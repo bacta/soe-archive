@@ -1,11 +1,11 @@
-package com.ocdsoft.bacta.soe.client;
+package com.ocdsoft.bacta.soe.connection;
 
 import com.ocdsoft.bacta.engine.network.client.UdpMessageBuilder;
 import com.ocdsoft.bacta.soe.message.ReliableNetworkMessage;
-import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -13,7 +13,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Created by Kyle on 3/26/14.
  */
-public class ReliableUdpMessageBuilder implements UdpMessageBuilder<ByteBuf> {
+public class ReliableUdpMessageBuilder implements UdpMessageBuilder<ByteBuffer> {
 
     public final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -28,14 +28,14 @@ public class ReliableUdpMessageBuilder implements UdpMessageBuilder<ByteBuf> {
     private int resendDelay;
     private float resendDelayPercentage;
     private int noDataTimeout;
-    private final SoeUdpClient client;
+    private final SoeUdpConnection client;
 
     private ReliableNetworkMessage pendingContainer;
     private boolean combineGameMessages;
 
     private final Queue<ReliableNetworkMessage> unacknowledgedQueue;
 
-    public ReliableUdpMessageBuilder(SoeUdpClient client, final ResourceBundle messageProperties) {
+    public ReliableUdpMessageBuilder(SoeUdpConnection client, final ResourceBundle messageProperties) {
 
         this.client = client;
         int udpMaxSize = Integer.parseInt(messageProperties.getString("UdpMaxSize"));
@@ -60,7 +60,7 @@ public class ReliableUdpMessageBuilder implements UdpMessageBuilder<ByteBuf> {
     }
 
     @Override
-    public synchronized boolean add(ByteBuf buffer) {
+    public synchronized boolean add(ByteBuffer buffer) {
 
         if (unacknowledgedQueue.size() >= unacknowledgedLimit) {
             return false;
@@ -96,7 +96,7 @@ public class ReliableUdpMessageBuilder implements UdpMessageBuilder<ByteBuf> {
     }
 
     @Override
-    public synchronized ByteBuf buildNext() {
+    public synchronized ByteBuffer buildNext() {
 
         long currentTime = System.currentTimeMillis();
 
@@ -148,11 +148,11 @@ public class ReliableUdpMessageBuilder implements UdpMessageBuilder<ByteBuf> {
 
     private class FragmentProcessor {
 
-        private final ByteBuf buffer;
+        private final ByteBuffer buffer;
         private final int size;
         private boolean first;
 
-        public FragmentProcessor(ByteBuf buffer) {
+        public FragmentProcessor(ByteBuffer buffer) {
             this.buffer = buffer;
             size = buffer.readableBytes();
             first = true;
@@ -171,7 +171,7 @@ public class ReliableUdpMessageBuilder implements UdpMessageBuilder<ByteBuf> {
                 messageSize = buffer.readableBytes();
             }
 
-            ByteBuf slice = buffer.slice(buffer.readerIndex(), messageSize);
+            ByteBuffer slice = buffer.slice(buffer.readerIndex(), messageSize);
             buffer.readerIndex(buffer.readerIndex() + messageSize);
 
             ReliableNetworkMessage message = new ReliableNetworkMessage(sequenceNumber.getAndIncrement(), slice, first, size).finish();

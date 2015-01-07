@@ -1,9 +1,13 @@
-package com.ocdsoft.bacta.soe.io.udp;
+package com.ocdsoft.bacta.soe.message;
+
+import com.ocdsoft.bacta.engine.buffer.ByteBufferSerializable;
+
+import java.nio.ByteBuffer;
 
 /**
  * Created by Kyle on 8/21/2014.
  */
-public enum UdpPacketType {
+public enum UdpPacketType implements ByteBufferSerializable {
     cUdpPacketZeroEscape(0x0),
     cUdpPacketConnect(0x1),
     cUdpPacketConfirm(0x2),
@@ -36,9 +40,14 @@ public enum UdpPacketType {
     cUdpPacketUnreachableConnection(0x1D),
     cUdpPacketRequestRemap(0x1E);
 
-    int value;
+    byte value;
 
     UdpPacketType(int value) {
-        this.value = value;
+        this.value = (byte) value;
+    }
+
+    @Override
+    public void writeToBuffer(ByteBuffer buffer) {
+        buffer.put(value);
     }
 }

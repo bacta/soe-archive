@@ -1,28 +1,28 @@
-package com.ocdsoft.bacta.soe.client;
+package com.ocdsoft.bacta.soe.connection;
 
 import com.ocdsoft.bacta.engine.network.client.ClientState;
 import com.ocdsoft.bacta.engine.network.client.UdpMessageBuilder;
 import com.ocdsoft.bacta.engine.network.client.UdpMessageProcessor;
-import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.ByteBuffer;
 import java.util.ResourceBundle;
 
 /**
  * @author kyle
  */
-public final class SoeUdpMessageProcessor implements UdpMessageProcessor<ByteBuf> {
+public final class SoeUdpMessageProcessor implements UdpMessageProcessor<ByteBuffer> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass().getSimpleName());
 
-    private final UdpMessageBuilder<ByteBuf> udpMessageBuilder;
-    private final UdpMessageBuilder<ByteBuf> reliableUdpMessageBuilder;
+    private final UdpMessageBuilder<ByteBuffer> udpMessageBuilder;
+    private final UdpMessageBuilder<ByteBuffer> reliableUdpMessageBuilder;
 
     private final int udpMaxSize;
-    private final SoeUdpClient client;
+    private final SoeUdpConnection client;
 
-    public SoeUdpMessageProcessor(SoeUdpClient client, final ResourceBundle messageProperties) {
+    public SoeUdpMessageProcessor(SoeUdpConnection client, final ResourceBundle messageProperties) {
 
         this.client = client;
 
@@ -36,14 +36,14 @@ public final class SoeUdpMessageProcessor implements UdpMessageProcessor<ByteBuf
     }
 
     @Override
-    public boolean addReliable(ByteBuf buffer) {
+    public boolean addReliable(ByteBuffer buffer) {
         if (buffer == null) throw new NullPointerException();
 
         return reliableUdpMessageBuilder.add(buffer);
     }
 
     @Override
-    public boolean addUnreliable(ByteBuf buffer) {
+    public boolean addUnreliable(ByteBuffer buffer) {
         if (buffer == null) throw new NullPointerException();
 
         flushReliable();
@@ -51,10 +51,10 @@ public final class SoeUdpMessageProcessor implements UdpMessageProcessor<ByteBuf
     }
 
     @Override
-    public ByteBuf processNext() {
+    public ByteBuffer processNext() {
 
         flushReliable();
-        ByteBuf message = udpMessageBuilder.buildNext();
+        ByteBuffer message = udpMessageBuilder.buildNext();
         if (message != null && message.readableBytes() > udpMaxSize) {
             throw new RuntimeException("Sending packet that exceeds " + udpMaxSize + " bytes");
         }
@@ -71,7 +71,7 @@ public final class SoeUdpMessageProcessor implements UdpMessageProcessor<ByteBuf
     }
 
     private void flushReliable() {
-        ByteBuf message;
+        ByteBuffer message;
         while ((message = reliableUdpMessageBuilder.buildNext()) != null) {
             udpMessageBuilder.add(message);
         }

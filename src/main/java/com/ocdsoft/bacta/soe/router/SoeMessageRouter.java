@@ -2,12 +2,11 @@ package com.ocdsoft.bacta.soe.router;
 
 import com.google.inject.Inject;
 import com.google.inject.Injector;
-import com.ocdsoft.bacta.engine.buffer.BactaBuffer;
 import com.ocdsoft.bacta.engine.network.ControllerScan;
 import com.ocdsoft.bacta.engine.network.router.ShortMessageRouter;
 import com.ocdsoft.bacta.soe.ServerState;
 import com.ocdsoft.bacta.soe.SoeController;
-import com.ocdsoft.bacta.soe.client.SoeUdpClient;
+import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 import com.ocdsoft.bacta.soe.controller.SoeMessageController;
 import com.ocdsoft.bacta.soe.utils.SoeMessageUtil;
 import gnu.trove.map.TShortObjectMap;
@@ -17,12 +16,13 @@ import org.reflections.Reflections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.Set;
 
 
-@ControllerScan(target = "com.ocdsoft.bacta")
-public class SoeMessageRouter implements ShortMessageRouter<SoeUdpClient, BactaBuffer> {
+@ControllerScan(target = "com.ocdsoft.bacta.soe")
+public class SoeMessageRouter implements ShortMessageRouter<SoeUdpConnection, ByteBuffer> {
 
     private Logger logger = LoggerFactory.getLogger(getClass().getSimpleName());
 
@@ -41,7 +41,7 @@ public class SoeMessageRouter implements ShortMessageRouter<SoeUdpClient, BactaB
     }
 
     @Override
-    public void routeMessage(short opcode, SoeUdpClient client, BactaBuffer buffer) {
+    public void routeMessage(short opcode, SoeUdpConnection client, ByteBuffer buffer) {
         SoeMessageController controller = controllers.get(opcode);
 
         if (controller == null) {

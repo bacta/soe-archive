@@ -1,6 +1,7 @@
 package com.ocdsoft.bacta.soe;
 
 import com.ocdsoft.bacta.engine.network.client.ConnectionState;
+import com.ocdsoft.bacta.soe.object.ClusterInfo;
 import lombok.Delegate;
 import lombok.Getter;
 import lombok.Setter;

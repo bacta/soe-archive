@@ -2,8 +2,10 @@ package com.ocdsoft.bacta.soe.io.udp;
 
 import com.ocdsoft.bacta.engine.network.io.udp.UdpTransceiver;
 import com.ocdsoft.bacta.soe.ServerType;
-import com.ocdsoft.bacta.soe.client.SoeUdpClient;
+import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
+import com.ocdsoft.bacta.soe.message.UdpPacketType;
 import com.ocdsoft.bacta.soe.protocol.SoeProtocol;
+import com.ocdsoft.bacta.soe.router.SoeMessageRouter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,33 +21,36 @@ import java.util.concurrent.ConcurrentHashMap;
  * Created by kburkhardt on 2/15/14.
  */
 
-public abstract class SoeTransceiver<Client extends SoeUdpClient> extends UdpTransceiver<Client> {
+public abstract class SoeTransceiver<Connection extends SoeUdpConnection> extends UdpTransceiver<Connection> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass().getSimpleName());
 
     private final ServerType serverType;
+
+    private final SoeMessageRouter soeMessageRouter;
 
     private SoeProtocol protocol;
 
     /**
      * This is a reference to the constructor used to create the clients
      */
-    protected Constructor<Client> clientConstructor;
+    protected Constructor<Connection> connectionConstructor;
 
     /**
      * The structure that holds the "connected" udp clients
      */
-    protected final Map<Object, Client> clients;
+    protected final Map<Object, Connection> connections;
 
     private final Thread sendThread;
     private final int sendQueueInterval;
 
-    public SoeTransceiver(InetAddress bindAddress,
-                          int port,
-                          ServerType serverType,
-                          Class<Client> clientClass,
-                          int sendQueueInterval,
-                          SoeProtocol soeProtocol) {
+    public SoeTransceiver(final InetAddress bindAddress,
+                          final int port,
+                          final ServerType serverType,
+                          final Class<Connection> connectionClass,
+                          final int sendQueueInterval,
+                          final SoeMessageRouter soeMessageRouter,
+                          final SoeProtocol soeProtocol) {
 
         super(bindAddress, port);
 
@@ -53,13 +58,14 @@ public abstract class SoeTransceiver<Client extends SoeUdpClient> extends UdpTra
 
             this.serverType = serverType;
             this.sendQueueInterval = sendQueueInterval;
-            clientConstructor = clientClass.getConstructor();
+            connectionConstructor = connectionClass.getConstructor();
+            this.soeMessageRouter = soeMessageRouter;
             this.protocol = soeProtocol;
 
             ResourceBundle bundle = PropertyResourceBundle.getBundle("messageprocessing");
             protocol.setCompression(bundle.getString("Compression").equalsIgnoreCase("true"));
 
-            clients = new ConcurrentHashMap<>();
+            connections = new ConcurrentHashMap<>();
 
             sendThread = new Thread(new SendLoop());
             sendThread.start();
@@ -74,19 +80,19 @@ public abstract class SoeTransceiver<Client extends SoeUdpClient> extends UdpTra
      * The factory method that creates instances of the {@link com.ocdsoft.bacta.engine.network.client.UdpClient} specified in the {@code Client} parameter
      *
      * @param address {@link java.net.InetSocketAddress of incoming {@code Data} message
-     * @return New instance of user specified class {@code Client}
+     * @return New instance of user specified class {@code Connection}
      * @throws Exception
      * @since 1.0
      */
-    protected final Client createClient(InetSocketAddress address) throws RuntimeException {
-        Client client;
+    protected final Connection createClient(InetSocketAddress address) throws RuntimeException {
+        Connection connection;
         try {
-            client = (Client) clientConstructor.newInstance();
+            connection = connectionConstructor.newInstance();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        client.setRemoteAddress(address);
-        return client;
+        connection.setRemoteAddress(address);
+        return connection;
     }
 
     @Override
@@ -94,28 +100,32 @@ public abstract class SoeTransceiver<Client extends SoeUdpClient> extends UdpTra
 
         try {
 
-            Client client = clients.get(sender);
+            Connection connection = connections.get(sender);
 
-            if (client == null) {
-                if (buffer.getShort(0) == 0x1 || buffer.getShort(0) == 0x4) {
+            byte zeroByte = buffer.get();
+            UdpPacketType packetType = UdpPacketType.values()[buffer.get()];
 
-                    client = createClient(sender);
-                    clients.put(sender, client);
+            if (packetType == UdpPacketType.cUdpPacketConnect) {
 
-                    logger.debug("{} connection from {} now has {} total connected clients.",
-                            client.getClass().getSimpleName(),
-                            sender,
-                            clients.size());
-                } else {
-                    return;
+                connection = createClient(sender);
+                connections.put(sender, connection);
+
+                logger.debug("{} connection from {} now has {} total connected clients.",
+                        connection.getClass().getSimpleName(),
+                        sender,
+                        connections.size());
+            } else {
+
+                if (buffer.getShort(0) != 1) {
+                    buffer = protocol.decode(connection.getSessionKey(), buffer.order(ByteOrder.LITTLE_ENDIAN));
                 }
             }
 
-            if(buffer.getShort(0) != 1) {
-                buffer = protocol.decode(client.getSessionKey(), buffer.order(ByteOrder.LITTLE_ENDIAN));
+            if(zeroByte == 0) {
+                soeMessageRouter.routeMessage(packetType, connection, buffer);
+            } else {
+                swgRouter.routeMessage(message.readInt(), client, message);
             }
-
-            receiveMessage(client.getRemoteAddress(), buffer);
 
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -123,16 +133,16 @@ public abstract class SoeTransceiver<Client extends SoeUdpClient> extends UdpTra
     }
 
     @Override
-    public void sendMessage(Client client, ByteBuffer buffer) {
+    public void sendMessage(Connection connection, ByteBuffer buffer) {
 
         short op = Short.reverseBytes(buffer.getShort(0));
 
         if (op > 0x2 && op != 0x4) {
-            buffer = protocol.encode(client.getSessionKey(), buffer, true);
-            protocol.appendCRC(client.getSessionKey(), buffer, 2);
+            buffer = protocol.encode(connection.getSessionKey(), buffer, true);
+            protocol.appendCRC(connection.getSessionKey(), buffer, 2);
         }
 
-        handleOutgoing(buffer, client.getRemoteAddress());
+        handleOutgoing(buffer, connection.getRemoteAddress());
     }
 
     private class SendLoop implements Runnable {
@@ -157,28 +167,28 @@ public abstract class SoeTransceiver<Client extends SoeUdpClient> extends UdpTra
 
                     nextIteration = currentTime + sendQueueInterval;
 
-                    Set<Object> clientList = clients.keySet();
+                    Set<Object> connectionList = connections.keySet();
                     List<Object> deadClients = new ArrayList<>();
 
-                    for (Object obj : clientList) {
-                        Client client = clients.get(obj);
+                    for (Object obj : connectionList) {
+                        Connection connection = connections.get(obj);
 
-                        if (client == null || client.isStale()) {
+                        if (connection == null || connection.isStale()) {
                             deadClients.add(obj);
                             continue;
                         }
 
-                        List<ByteBuffer> messages = client.getPendingMessages();
+                        List<ByteBuffer> messages = connection.getPendingMessages();
 
                         for (ByteBuffer message : messages) {
-                            sendMessage(client, message);
+                            sendMessage(connection, message);
                         }
                     }
 
                     for (Object key : deadClients) {
                         logger.debug("Removing client: " + key);
-                        Client client = clients.remove(key);
-                        client.close();
+                        Connection connection = connections.remove(key);
+                        connection.close();
                     }
 
                 } catch (Exception e) {

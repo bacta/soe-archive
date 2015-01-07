@@ -1,4 +1,4 @@
-package com.ocdsoft.bacta.soe.client;
+package com.ocdsoft.bacta.soe.connection;
 
 import com.ocdsoft.bacta.engine.network.client.ClientState;
 import com.ocdsoft.bacta.engine.network.client.UdpClient;
@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.ResourceBundle;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class SoeUdpClient extends UdpClient {
+public class SoeUdpConnection extends UdpClient {
 
     private final Logger logger = LoggerFactory.getLogger(getClass().getSimpleName());
     private static ResourceBundle messageProperties;
@@ -55,7 +55,7 @@ public class SoeUdpClient extends UdpClient {
     @Getter
     private long lastActivity = System.currentTimeMillis();
 
-    public SoeUdpClient() {
+    public SoeUdpConnection() {
         udpMessageProcessor = new SoeUdpMessageProcessor(this, messageProperties);
         staleTimeout = Integer.parseInt(messageProperties.getString("staleDisconnect"));
     }

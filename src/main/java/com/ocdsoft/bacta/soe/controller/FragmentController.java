@@ -2,7 +2,7 @@ package com.ocdsoft.bacta.soe.controller;
 
 import com.ocdsoft.bacta.engine.buffer.BactaBuffer;
 import com.ocdsoft.bacta.soe.SoeController;
-import com.ocdsoft.bacta.soe.client.SoeUdpClient;
+import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 import com.ocdsoft.bacta.soe.message.ReliableNetworkMessage;
 import com.ocdsoft.bacta.soe.message.SoeMessage;
 import com.ocdsoft.bacta.soe.router.SoeMessageRouter;
@@ -17,7 +17,7 @@ public class FragmentController extends SoeMessageController {
 
     private SoeMessageRouter soeRouter;
 
-    private final Map<SoeUdpClient, FragmentContainer> pendingFragments = new ConcurrentHashMap<>();
+    private final Map<SoeUdpConnection, FragmentContainer> pendingFragments = new ConcurrentHashMap<>();
 
     @Override
     public void setRouter(SoeMessageRouter soeRouter) {
@@ -25,7 +25,7 @@ public class FragmentController extends SoeMessageController {
     }
 
     @Override
-    public void handleIncoming(SoeUdpClient client, BactaBuffer buffer) {
+    public void handleIncoming(SoeUdpConnection client, BactaBuffer buffer) {
 
         FragmentContainer fragmentContainer = pendingFragments.get(client);
 

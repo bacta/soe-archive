@@ -1,12 +1,12 @@
-package com.ocdsoft.bacta.soe.client;
+package com.ocdsoft.bacta.soe.connection;
 
 import com.ocdsoft.bacta.engine.network.client.UdpMessageBuilder;
 import com.ocdsoft.bacta.soe.message.MultiMessage;
 import com.ocdsoft.bacta.soe.utils.SoeMessageUtil;
-import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.ByteBuffer;
 import java.util.Queue;
 import java.util.ResourceBundle;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -14,14 +14,14 @@ import java.util.concurrent.ArrayBlockingQueue;
 /**
  * Created by Kyle on 3/28/14.
  */
-public class SoeUdpMessageBuilder implements UdpMessageBuilder<ByteBuf> {
+public class SoeUdpMessageBuilder implements UdpMessageBuilder<ByteBuffer> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass().getSimpleName());
 
-    private final Queue<ByteBuf> bufferList;
+    private final Queue<ByteBuffer> bufferList;
     private final int udpMaxMultiPayload;
     private MultiMessage pendingMulti;
-    private ByteBuf pendingBuffer;
+    private ByteBuffer pendingBuffer;
     private boolean multiMessages;
 
     public SoeUdpMessageBuilder(int udpMaxMultiPayload, final ResourceBundle messageProperties) {
@@ -33,7 +33,7 @@ public class SoeUdpMessageBuilder implements UdpMessageBuilder<ByteBuf> {
     }
 
     @Override
-    public synchronized boolean add(ByteBuf buffer) {
+    public synchronized boolean add(ByteBuffer buffer) {
 
         if(!multiMessages) {
             return bufferList.add(buffer);
@@ -77,9 +77,9 @@ public class SoeUdpMessageBuilder implements UdpMessageBuilder<ByteBuf> {
     }
 
     @Override
-    public synchronized ByteBuf buildNext() {
+    public synchronized ByteBuffer buildNext() {
 
-        ByteBuf buffer = bufferList.poll();
+        ByteBuffer buffer = bufferList.poll();
 
         if(buffer == null && pendingMulti != null) {
             buffer = pendingMulti;

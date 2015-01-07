@@ -1,7 +1,6 @@
 package com.ocdsoft.bacta.soe.router;
 
-
-import com.ocdsoft.bacta.swg.network.swg.ServerType;
+import com.ocdsoft.bacta.soe.ServerType;
 
 public interface BactaMessageRouterFactory {
 	BactaMessageRouter create(ServerType serverEnv);

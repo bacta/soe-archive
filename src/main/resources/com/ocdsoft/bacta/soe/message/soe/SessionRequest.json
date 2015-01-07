@@ -1,0 +1,29 @@
+{
+    "id": "SessionRequest",
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "additionalProperties": false,
+    "title": "SessionRequest",
+    "description": "A session request",
+    "properties": {
+        "zeroByte": {
+            "type": "byte",
+            "default" : 0
+        },
+        "packetType": {
+            "type": "byte",
+            "default" : 1
+        },
+        "connectionId": {
+            "type": "integer"
+        },
+        "udpSize": {
+            "type": "integer"
+        },
+        "crcLength": {
+            "type": "integer"
+        }
+    }
+}
+
+

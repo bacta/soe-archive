@@ -1,17 +1,25 @@
 package com.ocdsoft.bacta.soe.message;
 
+import com.ocdsoft.bacta.engine.utils.BufferUtil;
+
 public final class SessionResponse extends SoeMessage {
 
-	public SessionResponse(int crcLength, int connectionID, int sessionKey, byte cryptMethod, boolean useComp, int udpSize) {
-		super(0x2);
+	public SessionResponse(final int crcLength,
+                           final int connectionID,
+                           final int sessionKey,
+                           final byte cryptMethod,
+                           final boolean useComp,
+                           final int udpSize) {
+
+		super(UdpPacketType.cUdpPacketConfirm);
 
 		process = false;
 
-		writeIntBE(connectionID);
-		writeIntBE(sessionKey);
-		writeByte(crcLength);
-		writeBoolean(useComp);
-		writeByte(cryptMethod);
-		writeIntBE(udpSize);
+		buffer.putInt(connectionID);
+        buffer.putInt(sessionKey);
+		buffer.put((byte) crcLength);
+		BufferUtil.putBoolean(buffer, useComp);
+		buffer.put(cryptMethod);
+        buffer.putInt(udpSize);
 	}
 }

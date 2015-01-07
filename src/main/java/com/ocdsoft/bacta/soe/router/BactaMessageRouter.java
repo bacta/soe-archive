@@ -3,25 +3,25 @@ package com.ocdsoft.bacta.soe.router;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.assistedinject.Assisted;
-import com.ocdsoft.bacta.swg.network.soe.BactaController;
-import com.ocdsoft.bacta.swg.network.soe.buffer.SoeByteBuf;
-import com.ocdsoft.bacta.swg.network.soe.client.SoeUdpClient;
-import com.ocdsoft.bacta.swg.network.soe.controller.BactaMessageController;
-import com.ocdsoft.bacta.swg.network.soe.message.util.SoeMessageUtil;
-import com.ocdsoft.bacta.swg.network.swg.ServerType;
-import com.ocdsoft.network.annotation.ControllerScan;
-import com.ocdsoft.network.router.ShortMessageRouter;
+import com.ocdsoft.bacta.engine.network.ControllerScan;
+import com.ocdsoft.bacta.engine.network.router.ShortMessageRouter;
+import com.ocdsoft.bacta.soe.BactaController;
+import com.ocdsoft.bacta.soe.ServerType;
+import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
+import com.ocdsoft.bacta.soe.controller.BactaMessageController;
+import com.ocdsoft.bacta.soe.utils.SoeMessageUtil;
 import gnu.trove.map.TShortObjectMap;
 import gnu.trove.map.hash.TShortObjectHashMap;
 import org.reflections.Reflections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.Set;
 
 @ControllerScan(target = "com.ocdsoft.bacta")
-public class BactaMessageRouter implements ShortMessageRouter<SoeUdpClient, SoeByteBuf> {
+public class BactaMessageRouter implements ShortMessageRouter<SoeUdpConnection, ByteBuffer> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass().getSimpleName());
 
@@ -39,7 +39,7 @@ public class BactaMessageRouter implements ShortMessageRouter<SoeUdpClient, SoeB
     }
 
     @Override
-    public void routeMessage(short command, SoeUdpClient client, SoeByteBuf buffer) {
+    public void routeMessage(short command, SoeUdpConnection client, ByteBuffer buffer) {
         BactaMessageController controller = controllers.get(command);
 
         if (controller == null) {

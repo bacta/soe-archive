@@ -1,0 +1,17 @@
+{
+    "id": "SoeMessage",
+    "$schema" : "http://json-schema.org/draft-04/schema#",
+    "type" : "object",
+    "additionalProperties" : false,
+    "title" : "SoeMessage",
+    "description" : "The basic definition file for SoeMessage",
+
+    "definitions" : {
+        "short" : {
+            "type" : "integer"
+        },
+        "byte" : {
+            "type" : "integer"
+        }
+    }
+}

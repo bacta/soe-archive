@@ -1,15 +1,16 @@
 package com.ocdsoft.bacta.soe.utils;
 
 import com.ocdsoft.bacta.engine.utils.BufferUtil;
-import io.netty.buffer.ByteBuf;
+
+import java.nio.ByteBuffer;
 
 public class SoeMessageUtil {
 
-    public static String bytesToHex(ByteBuf buffer) {
+    public static String bytesToHex(ByteBuffer buffer) {
         return BufferUtil.bytesToHex(buffer);
     }
 
-    public static String makeMessageStruct(ByteBuf buffer) {
+    public static String makeMessageStruct(ByteBuffer buffer) {
         StringBuilder builder = new StringBuilder();
 
         String bytes = SoeMessageUtil.bytesToHex(buffer);
