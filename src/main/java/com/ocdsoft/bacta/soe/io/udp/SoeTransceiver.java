@@ -29,7 +29,7 @@ public abstract class SoeTransceiver<Connection extends SoeUdpConnection> extend
 
     private final SoeMessageRouter soeMessageRouter;
 
-    private SoeProtocol protocol;
+    private final SoeProtocol protocol;
 
     /**
      * This is a reference to the constructor used to create the clients
@@ -77,14 +77,14 @@ public abstract class SoeTransceiver<Connection extends SoeUdpConnection> extend
     }
 
     /**
-     * The factory method that creates instances of the {@link com.ocdsoft.bacta.engine.network.client.UdpClient} specified in the {@code Client} parameter
+     * The factory method that creates instances of the {@link com.ocdsoft.bacta.engine.network.client.UdpConnection} specified in the {@code Client} parameter
      *
      * @param address {@link java.net.InetSocketAddress of incoming {@code Data} message
      * @return New instance of user specified class {@code Connection}
      * @throws Exception
      * @since 1.0
      */
-    protected final Connection createClient(InetSocketAddress address) throws RuntimeException {
+    protected final Connection createConnection(InetSocketAddress address) throws RuntimeException {
         Connection connection;
         try {
             connection = connectionConstructor.newInstance();
@@ -107,7 +107,7 @@ public abstract class SoeTransceiver<Connection extends SoeUdpConnection> extend
 
             if (packetType == UdpPacketType.cUdpPacketConnect) {
 
-                connection = createClient(sender);
+                connection = createConnection(sender);
                 connections.put(sender, connection);
 
                 logger.debug("{} connection from {} now has {} total connected clients.",
@@ -121,11 +121,7 @@ public abstract class SoeTransceiver<Connection extends SoeUdpConnection> extend
                 }
             }
 
-            if(zeroByte == 0) {
-                soeMessageRouter.routeMessage(packetType, connection, buffer);
-            } else {
-                swgRouter.routeMessage(message.readInt(), client, message);
-            }
+            soeMessageRouter.routeMessage(packetType, connection, buffer);
 
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -135,9 +131,9 @@ public abstract class SoeTransceiver<Connection extends SoeUdpConnection> extend
     @Override
     public void sendMessage(Connection connection, ByteBuffer buffer) {
 
-        short op = Short.reverseBytes(buffer.getShort(0));
+        UdpPacketType packetType = UdpPacketType.values()[buffer.get(1)];
 
-        if (op > 0x2 && op != 0x4) {
+        if (packetType != UdpPacketType.cUdpPacketConfirm) {
             buffer = protocol.encode(connection.getSessionKey(), buffer, true);
             protocol.appendCRC(connection.getSessionKey(), buffer, 2);
         }

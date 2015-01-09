@@ -9,7 +9,7 @@ import com.ocdsoft.bacta.soe.BactaController;
 import com.ocdsoft.bacta.soe.ServerType;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 import com.ocdsoft.bacta.soe.controller.BactaMessageController;
-import com.ocdsoft.bacta.soe.utils.SoeMessageUtil;
+import com.ocdsoft.bacta.soe.util.SoeMessageUtil;
 import gnu.trove.map.TShortObjectMap;
 import gnu.trove.map.hash.TShortObjectHashMap;
 import org.reflections.Reflections;

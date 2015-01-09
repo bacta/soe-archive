@@ -1,6 +1,6 @@
 package com.ocdsoft.bacta.soe.connection;
 
-import com.ocdsoft.bacta.engine.network.client.ClientState;
+import com.ocdsoft.bacta.engine.network.client.ConnectionState;
 import com.ocdsoft.bacta.engine.network.client.UdpMessageBuilder;
 import com.ocdsoft.bacta.engine.network.client.UdpMessageProcessor;
 import org.slf4j.Logger;
@@ -64,8 +64,8 @@ public final class SoeUdpMessageProcessor implements UdpMessageProcessor<ByteBuf
 
     @Override
     public void acknowledge(short reliableSequence) {
-        if(client.getClientState() != ClientState.ONLINE) {
-            client.setClientState(ClientState.ONLINE);
+        if(client.getConnectionState() != ConnectionState.ONLINE) {
+            client.setConnectionState(ConnectionState.ONLINE);
         }
         reliableUdpMessageBuilder.acknowledge(reliableSequence);
     }

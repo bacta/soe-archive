@@ -17,14 +17,14 @@ public enum UdpPacketType implements ByteBufferSerializable {
     cUdpPacketKeepAlive(0x6),
     cUdpPacketClockSync(0x7),
     cUdpPacketClockReflect(0x8),
-    cUdpPacketReliable1(0x9),
-    cUdpPacketReliable2(0xA),
-    cUdpPacketReliable3(0xB),
-    cUdpPacketReliable4(0xC),
-    cUdpPacketFragment1(0xD),
-    cUdpPacketFragment2(0xE),
-    cUdpPacketFragment3(0xF),
-    cUdpPacketFragment4(0x10),
+    cUdpPacketReliable1(0x9),     // Handled the same
+    cUdpPacketReliable2(0xA),     //     |
+    cUdpPacketReliable3(0xB),     //     |
+    cUdpPacketReliable4(0xC),     //     |
+    cUdpPacketFragment1(0xD),     //     |
+    cUdpPacketFragment2(0xE),     //     |
+    cUdpPacketFragment3(0xF),     //     |
+    cUdpPacketFragment4(0x10),    //     v
     cUdpPacketAck1(0x11),
     cUdpPacketAck2(0x12),
     cUdpPacketAck3(0x13),
@@ -40,10 +40,14 @@ public enum UdpPacketType implements ByteBufferSerializable {
     cUdpPacketUnreachableConnection(0x1D),
     cUdpPacketRequestRemap(0x1E);
 
-    byte value;
+    private byte value;
 
     UdpPacketType(int value) {
         this.value = (byte) value;
+    }
+
+    public byte getValue() {
+        return value;
     }
 
     @Override

@@ -1,34 +1,35 @@
 package com.ocdsoft.bacta.soe.message;
 
-import io.netty.buffer.ByteBuf;
+import java.nio.ByteBuffer;
 
 public final class MultiMessage extends SoeMessage {
 
-    public MultiMessage(ByteBuf buffer1, ByteBuf buffer2) {
-        super(0x3);
-        add(buffer1);
-        add(buffer2);
+    public MultiMessage(ByteBuffer inbuffer1, ByteBuffer inbuffer2) {
+        super(UdpPacketType.cUdpPacketMulti);
+
+        add(inbuffer1);
+        add(inbuffer2);
     }
 
-    public void add(ByteBuf buffer) {
+    public void add(ByteBuffer inbuffer) {
 
-        int byteCount = buffer.readableBytes();
+        int byteCount = inbuffer.remaining();
         if(byteCount > 0xFF) {
-            int sizeCount = (byteCount / 0xFF) - (byteCount % 0xFF == 0 ? 1 : 0);
+            byte sizeCount = (byte)((byteCount / 0xFF) - (byteCount % 0xFF == 0 ? 1 : 0));
 
-            writeByte(0xFF);
-            writeByte(sizeCount);
+            buffer.put((byte) 0xFF);
+            buffer.put(sizeCount);
             byteCount -= 0xFF;
 
             for (int i = 0; i < sizeCount; ++i) {
-                writeByte(byteCount > 0xFF ? 0xFF : byteCount);
+                buffer.put(byteCount > 0xFF ? (byte) 0xFF : (byte) byteCount);
                 byteCount -= 0xFF;
             }
 
         } else {
-            writeByte(byteCount);
+            buffer.put((byte) byteCount);
         }
 
-        writeBytes(buffer);
+        buffer.put(inbuffer);
     }
 }

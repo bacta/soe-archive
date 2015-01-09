@@ -1,7 +1,7 @@
 package com.ocdsoft.bacta.soe.object;
 
 import com.ocdsoft.bacta.engine.buffer.BactaBufferSerializable;
-import com.ocdsoft.bacta.engine.network.client.ConnectionState;
+import com.ocdsoft.bacta.engine.network.client.ServerStatus;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -42,7 +42,7 @@ public class ClusterInfo implements BactaBufferSerializable, Comparable<ClusterI
     private int timezone;
 	@Getter
     @Setter
-    private ConnectionState status;
+    private ServerStatus status;
 	@Getter
     @Setter
     private boolean recommended;
@@ -60,17 +60,17 @@ public class ClusterInfo implements BactaBufferSerializable, Comparable<ClusterI
         maximumPopulation = ((Double)clusterInfo.get("maximumPopulation")).intValue();
         maximumCharacters = ((Double)clusterInfo.get("maximumCharacters")).intValue();
         timezone = ((Double)clusterInfo.get("timezone")).intValue();
-        status = ConnectionState.valueOf((String) clusterInfo.get("status"));
+        status = ServerStatus.valueOf((String) clusterInfo.get("status"));
         recommended = (boolean) clusterInfo.get("recommended");
 
     }
 
-    public boolean isOffline() { return status == ConnectionState.OFFLINE; }
-	public boolean isLoading() { return status == ConnectionState.LOADING; }
-	public boolean isOnline()  { return status == ConnectionState.ONLINE;  }
-	public boolean isLocked()  { return status == ConnectionState.LOCKED;  }
-    public boolean isRestricted()  { return status == ConnectionState.RESTRICTED;  }
-    public boolean isFull()  { return status == ConnectionState.FULL;  }
+    public boolean isOffline() { return status == ServerStatus.OFFLINE; }
+	public boolean isLoading() { return status == ServerStatus.LOADING; }
+	public boolean isOnline()  { return status == ServerStatus.ONLINE;  }
+	public boolean isLocked()  { return status == ServerStatus.LOCKED;  }
+    public boolean isRestricted()  { return status == ServerStatus.RESTRICTED;  }
+    public boolean isFull()  { return status == ServerStatus.FULL;  }
 
 	@Override
 	public void writeToBuffer(ByteBuffer message) {

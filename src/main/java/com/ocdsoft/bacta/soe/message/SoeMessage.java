@@ -11,9 +11,6 @@ public abstract class SoeMessage {
     protected transient boolean compressed = true;
 
     @Getter
-    protected transient boolean process = true;
-
-    @Getter
     protected final byte zeroByte;
 
     @Getter

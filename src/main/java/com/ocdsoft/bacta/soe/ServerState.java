@@ -1,6 +1,6 @@
 package com.ocdsoft.bacta.soe;
 
-import com.ocdsoft.bacta.engine.network.client.ConnectionState;
+import com.ocdsoft.bacta.engine.network.client.ServerStatus;
 import com.ocdsoft.bacta.soe.object.ClusterInfo;
 import lombok.Delegate;
 import lombok.Getter;
@@ -17,14 +17,14 @@ public abstract class ServerState {
 
     @Getter
     @Setter
-    private ConnectionState connectionState;
+    private ServerStatus serverStatus;
 
     @Delegate
     private final ClusterInfo info = new ClusterInfo();
     
     public ServerState(ServerType serverType) {
         this.serverType = serverType;
-        connectionState = ConnectionState.LOADING;
+        serverStatus = ServerStatus.LOADING;
     }
 
     @Synchronized("info")

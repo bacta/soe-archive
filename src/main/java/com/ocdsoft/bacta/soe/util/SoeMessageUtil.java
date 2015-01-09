@@ -1,4 +1,4 @@
-package com.ocdsoft.bacta.soe.utils;
+package com.ocdsoft.bacta.soe.util;
 
 import com.ocdsoft.bacta.engine.utils.BufferUtil;
 

@@ -1,21 +1,30 @@
 package com.ocdsoft.bacta.soe.controller;
 
-import com.ocdsoft.bacta.engine.buffer.BactaBuffer;
+import com.ocdsoft.bacta.engine.network.client.ConnectionState;
+import com.ocdsoft.bacta.engine.utils.UnsignedUtil;
 import com.ocdsoft.bacta.soe.SoeController;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
-import com.ocdsoft.bacta.soe.message.Disconnect;
+import com.ocdsoft.bacta.soe.message.TerminateReason;
+import com.ocdsoft.bacta.soe.message.UdpPacketType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-@SoeController(opcode = 0x5, handles = Disconnect.class)
-public class DisconnectController extends SoeMessageController {
+import java.nio.ByteBuffer;
+
+@SoeController(handles = {UdpPacketType.cUdpPacketTerminate})
+public class DisconnectController implements SoeMessageController {
+
+    private static final Logger logger = LoggerFactory.getLogger(DisconnectController.class);
 
     @Override
-    public void handleIncoming(SoeUdpConnection client, BactaBuffer buffer) {
-        long connectionID = buffer.readUnsignedInt();
-        byte reasonID = (byte) buffer.readShort();
+    public void handleIncoming(SoeUdpConnection connection, ByteBuffer buffer) {
 
-        client.disconnect();
+        long connectionID = UnsignedUtil.getUnsignedInt(buffer);
+        TerminateReason reason = TerminateReason.values()[buffer.getShort()];
 
-        logger.debug("Client disconnected: " + client.getClass().getSimpleName() + " " + client.getRemoteAddress() + " Connection: " + connectionID + " Reason: " + Disconnect.reasons.get(reasonID));
+        connection.setConnectionState(ConnectionState.DISCONNECTED);
+
+        logger.debug("Client disconnected: " + connection.getClass().getSimpleName() + " " + connection.getRemoteAddress() + " Connection: " + connectionID + " Reason: " + reason.getReason());
     }
 
 }

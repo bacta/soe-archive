@@ -1,54 +1,50 @@
 package com.ocdsoft.bacta.soe.controller;
 
-import com.ocdsoft.bacta.engine.buffer.BactaBuffer;
+import com.google.inject.Inject;
+import com.ocdsoft.bacta.engine.utils.UnsignedUtil;
 import com.ocdsoft.bacta.soe.SoeController;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
-import com.ocdsoft.bacta.soe.message.MultiMessage;
+import com.ocdsoft.bacta.soe.message.UdpPacketType;
 import com.ocdsoft.bacta.soe.router.SoeMessageRouter;
 
-@SoeController(opcode = 0x3, handles = MultiMessage.class)
-public class MultiController extends SoeMessageController {
+import java.nio.ByteBuffer;
 
-    private SoeMessageRouter soeRouter;
-    private SwgMessageRouter swgRouter;
+@SoeController(handles = {UdpPacketType.cUdpPacketMulti})
+public class MultiController implements SoeMessageController {
 
-    @Override
-    public void setRouter(SoeMessageRouter soeRouter) {
-        this.soeRouter = soeRouter;
-        this.swgRouter = soeRouter.getSwgRouter();
+    private final SoeMessageRouter soeMessageRouter;
+
+    @Inject
+    public MultiController(final SoeMessageRouter soeMessageRouter) {
+        this.soeMessageRouter = soeMessageRouter;
     }
 
     @Override
-    public void handleIncoming(SoeUdpConnection client, BactaBuffer buffer) {
+    public void handleIncoming(SoeUdpConnection connection, ByteBuffer buffer) {
 
-        short length = buffer.readUnsignedByte();
+        short length = UnsignedUtil.getUnsignedByte(buffer);
 
-        while (buffer.readableBytes() >= length) {
+        while (buffer.remaining() >= length) {
 
             if (length == 0xFF) {
-                if (buffer.readUnsignedByte() == 0x01)
-                    length += buffer.readUnsignedByte();
+                if (UnsignedUtil.getUnsignedByte(buffer) == 0x01) {
+                    length += UnsignedUtil.getUnsignedByte(buffer);
+                }
             }
 
-            int swgByte = buffer.readUnsignedByte();
-            short soeByte = buffer.readUnsignedByte();
+            byte zeroByte = buffer.get();
+            UdpPacketType packetType = UdpPacketType.values()[buffer.get()];
 
-            if (swgByte != 0) {
-                int opcode = buffer.readInt();
+            ByteBuffer slicedMessage = buffer.slice();
+            slicedMessage.limit(length - 2);
 
-                BactaBuffer gameMessage = new BactaBuffer(buffer.slice(buffer.readerIndex(), length - 6));
-                swgRouter.routeMessage(opcode, client, gameMessage);
+            soeMessageRouter.routeMessage(packetType, connection, slicedMessage);
 
-                buffer.skipBytes(length - 6);
-            } else {
-                soeRouter.routeMessage(soeByte, client, new BactaBuffer(buffer.slice(buffer.readerIndex(), length - 2)));
-                buffer.skipBytes(length - 2);
-            }
-
-            if (buffer.readableBytes() <= 3)
+            if (!buffer.hasRemaining()) {
                 break;
+            }
 
-            length = buffer.readUnsignedByte();
+            length = UnsignedUtil.getUnsignedByte(buffer);
         }
     }
 

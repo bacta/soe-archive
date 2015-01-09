@@ -2,7 +2,7 @@ package com.ocdsoft.bacta.soe.connection;
 
 import com.ocdsoft.bacta.engine.network.client.UdpMessageBuilder;
 import com.ocdsoft.bacta.soe.message.MultiMessage;
-import com.ocdsoft.bacta.soe.utils.SoeMessageUtil;
+import com.ocdsoft.bacta.soe.util.SoeMessageUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
