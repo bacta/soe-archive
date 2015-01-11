@@ -1,9 +1,14 @@
 package com.ocdsoft.bacta.soe.disruptor;
 
 import com.google.inject.Inject;
+import com.lmax.disruptor.EventHandler;
+import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
+import com.ocdsoft.bacta.soe.protocol.SoeProtocol;
 import io.netty.buffer.ByteBuf;
 
-public class SoeUnmarshallingConsumer<T extends SoeUdpClient> implements EventHandler<SoeInputEvent<T>> {
+import java.nio.ByteBuffer;
+
+public class SoeUnmarshallingConsumer<T extends SoeUdpConnection> implements EventHandler<SoeInputEvent<T>> {
 	
 	private final SoeProtocol protocol;
 	
@@ -16,10 +21,10 @@ public class SoeUnmarshallingConsumer<T extends SoeUdpClient> implements EventHa
 	public void onEvent(SoeInputEvent<T> event, long sequence, boolean endOfBatch)
 			throws Exception {
 
-		ByteBuf message = event.getBuffer();
+		ByteBuffer message = event.getBuffer();
 		T client = event.getClient(); 
 		
-		int swgByte = message.getByte(0);
+		int swgByte = message.get(0);
 		
 		ByteBuf decodedMessage;
 		

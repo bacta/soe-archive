@@ -20,18 +20,18 @@ public final class SoeUdpMessageProcessor implements UdpMessageProcessor<ByteBuf
     private final UdpMessageBuilder<ByteBuffer> reliableUdpMessageBuilder;
 
     private final int udpMaxSize;
-    private final SoeUdpConnection client;
+    private final SoeUdpConnection connection;
 
-    public SoeUdpMessageProcessor(SoeUdpConnection client, final ResourceBundle messageProperties) {
+    public SoeUdpMessageProcessor(SoeUdpConnection connection, final ResourceBundle messageProperties) {
 
-        this.client = client;
+        this.connection = connection;
 
         this.udpMaxSize = Integer.parseInt(messageProperties.getString("UdpMaxSize"));
         int footerLength = Integer.parseInt(messageProperties.getString("FooterLength"));
 
         int udpMaxMultiPayload = udpMaxSize - footerLength - 3;
 
-        reliableUdpMessageBuilder = new ReliableUdpMessageBuilder(client, messageProperties);
+        reliableUdpMessageBuilder = new ReliableUdpMessageBuilder(connection, messageProperties);
         udpMessageBuilder = new SoeUdpMessageBuilder(udpMaxMultiPayload, messageProperties);
     }
 
@@ -55,7 +55,7 @@ public final class SoeUdpMessageProcessor implements UdpMessageProcessor<ByteBuf
 
         flushReliable();
         ByteBuffer message = udpMessageBuilder.buildNext();
-        if (message != null && message.readableBytes() > udpMaxSize) {
+        if (message != null && message.remaining() > udpMaxSize) {
             throw new RuntimeException("Sending packet that exceeds " + udpMaxSize + " bytes");
         }
         return message;
@@ -64,8 +64,8 @@ public final class SoeUdpMessageProcessor implements UdpMessageProcessor<ByteBuf
 
     @Override
     public void acknowledge(short reliableSequence) {
-        if(client.getConnectionState() != ConnectionState.ONLINE) {
-            client.setConnectionState(ConnectionState.ONLINE);
+        if(connection.getState() != ConnectionState.ONLINE) {
+            connection.setState(ConnectionState.ONLINE);
         }
         reliableUdpMessageBuilder.acknowledge(reliableSequence);
     }

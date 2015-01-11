@@ -28,7 +28,7 @@ public class ConnectController implements SoeMessageController {
     }
 
     @Override
-    public void handleIncoming(SoeUdpConnection connection, ByteBuffer buffer) {
+    public void handleIncoming(byte zeroByte, UdpPacketType type, SoeUdpConnection connection, ByteBuffer buffer) {
 
         int protocolVersion = buffer.getInt();
         int connectionId = buffer.getInt();
@@ -37,7 +37,7 @@ public class ConnectController implements SoeMessageController {
 
         connection.setId(connectionId);
         connection.setSessionKey(sessionKey);
-        connection.setConnectionState(ConnectionState.ONLINE);
+        connection.setState(ConnectionState.ONLINE);
         connection.setUdpSize(udpSize);
 
         ConfirmMessage response = new ConfirmMessage(crcLength, connectionId, sessionKey, cryptMethod, useComp, udpSize);

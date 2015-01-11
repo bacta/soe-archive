@@ -33,11 +33,15 @@ public final class SoeMessageRouter {
         loadControllers(injector);
     }
 
-    public void routeMessage(UdpPacketType packetType, SoeUdpConnection client, ByteBuffer buffer) {
-        SoeMessageController controller = controllers.get(packetType);
+    public void routeMessage(SoeUdpConnection client, ByteBuffer buffer) {
+
+        byte zeroByte = buffer.get();
+        UdpPacketType type = UdpPacketType.values()[buffer.get()];
+
+        SoeMessageController controller = controllers.get(type);
 
         if (controller == null) {
-            logger.error("Unhandled SOE Opcode 0x" + Integer.toHexString(packetType.getValue()).toUpperCase());
+            logger.error("Unhandled SOE Opcode 0x" + Integer.toHexString(type.getValue()).toUpperCase());
             logger.error(SoeMessageUtil.bytesToHex(buffer));
             return;
         }
@@ -45,7 +49,7 @@ public final class SoeMessageRouter {
         try {
 
             //logger.trace("Routing to " + controller.getClass().getSimpleName());
-            controller.handleIncoming(client, buffer);
+            controller.handleIncoming(zeroByte, type, client, buffer);
 
         } catch (Exception e) {
             logger.error("SOE Routing", e);

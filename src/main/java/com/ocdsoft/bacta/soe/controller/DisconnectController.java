@@ -17,12 +17,12 @@ public class DisconnectController implements SoeMessageController {
     private static final Logger logger = LoggerFactory.getLogger(DisconnectController.class);
 
     @Override
-    public void handleIncoming(SoeUdpConnection connection, ByteBuffer buffer) {
+    public void handleIncoming(byte zeroByte, UdpPacketType type, SoeUdpConnection connection, ByteBuffer buffer) {
 
         long connectionID = UnsignedUtil.getUnsignedInt(buffer);
         TerminateReason reason = TerminateReason.values()[buffer.getShort()];
 
-        connection.setConnectionState(ConnectionState.DISCONNECTED);
+        connection.setState(ConnectionState.DISCONNECTED);
 
         logger.debug("Client disconnected: " + connection.getClass().getSimpleName() + " " + connection.getRemoteAddress() + " Connection: " + connectionID + " Reason: " + reason.getReason());
     }

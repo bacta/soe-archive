@@ -1,13 +1,14 @@
 package com.ocdsoft.bacta.soe.object.chat;
 
-import com.ocdsoft.bacta.swg.network.soe.buffer.SoeByteBuf;
-import com.ocdsoft.bacta.swg.network.soe.buffer.SoeByteBufSerializable;
+import com.ocdsoft.bacta.engine.buffer.ByteBufferSerializable;
+import com.ocdsoft.bacta.engine.utils.BufferUtil;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.nio.ByteBuffer;
 import java.util.List;
 
-public class ChatRoomData implements SoeByteBufSerializable {
+public class ChatRoomData implements ByteBufferSerializable {
     private String serverName;
     private String serviceName;
 
@@ -61,21 +62,22 @@ public class ChatRoomData implements SoeByteBufSerializable {
     }
 
     @Override
-    public void writeToBuffer(SoeByteBuf message) {
-        message.writeInt(roomId);
-        message.writeBoolean(passwordProtected);
-        message.writeBoolean(nonanonymous);
-        message.writeBoolean(persistent);
-        message.writeBoolean(membersOnly);
-        message.writeBoolean(moderated);
-        message.writeAscii(address);
+    public void writeToBuffer(ByteBuffer buffer) {
+        buffer.putInt(roomId);
+        BufferUtil.putBoolean(buffer, passwordProtected);
+        BufferUtil.putBoolean(buffer, passwordProtected);
+        BufferUtil.putBoolean(buffer, nonanonymous);
+        BufferUtil.putBoolean(buffer, persistent);
+        BufferUtil.putBoolean(buffer, membersOnly);
+        BufferUtil.putBoolean(buffer, moderated);
+        BufferUtil.putAscii(buffer, address);
 
-        owner.writeToBuffer(message);
-        creator.writeToBuffer(message);
+        owner.writeToBuffer(buffer);
+        creator.writeToBuffer(buffer);
 
-        message.writeUnicode(title);
+        BufferUtil.putUnicode(buffer, title);
 
-        message.writeInt(0); //Moderator list
-        message.writeInt(0); //User list
+        buffer.putInt(0); //Moderator list
+        buffer.putInt(0); //User list
     }
 }

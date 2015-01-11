@@ -1,14 +1,15 @@
 package com.ocdsoft.bacta.soe.object;
 
-import com.ocdsoft.bacta.engine.buffer.BactaBufferSerializable;
+import com.ocdsoft.bacta.engine.buffer.ByteBufferSerializable;
 import com.ocdsoft.bacta.engine.network.client.ServerStatus;
+import com.ocdsoft.bacta.engine.utils.BufferUtil;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
 
-public class ClusterInfo implements BactaBufferSerializable, Comparable<ClusterInfo> {
+public class ClusterInfo implements ByteBufferSerializable, Comparable<ClusterInfo> {
 
     @Getter
     @Setter
@@ -73,18 +74,18 @@ public class ClusterInfo implements BactaBufferSerializable, Comparable<ClusterI
     public boolean isFull()  { return status == ServerStatus.FULL;  }
 
 	@Override
-	public void writeToBuffer(ByteBuffer message) {
-		message.writeInt(getId());
-        message.writeAscii(getName());
-        message.writeAscii(getAddress());
-		message.writeShort((short)getPort());
-		message.writeShort((short)getPingPort());
-		message.writeInt(getPopulation());
-		message.writeInt(getMaximumPopulation());
-		message.writeInt(getMaximumCharacters());
-		message.writeInt(getTimezone());
-		message.writeInt(getStatus().getValue());
-		message.writeBoolean(isRecommended());
+	public void writeToBuffer(ByteBuffer buffer) {
+        buffer.putInt(getId());
+        BufferUtil.putAscii(buffer, getName());
+        BufferUtil.putAscii(buffer, getAddress());
+        buffer.putShort((short) getPort());
+        buffer.putShort((short) getPingPort());
+        buffer.putInt(getPopulation());
+        buffer.putInt(getMaximumPopulation());
+        buffer.putInt(getMaximumCharacters());
+        buffer.putInt(getTimezone());
+        buffer.putInt(getStatus().getValue());
+        BufferUtil.putBoolean(buffer, isRecommended());
 	}
 
     @Override

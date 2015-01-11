@@ -2,23 +2,23 @@ package com.ocdsoft.bacta.soe.disruptor;
 
 import com.google.inject.Inject;
 import com.lmax.disruptor.EventHandler;
-import com.ocdsoft.bacta.swg.network.soe.client.SoeUdpClient;
-import com.ocdsoft.network.protocol.Protocol;
-import io.netty.buffer.ByteBuf;
+import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
+import com.ocdsoft.bacta.soe.protocol.SoeProtocol;
 import io.netty.buffer.ByteBufUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.ByteBuffer;
 import java.util.List;
 
-public class SoeMarshallingConsumer<T extends SoeUdpClient> implements EventHandler<SoeOutputEvent<T>> {
+public class SoeMarshallingConsumer<T extends SoeUdpConnection> implements EventHandler<SoeOutputEvent<T>> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass().getSimpleName());
 
-    private final Protocol<ByteBuf> protocol;
+    private final SoeProtocol protocol;
 
     @Inject
-    public SoeMarshallingConsumer(Protocol<ByteBuf> protocol) {
+    public SoeMarshallingConsumer(SoeProtocol protocol) {
         this.protocol = protocol;
     }
 
@@ -28,11 +28,11 @@ public class SoeMarshallingConsumer<T extends SoeUdpClient> implements EventHand
 
         T client = event.getClient();
 
-        List<ByteBuf> messageList = event.getMessageList();
+        List<ByteBuffer> messageList = event.getMessageList();
 
         for (int i = 0; i < messageList.size(); ++i) {
 
-            ByteBuf buffer = messageList.get(i);
+            ByteBuffer buffer = messageList.get(i);
 
             short op = ByteBufUtil.swapShort(buffer.getShort(0));
 

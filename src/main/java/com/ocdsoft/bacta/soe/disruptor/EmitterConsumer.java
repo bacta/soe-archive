@@ -3,13 +3,13 @@ package com.ocdsoft.bacta.soe.disruptor;
 import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
 import com.lmax.disruptor.EventHandler;
-import com.ocdsoft.bacta.swg.network.soe.client.SoeUdpClient;
-import com.ocdsoft.network.io.udp.UdpTransceiver;
-import io.netty.buffer.ByteBuf;
+import com.ocdsoft.bacta.engine.network.io.udp.UdpTransceiver;
+import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 
+import java.nio.ByteBuffer;
 import java.util.List;
 
-public class EmitterConsumer<C extends SoeUdpClient, T extends UdpTransceiver> implements EventHandler<SoeOutputEvent<C>> {
+public class EmitterConsumer<C extends SoeUdpConnection, T extends UdpTransceiver> implements EventHandler<SoeOutputEvent<C>> {
 
     private final T transceiver;
 
@@ -25,11 +25,11 @@ public class EmitterConsumer<C extends SoeUdpClient, T extends UdpTransceiver> i
 
         C client = event.getClient();
 
-        List<ByteBuf> messageList = event.getMessageList();
+        List<ByteBuffer> messageList = event.getMessageList();
 
         while (!messageList.isEmpty()) {
 
-            ByteBuf message = messageList.remove(0);
+            ByteBuffer message = messageList.remove(0);
             transceiver.sendMessage(client, message);
         }
 

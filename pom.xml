@@ -55,33 +55,33 @@
 
     <build>
         <plugins>
-            <plugin>
-                <groupId>org.jsonschema2pojo</groupId>
-                <artifactId>jsonschema2pojo-maven-plugin</artifactId>
-                <version>0.4.7</version>
-                <dependencies>
-                    <dependency>
-                        <groupId>com.ocdsoft.bacta.soe</groupId>
-                        <artifactId>jsonschema2pojo-bacta</artifactId>
-                        <version>1.0.0-SNAPSHOT</version>
-                    </dependency>
-                </dependencies>
-                <configuration>
-                    <sourceDirectory>src/main/resources/com/ocdsoft/bacta/soe/message/soe</sourceDirectory>
-                    <targetPackage>com.ocdsoft.bacta.soe.message</targetPackage>
-                    <usePrimitives>true</usePrimitives>
-                    <removeOldOutput>true</removeOldOutput>
+            <!--<plugin>-->
+                <!--<groupId>org.jsonschema2pojo</groupId>-->
+                <!--<artifactId>jsonschema2pojo-maven-plugin</artifactId>-->
+                <!--<version>0.4.7</version>-->
+                <!--<dependencies>-->
+                    <!--<dependency>-->
+                        <!--<groupId>com.ocdsoft.bacta.soe</groupId>-->
+                        <!--<artifactId>jsonschema2pojo-bacta</artifactId>-->
+                        <!--<version>1.0.0-SNAPSHOT</version>-->
+                    <!--</dependency>-->
+                <!--</dependencies>-->
+                <!--<configuration>-->
+                    <!--<sourceDirectory>src/main/resources/com/ocdsoft/bacta/soe/message/soe</sourceDirectory>-->
+                    <!--<targetPackage>com.ocdsoft.bacta.soe.message</targetPackage>-->
+                    <!--<usePrimitives>true</usePrimitives>-->
+                    <!--<removeOldOutput>true</removeOldOutput>-->
 
-                    <customRuleFactory>com.ocdsoft.bacta.soe.json.schema.SoeRuleFactory</customRuleFactory>
-                </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>generate</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
+                    <!--<customRuleFactory>com.ocdsoft.bacta.soe.json.schema.SoeRuleFactory</customRuleFactory>-->
+                <!--</configuration>-->
+                <!--<executions>-->
+                    <!--<execution>-->
+                        <!--<goals>-->
+                            <!--<goal>generate</goal>-->
+                        <!--</goals>-->
+                    <!--</execution>-->
+                <!--</executions>-->
+            <!--</plugin>-->
 
             <plugin>
                 <groupId>org.sonatype.plugins</groupId>
@@ -202,6 +202,12 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
+            <groupId>com.ocdsoft.bacta.engine.serialization</groupId>
+            <artifactId>kryo</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
             <groupId>com.jcraft</groupId>
             <artifactId>jzlib</artifactId>
             <version>1.1.3</version>
@@ -235,6 +241,11 @@
             <groupId>org.jsonschema2pojo</groupId>
             <artifactId>jsonschema2pojo-core</artifactId>
             <version>0.4.7</version>
+        </dependency>
+        <dependency>
+            <groupId>com.lmax</groupId>
+            <artifactId>disruptor</artifactId>
+            <version>3.3.0</version>
         </dependency>
     </dependencies>
 

@@ -1,18 +1,19 @@
 package com.ocdsoft.bacta.soe.disruptor;
 
-import com.ocdsoft.bacta.swg.network.soe.client.SoeUdpClient;
-import io.netty.buffer.ByteBuf;
+import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 import lombok.Getter;
 import lombok.Setter;
 
-public final class SoeInputEvent<Client extends SoeUdpClient> {
+import java.nio.ByteBuffer;
+
+public final class SoeInputEvent<Client extends SoeUdpConnection> {
 
     @Getter
     @Setter
     private Client client;
     @Getter
     @Setter
-    private ByteBuf buffer;
+    private ByteBuffer buffer;
     @Getter
     @Setter
     private boolean SwgMessage = false;

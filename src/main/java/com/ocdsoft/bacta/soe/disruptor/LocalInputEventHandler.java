@@ -2,16 +2,17 @@ package com.ocdsoft.bacta.soe.disruptor;
 
 import com.google.inject.Inject;
 import com.lmax.disruptor.EventHandler;
-import com.ocdsoft.bacta.swg.network.soe.ServerState;
-import com.ocdsoft.bacta.swg.network.soe.buffer.SoeByteBuf;
-import com.ocdsoft.bacta.swg.network.soe.client.SoeUdpClient;
-import com.ocdsoft.bacta.swg.network.soe.router.SoeMessageRouter;
-import com.ocdsoft.bacta.swg.network.soe.router.SoeMessageRouterFactory;
-import com.ocdsoft.bacta.swg.network.swg.router.SwgMessageRouter;
+import com.ocdsoft.bacta.soe.ServerState;
+import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
+import com.ocdsoft.bacta.soe.router.SoeMessageRouter;
+import com.ocdsoft.bacta.soe.router.SoeMessageRouterFactory;
+import com.ocdsoft.bacta.soe.router.SwgMessageRouter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class LocalInputEventHandler<T extends SoeUdpClient> implements EventHandler<SoeInputEvent<T>> {
+import java.nio.ByteBuffer;
+
+public class LocalInputEventHandler<T extends SoeUdpConnection> implements EventHandler<SoeInputEvent<T>> {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass().getSimpleName());
 
@@ -23,7 +24,7 @@ public class LocalInputEventHandler<T extends SoeUdpClient> implements EventHand
     public LocalInputEventHandler(SoeMessageRouterFactory routerFactory, ServerState serverState) {
 
         soeRouter = routerFactory.create(serverState.getServerType());
-        swgRouter = soeRouter.getSwgRouter();
+        swgRouter = null;
         this.serverState = serverState;
     }
 
@@ -31,19 +32,18 @@ public class LocalInputEventHandler<T extends SoeUdpClient> implements EventHand
     public void onEvent(SoeInputEvent<T> event, long sequence, boolean endOfBatch)
             throws Exception {
 
-        io.netty.buffer.ByteBuf buffer = event.getBuffer();
+        ByteBuffer buffer = event.getBuffer();
         T client = event.getClient();
-        SoeByteBuf bactaBuffer = new SoeByteBuf(buffer);
 
         if (event.isSwgMessage()) {
 
-            int opcode = bactaBuffer.readInt();
+            int opcode = buffer.getInt();
 
-            swgRouter.routeMessage(opcode, client, bactaBuffer);
+            //swgRouter.routeMessage(opcode, client, bactaBuffer);
 
         } else {
 
-            soeRouter.routeMessage(bactaBuffer.readShortBE(), client, bactaBuffer);
+           // soeRouter.routeMessage(buffer.getShort(), client, buffer);
 
         }
     }

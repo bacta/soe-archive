@@ -45,18 +45,19 @@ public class SoeUdpMessageBuilder implements UdpMessageBuilder<ByteBuffer> {
         logger.trace("  Pending Buffer: " + (pendingBuffer != null));
 
         if(pendingMulti != null) {
-            if(pendingMulti.readableBytes() + buffer.readableBytes() <= udpMaxMultiPayload) {
+            if(pendingMulti.size() + buffer.remaining() <= udpMaxMultiPayload) {
                 pendingMulti.add(buffer);
                 logger.trace("Appending: " + SoeMessageUtil.bytesToHex(buffer));
             } else {
-                bufferList.add(pendingMulti);
-                logger.trace("Ready to send: " + SoeMessageUtil.bytesToHex(pendingMulti));
+                ByteBuffer send = pendingMulti.slice();
+                bufferList.add(send);
+                logger.trace("Ready to send: " + SoeMessageUtil.bytesToHex(send));
                 pendingMulti = null;
                 pendingBuffer = buffer;
             }
         } else {
             if(pendingBuffer != null) {
-                if(pendingBuffer.readableBytes() + buffer.readableBytes() <= udpMaxMultiPayload) {
+                if(pendingBuffer.remaining() + buffer.remaining() <= udpMaxMultiPayload) {
                     pendingMulti = new MultiMessage(pendingBuffer, buffer);
                     logger.trace("Combining: " + SoeMessageUtil.bytesToHex(pendingBuffer));
                     logger.trace("Combining: " + SoeMessageUtil.bytesToHex(buffer));
@@ -82,7 +83,7 @@ public class SoeUdpMessageBuilder implements UdpMessageBuilder<ByteBuffer> {
         ByteBuffer buffer = bufferList.poll();
 
         if(buffer == null && pendingMulti != null) {
-            buffer = pendingMulti;
+            buffer = pendingMulti.slice();
             pendingMulti = null;
         }
         if(buffer == null) {

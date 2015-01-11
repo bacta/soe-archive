@@ -1,5 +1,6 @@
 package com.ocdsoft.bacta.soe.io.udp;
 
+import com.ocdsoft.bacta.engine.network.client.ConnectionState;
 import com.ocdsoft.bacta.engine.network.io.udp.UdpTransceiver;
 import com.ocdsoft.bacta.soe.ServerType;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
@@ -39,7 +40,7 @@ public abstract class SoeTransceiver<Connection extends SoeUdpConnection> extend
     /**
      * The structure that holds the "connected" udp clients
      */
-    protected final Map<Object, Connection> connections;
+    protected final Map<Object, Connection> connectionMap;
 
     private final Thread sendThread;
     private final int sendQueueInterval;
@@ -65,7 +66,7 @@ public abstract class SoeTransceiver<Connection extends SoeUdpConnection> extend
             ResourceBundle bundle = PropertyResourceBundle.getBundle("messageprocessing");
             protocol.setCompression(bundle.getString("Compression").equalsIgnoreCase("true"));
 
-            connections = new ConcurrentHashMap<>();
+            connectionMap = new ConcurrentHashMap<>();
 
             sendThread = new Thread(new SendLoop());
             sendThread.start();
@@ -100,28 +101,25 @@ public abstract class SoeTransceiver<Connection extends SoeUdpConnection> extend
 
         try {
 
-            Connection connection = connections.get(sender);
+            Connection connection = connectionMap.get(sender);
 
-            byte zeroByte = buffer.get();
-            UdpPacketType packetType = UdpPacketType.values()[buffer.get()];
+            UdpPacketType packetType = UdpPacketType.values()[buffer.get(1)];
 
             if (packetType == UdpPacketType.cUdpPacketConnect) {
 
                 connection = createConnection(sender);
-                connections.put(sender, connection);
+                connectionMap.put(sender, connection);
 
                 logger.debug("{} connection from {} now has {} total connected clients.",
                         connection.getClass().getSimpleName(),
                         sender,
-                        connections.size());
+                        connectionMap.size());
             } else {
 
-                if (buffer.getShort(0) != 1) {
-                    buffer = protocol.decode(connection.getSessionKey(), buffer.order(ByteOrder.LITTLE_ENDIAN));
-                }
+                buffer = protocol.decode(connection.getSessionKey(), buffer.order(ByteOrder.LITTLE_ENDIAN));
             }
 
-            soeMessageRouter.routeMessage(packetType, connection, buffer);
+            soeMessageRouter.routeMessage(connection, buffer);
 
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -163,11 +161,11 @@ public abstract class SoeTransceiver<Connection extends SoeUdpConnection> extend
 
                     nextIteration = currentTime + sendQueueInterval;
 
-                    Set<Object> connectionList = connections.keySet();
+                    Set<Object> connectionList = connectionMap.keySet();
                     List<Object> deadClients = new ArrayList<>();
 
                     for (Object obj : connectionList) {
-                        Connection connection = connections.get(obj);
+                        Connection connection = connectionMap.get(obj);
 
                         if (connection == null || connection.isStale()) {
                             deadClients.add(obj);
@@ -183,8 +181,8 @@ public abstract class SoeTransceiver<Connection extends SoeUdpConnection> extend
 
                     for (Object key : deadClients) {
                         logger.debug("Removing client: " + key);
-                        Connection connection = connections.remove(key);
-                        connection.close();
+                        Connection connection = connectionMap.remove(key);
+                        connection.setState(ConnectionState.DISCONNECTED);
                     }
 
                 } catch (Exception e) {

@@ -1,5 +1,6 @@
 package com.ocdsoft.bacta.soe.connection;
 
+import com.ocdsoft.bacta.engine.network.client.ConnectionState;
 import com.ocdsoft.bacta.engine.network.client.UdpMessageBuilder;
 import com.ocdsoft.bacta.soe.message.ReliableNetworkMessage;
 import org.slf4j.Logger;
@@ -17,7 +18,7 @@ public class ReliableUdpMessageBuilder implements UdpMessageBuilder<ByteBuffer> 
 
     public final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final AtomicInteger sequenceNumber = new AtomicInteger();
+    private final AtomicInteger sequenceNum = new AtomicInteger();
     private final Set<ReliableNetworkMessage> containerList;
     private final int maxQueueSize;
     private final int udpMaxReliablePayload;
@@ -28,16 +29,16 @@ public class ReliableUdpMessageBuilder implements UdpMessageBuilder<ByteBuffer> 
     private int resendDelay;
     private float resendDelayPercentage;
     private int noDataTimeout;
-    private final SoeUdpConnection client;
+    private final SoeUdpConnection connection;
 
     private ReliableNetworkMessage pendingContainer;
     private boolean combineGameMessages;
 
     private final Queue<ReliableNetworkMessage> unacknowledgedQueue;
 
-    public ReliableUdpMessageBuilder(SoeUdpConnection client, final ResourceBundle messageProperties) {
+    public ReliableUdpMessageBuilder(SoeUdpConnection connection, final ResourceBundle messageProperties) {
 
-        this.client = client;
+        this.connection = connection;
         int udpMaxSize = Integer.parseInt(messageProperties.getString("UdpMaxSize"));
         int footerLength = Integer.parseInt(messageProperties.getString("FooterLength"));
         this.udpMaxReliablePayload = udpMaxSize - footerLength - 4;
@@ -59,6 +60,17 @@ public class ReliableUdpMessageBuilder implements UdpMessageBuilder<ByteBuffer> 
         unacknowledgedQueue = new PriorityBlockingQueue<>(unacknowledgedLimit);
     }
 
+    private short getAndIncrement() {
+
+        int value = sequenceNum.getAndIncrement();
+        if(value > Short.MAX_VALUE) {
+            value = 0;
+            sequenceNum.set(value);
+        }
+
+        return (short) value;
+    }
+
     @Override
     public synchronized boolean add(ByteBuffer buffer) {
 
@@ -67,18 +79,20 @@ public class ReliableUdpMessageBuilder implements UdpMessageBuilder<ByteBuffer> 
         }
 
         if (pendingContainer != null) {
-            if (combineGameMessages && pendingContainer.size() + buffer.readableBytes() + 1 <= udpMaxReliablePayload) {
+            if (combineGameMessages && pendingContainer.size() + buffer.limit() + 1 <= udpMaxReliablePayload) {
                 return pendingContainer.addMessage(buffer);
             }
-            containerList.add(pendingContainer.finish());
+            pendingContainer.finish();
+            containerList.add(pendingContainer);
             pendingContainer = null;
         }
 
         // Fragment large message
-        if (buffer.readableBytes() > udpMaxReliablePayload) {
+        if (buffer.limit() > udpMaxReliablePayload) {
 
             if(pendingContainer != null) {
-                containerList.add(pendingContainer.finish());
+                pendingContainer.finish();
+                containerList.add(pendingContainer);
                 pendingContainer = null;
             }
 
@@ -91,7 +105,7 @@ public class ReliableUdpMessageBuilder implements UdpMessageBuilder<ByteBuffer> 
             return true;
         }
 
-        pendingContainer = new ReliableNetworkMessage(sequenceNumber.getAndIncrement(), buffer);
+        pendingContainer = new ReliableNetworkMessage(getAndIncrement(), buffer);
         return true;
     }
 
@@ -100,8 +114,8 @@ public class ReliableUdpMessageBuilder implements UdpMessageBuilder<ByteBuffer> 
 
         long currentTime = System.currentTimeMillis();
 
-        if(currentTime - client.getLastActivity() > noDataTimeout) {
-            client.setLinkDead();
+        if(currentTime - connection.getLastActivity() > noDataTimeout) {
+            connection.setState(ConnectionState.LINKDEAD);
         }
 //
 //        for(ReliableNetworkMessage message : unacknowledgedQueue) {
@@ -111,28 +125,26 @@ public class ReliableUdpMessageBuilder implements UdpMessageBuilder<ByteBuffer> 
 //            }
 //        }
 
-
-
         Iterator<ReliableNetworkMessage> iterator = containerList.iterator();
 
         if (!iterator.hasNext()) {
             if (pendingContainer != null) {
-                ReliableNetworkMessage send = pendingContainer.finish();
+                pendingContainer.finish();
                 pendingContainer = null;
-                send.addSendAttempt();
-                unacknowledgedQueue.add(send);
+                pendingContainer.addSendAttempt();
+                unacknowledgedQueue.add(pendingContainer);
                 lastSend = currentTime;
-                return send.slice();
+                return pendingContainer.slice();
             }
             return null;
         }
 
-        ReliableNetworkMessage buffer = iterator.next();
-        containerList.remove(buffer);
-        buffer.addSendAttempt();
-        unacknowledgedQueue.add(buffer);
+        ReliableNetworkMessage message = iterator.next();
+        containerList.remove(message);
+        message.addSendAttempt();
+        unacknowledgedQueue.add(message);
         lastSend = currentTime;
-        return buffer.slice();
+        return message.slice();
     }
 
     @Override
@@ -154,27 +166,31 @@ public class ReliableUdpMessageBuilder implements UdpMessageBuilder<ByteBuffer> 
 
         public FragmentProcessor(ByteBuffer buffer) {
             this.buffer = buffer;
-            size = buffer.readableBytes();
+            size = buffer.remaining();
             first = true;
         }
 
         public boolean hasNext() {
-            return buffer.readableBytes() > 0;
+            return buffer.hasRemaining();
         }
 
         public ReliableNetworkMessage next() {
 
             int messageSize;
-            if (buffer.readableBytes() > udpMaxFragmentedPayload) {
+            if (buffer.remaining() > udpMaxFragmentedPayload) {
                 messageSize = udpMaxFragmentedPayload;
             } else {
-                messageSize = buffer.readableBytes();
+                messageSize = buffer.remaining();
             }
 
-            ByteBuffer slice = buffer.slice(buffer.readerIndex(), messageSize);
-            buffer.readerIndex(buffer.readerIndex() + messageSize);
+            ByteBuffer slice = buffer.slice();
+            slice.limit(messageSize);
 
-            ReliableNetworkMessage message = new ReliableNetworkMessage(sequenceNumber.getAndIncrement(), slice, first, size).finish();
+            buffer.position(buffer.position() + messageSize);
+
+            ReliableNetworkMessage message = new ReliableNetworkMessage(getAndIncrement(), slice, first, size);
+            message.finish();
+
             first = false;
             return message;
         }

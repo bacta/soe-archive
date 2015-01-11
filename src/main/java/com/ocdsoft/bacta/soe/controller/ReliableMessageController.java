@@ -1,55 +1,49 @@
 package com.ocdsoft.bacta.soe.controller;
 
-import com.ocdsoft.bacta.engine.buffer.BactaBuffer;
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.ocdsoft.bacta.soe.SoeController;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
-import com.ocdsoft.bacta.soe.message.ReliableNetworkMessage;
+import com.ocdsoft.bacta.soe.message.UdpPacketType;
 import com.ocdsoft.bacta.soe.router.SoeMessageRouter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.nio.ByteOrder;
+import java.nio.ByteBuffer;
 
-@SoeController(opcode = 0x9, handles = ReliableNetworkMessage.class)
-public class ReliableMessageController extends SoeMessageController {
+@Singleton
+@SoeController(handles = {UdpPacketType.cUdpPacketReliable1, UdpPacketType.cUdpPacketFragment1})
+public class ReliableMessageController implements SoeMessageController {
 
-    private SwgMessageRouter swgRouter;
+    private static final Logger logger = LoggerFactory.getLogger(ReliableMessageController.class);
 
-    @Override
-    public void setRouter(SoeMessageRouter soeRouter) {
-        this.swgRouter = soeRouter.getSwgRouter();
+    private final SoeMessageRouter soeMessageRouter;
+
+    @Inject
+    public ReliableMessageController(final SoeMessageRouter soeMessageRouter) {
+        this.soeMessageRouter = soeMessageRouter;
     }
 
     @Override
-    public void handleIncoming(SoeUdpConnection client, BactaBuffer buffer) {
-        short sequenceNum = buffer.readShortBE();
+    public void handleIncoming(byte zeroByte, UdpPacketType type, SoeUdpConnection connection, ByteBuffer buffer) {
 
-        client.sendAck(sequenceNum);
+        short sequenceNum = buffer.getShort();
+        connection.sendAck(sequenceNum);
 
-        short priority = buffer.readShort();
-        int opcode = 0;
+        if(type == UdpPacketType.cUdpPacketFragment1) {
+            buffer = connection.addIncomingFragment(buffer);
+        }
 
-        if (priority != 0x1900) {
-            buffer.order(ByteOrder.LITTLE_ENDIAN);
+        if (buffer != null) {
 
-            opcode = buffer.readInt();
-            swgRouter.routeMessage(opcode, client, buffer);
+            try {
 
-        } else {
+                soeMessageRouter.routeMessage(connection, buffer);
 
-            while (buffer.readableBytes() > 3) {
-
-                int length = buffer.readUnsignedByte();
-
-                BactaBuffer gameMessage = new BactaBuffer(buffer.slice(buffer.readerIndex(), length).order(ByteOrder.LITTLE_ENDIAN));
-
-                priority = gameMessage.readShort();
-                opcode = gameMessage.readInt();
-
-                swgRouter.routeMessage(opcode, client, gameMessage);
-
-                buffer.skipBytes(length);
+            } catch (Exception e) {
+                logger.error("Unable to handle ZeroEscape", e);
             }
 
         }
     }
-
 }

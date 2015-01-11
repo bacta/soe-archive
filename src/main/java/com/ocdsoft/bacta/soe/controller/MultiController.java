@@ -20,7 +20,7 @@ public class MultiController implements SoeMessageController {
     }
 
     @Override
-    public void handleIncoming(SoeUdpConnection connection, ByteBuffer buffer) {
+    public void handleIncoming(byte zeroByte, UdpPacketType type, SoeUdpConnection connection, ByteBuffer buffer) {
 
         short length = UnsignedUtil.getUnsignedByte(buffer);
 
@@ -32,13 +32,10 @@ public class MultiController implements SoeMessageController {
                 }
             }
 
-            byte zeroByte = buffer.get();
-            UdpPacketType packetType = UdpPacketType.values()[buffer.get()];
-
             ByteBuffer slicedMessage = buffer.slice();
             slicedMessage.limit(length - 2);
 
-            soeMessageRouter.routeMessage(packetType, connection, slicedMessage);
+            soeMessageRouter.routeMessage(connection, slicedMessage);
 
             if (!buffer.hasRemaining()) {
                 break;

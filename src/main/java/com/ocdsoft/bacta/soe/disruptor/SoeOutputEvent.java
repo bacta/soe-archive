@@ -1,13 +1,13 @@
 package com.ocdsoft.bacta.soe.disruptor;
 
-import com.ocdsoft.bacta.swg.network.soe.client.SoeUdpClient;
-import io.netty.buffer.ByteBuf;
+import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.nio.ByteBuffer;
 import java.util.List;
 
-public class SoeOutputEvent<T extends SoeUdpClient> {
+public class SoeOutputEvent<T extends SoeUdpConnection> {
 
     @Getter
     @Setter
@@ -15,6 +15,6 @@ public class SoeOutputEvent<T extends SoeUdpClient> {
 
     @Getter
     @Setter
-    List<ByteBuf> messageList;
+    List<ByteBuffer> messageList;
 
 }

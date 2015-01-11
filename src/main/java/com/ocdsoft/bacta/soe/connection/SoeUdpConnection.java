@@ -3,28 +3,25 @@ package com.ocdsoft.bacta.soe.connection;
 import com.ocdsoft.bacta.engine.network.client.ConnectionState;
 import com.ocdsoft.bacta.engine.network.client.UdpConnection;
 import com.ocdsoft.bacta.engine.network.client.UdpMessageProcessor;
-import com.ocdsoft.bacta.soe.message.AckAllMessage;
-import com.ocdsoft.bacta.soe.message.SoeMessage;
-import com.ocdsoft.bacta.soe.message.Terminate;
+import com.ocdsoft.bacta.soe.message.*;
 import com.ocdsoft.bacta.soe.util.SoeMessageUtil;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.Synchronized;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Queue;
 import java.util.ResourceBundle;
+import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class SoeUdpConnection extends UdpConnection {
+public abstract class SoeUdpConnection extends UdpConnection {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass().getSimpleName());
+    private static final Logger logger = LoggerFactory.getLogger(SoeUdpConnection.class);
     private static ResourceBundle messageProperties;
-
-    private ConnectionState connectionState = ConnectionState.DISCONNECTED;
 
     static {
         messageProperties = ResourceBundle.getBundle("messageprocessing");
@@ -33,45 +30,55 @@ public class SoeUdpConnection extends UdpConnection {
     @Getter
     @Setter
     private int id;
+
     @Getter
     @Setter
     private int udpSize;
+
     @Getter
     @Setter
     private int sessionKey;
+
     @Getter
     @Setter
     private int accountId;
+
     @Getter
     @Setter
     private String accountUsername;
 
     private final int staleTimeout;
 
+    private ConnectionState state;
+
     private final UdpMessageProcessor<ByteBuffer> udpMessageProcessor;
 
-    private final AtomicInteger clientSequenceNumber = new AtomicInteger();
+    private final AtomicInteger clientSequenceNumber;
+
+    private final FragmentContainer fragmentContainer;
 
     @Getter
     private long lastActivity = System.currentTimeMillis();
 
     public SoeUdpConnection() {
+        state = ConnectionState.DISCONNECTED;
         udpMessageProcessor = new SoeUdpMessageProcessor(this, messageProperties);
         staleTimeout = Integer.parseInt(messageProperties.getString("staleDisconnect"));
+        clientSequenceNumber = new AtomicInteger();
+        fragmentContainer = new FragmentContainer();
     }
 
-    public void sendMessage(SoeMessage buffer) {
-
-        if (udpMessageProcessor.addUnreliable(buffer)) {
+    public void sendMessage(SoeMessage message) {
+        if (udpMessageProcessor.addUnreliable(message.slice())) {
             lastActivity = System.currentTimeMillis();
         }
     }
 
-    public void sendMessage(SwgMessage buffer) {
+    public void sendMessage(GameNetworkMessage message) {
 
-        if (!udpMessageProcessor.addReliable(buffer)) {
-            if(getConnectionState() == ConnectionState.ONLINE) {
-                disconnect();
+        if (!udpMessageProcessor.addReliable(message.toBuffer())) {
+            if(getState() == ConnectionState.ONLINE) {
+                setState(ConnectionState.DISCONNECTED);
             }
         } else {
             lastActivity = System.currentTimeMillis();
@@ -100,10 +107,6 @@ public class SoeUdpConnection extends UdpConnection {
         sendMessage(new AckAllMessage(sequenceNum));
     }
 
-    public void sendErrorMessage(String type, String message, boolean fatal) {
-        sendMessage(new ErrorMessage(type, message, fatal));
-    }
-
     public void processAckAll(short sequenceNum) {
         clientSequenceNumber.set(sequenceNum);
         udpMessageProcessor.acknowledge(sequenceNum);
@@ -118,22 +121,45 @@ public class SoeUdpConnection extends UdpConnection {
         return (System.currentTimeMillis() - lastActivity > (staleTimeout));
     }
 
-    @Synchronized("clientState")
-    public void setConnectionState(ConnectionState state) {
-        connectionState = state;
+    @Override
+    public void setState(ConnectionState state) {
+        this.state = state;
 
-        if(connectionState == ConnectionState.DISCONNECTED) {
-            Terminate terminate = new Terminate(this.getId(), Terminate.NONE);
+        if(state == ConnectionState.DISCONNECTED) {
+            Terminate terminate = new Terminate(this.getId(), TerminateReason.NONE);
             sendMessage(terminate);
         }
     }
 
-    @Synchronized("clientState")
-    public ConnectionState getConnectionState() {
-        return connectionState;
+    @Override
+    public ConnectionState getState() {
+        return state;
     }
 
-    public void close() {
+    public ByteBuffer addIncomingFragment(ByteBuffer buffer) {
+
+        ByteBuffer completedMessage = fragmentContainer.addFragment(buffer);
+
+        if (completedMessage != null) {
+            return completedMessage;
+        }
+
+        return null;
+    }
+
+    @SuppressWarnings("serial")
+    private class FragmentContainer {
+
+        private final Queue<ByteBuffer> queue = new PriorityBlockingQueue<>();
+
+        private int firstFragment = 0;
+        private int lastFragment = 0;
+
+        public ByteBuffer addFragment(ByteBuffer buffer) {
+            queue.add(buffer);
+            return null;
+        }
+
     }
 
 //    013CA650	UdpManager::UdpManager(UdpManager::Params const *)

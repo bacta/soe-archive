@@ -34,4 +34,12 @@ public abstract class SoeMessage {
         this.packetType = packetType;
         this.buffer = buffer;
     }
+
+    public ByteBuffer slice() {
+        return buffer.slice();
+    }
+
+    public int size() {
+        return buffer.limit();
+    }
 }

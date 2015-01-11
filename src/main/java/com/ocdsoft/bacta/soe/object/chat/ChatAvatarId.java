@@ -1,9 +1,10 @@
 package com.ocdsoft.bacta.soe.object.chat;
 
-import com.ocdsoft.bacta.swg.network.soe.buffer.SoeByteBuf;
-import com.ocdsoft.bacta.swg.network.soe.buffer.SoeByteBufSerializable;
-import io.netty.buffer.ByteBuf;
+import com.ocdsoft.bacta.engine.buffer.ByteBufferSerializable;
+import com.ocdsoft.bacta.engine.utils.BufferUtil;
 import lombok.Getter;
+
+import java.nio.ByteBuffer;
 
 /**
  * The ChatAvatarId represents a player on a chat server. It is composed of three parts:
@@ -15,7 +16,7 @@ import lombok.Getter;
  * This helps to distinguish the chat user from other users who may be connected to the same chat server, yet using
  * different games or the same game on a different game server.
  */
-public final class ChatAvatarId implements SoeByteBufSerializable {
+public final class ChatAvatarId implements ByteBufferSerializable {
     @Getter
     private final String gameCode;
     @Getter
@@ -37,17 +38,17 @@ public final class ChatAvatarId implements SoeByteBufSerializable {
     }
 
     /**
-     * Creates a new ChatAvatarId based on the buffer of an incoming {@link ByteBuf}. Reads each component as
+     * Creates a new ChatAvatarId based on the buffer of an incoming {@link ByteBuffer}. Reads each component as
      * an individual ASCII 8-bit sequence of characters. The ASCII string is encoded with its length as a short
      * before the bytes of the string, and is not null terminated. This constructor will advance the position of
      * BactaBuffer's underlying buffer.
      *
-     * @param message The {@link ByteBuf} containing the parts of the ChatAvatarId.
+     * @param buffer The {@link ByteBuffer} containing the parts of the ChatAvatarId.
      */
-    public ChatAvatarId(SoeByteBuf message) {
-        this.gameCode = message.readAscii();
-        this.cluster = message.readAscii();
-        this.name = message.readAscii();
+    public ChatAvatarId(ByteBuffer buffer) {
+        this.gameCode = BufferUtil.getAscii(buffer);
+        this.cluster = BufferUtil.getAscii(buffer);
+        this.name = BufferUtil.getAscii(buffer);
     }
 
     /**
@@ -90,9 +91,9 @@ public final class ChatAvatarId implements SoeByteBufSerializable {
     }
 
     @Override
-    public void writeToBuffer(SoeByteBuf message) {
-        message.writeAscii(gameCode);
-        message.writeAscii(cluster);
-        message.writeAscii(name);
+    public void writeToBuffer(ByteBuffer buffer) {
+        BufferUtil.putAscii(buffer, gameCode);
+        BufferUtil.putAscii(buffer, cluster);
+        BufferUtil.putAscii(buffer, name);
     }
 }
