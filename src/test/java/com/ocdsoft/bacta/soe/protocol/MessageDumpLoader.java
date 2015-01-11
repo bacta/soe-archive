@@ -1,17 +1,17 @@
 package com.ocdsoft.bacta.soe.protocol;
 
 import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 
 public class MessageDumpLoader {
 
 	int sessionKey;
 	
-	ArrayList<short[]> pre = new ArrayList<short[]>();
-	ArrayList<short[]> post = new ArrayList<short[]>();
-	ArrayList<short[]> decomp = new ArrayList<short[]>();
+	ArrayList<byte[]> pre = new ArrayList<byte[]>();
+	ArrayList<byte[]> post = new ArrayList<byte[]>();
+	ArrayList<byte[]> decomp = new ArrayList<byte[]>();
 
 	public MessageDumpLoader() {
 		try {
@@ -23,7 +23,7 @@ public class MessageDumpLoader {
 
 	private void loadMessages() throws IOException {
 
-		BufferedReader br = new BufferedReader(new FileReader(System.getProperty("user.dir") + "/test/bacta/soe/protocol/packetdump.txt"));
+		BufferedReader br = new BufferedReader(new InputStreamReader(getClass().getResourceAsStream("/packetdump.txt")));
 
 		String line = br.readLine();
 		sessionKey = (int) Long.parseLong(line, 16);
@@ -34,7 +34,7 @@ public class MessageDumpLoader {
 				continue;
 			}
 
-			ArrayList<short[]> list = null;
+			ArrayList<byte[]> list = null;
 			int offset = 0;
 
 			if (line.startsWith("Pre: ")) {
@@ -58,7 +58,7 @@ public class MessageDumpLoader {
 			}
 
 			String[] split = line.split(",");
-			short[] myarray = new short[split.length - offset];
+			byte[] myarray = new byte[split.length - offset];
 			for (int i = 0; i < split.length - offset; ++i) {
 				
 				try {

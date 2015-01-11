@@ -3,6 +3,8 @@ package com.ocdsoft.bacta.soe.protocol;
 import com.ocdsoft.bacta.engine.utils.BufferUtil;
 import com.ocdsoft.bacta.engine.utils.UnsignedUtil;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -10,7 +12,9 @@ import java.nio.ByteOrder;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-public class NettyProtocol extends MessageDumpLoader {
+public class ProtocolTest extends MessageDumpLoader {
+
+    public static final Logger logger = LoggerFactory.getLogger(ProtocolTest.class);
 
 	@Test
 	public void test() {
@@ -19,22 +23,22 @@ public class NettyProtocol extends MessageDumpLoader {
 
 		for(int i = 0; i < pre.size(); ++i) {
 			
-			short[] preArray = pre.get(i);
+			byte[] preArray = pre.get(i);
 			ByteBuffer test1 = ByteBuffer.allocate(preArray.length);
 			
 			for(short b : preArray)
 				test1.put((byte) b);
 			
-			System.out.println("Decoded");
-			System.out.println("Test: " + BufferUtil.bytesToHex(test1.array()));
-			System.out.println("	" + BufferUtil.bytesToHex(decomp.get(i)));
-			
+			logger.debug("Decoded");
+            logger.debug("Test: " + BufferUtil.bytesToHex(test1.array()));
+            logger.debug("      " + BufferUtil.bytesToHex(decomp.get(i)));
+
 			test1 = test1.order(ByteOrder.LITTLE_ENDIAN);
 			test1 = protocol.decode(sessionKey, test1);
 
-			System.out.println("	" + BufferUtil.bytesToHex(test1.array()));
-			
-			test1.rewind();
+            logger.debug("      " + BufferUtil.bytesToHex(test1.array()));
+
+            test1.rewind();
 
 			for(int j = 0 ; j < decomp.get(i).length; ++j) {
 				
@@ -54,21 +58,21 @@ public class NettyProtocol extends MessageDumpLoader {
 			for(short b : decomp.get(i))
 				test1.put((byte) b);
 			
-			test1.position(0);
-			
-			System.out.println("Encoded");
-			System.out.println("Test: " + BufferUtil.bytesToHex(test1.array()));
-			System.out.println("	" + BufferUtil.bytesToHex(pre.get(i)));
+			test1.rewind();
+
+            logger.debug("Encoded");
+            logger.debug("Test: " + BufferUtil.bytesToHex(test1.array()));
+            logger.debug("	   " + BufferUtil.bytesToHex(pre.get(i)));
 			
 			test1 = protocol.encode(sessionKey, test1, true);
 			
 			protocol.appendCRC(sessionKey, test1, 2);
-			
-			assertTrue(protocol.validate(sessionKey, test1));
-	
-			System.out.println("	" + BufferUtil.bytesToHex(test1.array()));
-			
-			test1.position(0);
+
+            logger.debug("	   " + BufferUtil.bytesToHex(test1.array()));
+
+            assertTrue(protocol.validate(sessionKey, test1));
+
+			test1.rewind();
 
 			for(int j = 0 ; j < pre.get(i).length; ++j) {
 				

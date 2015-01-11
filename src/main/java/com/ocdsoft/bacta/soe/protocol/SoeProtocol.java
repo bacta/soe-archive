@@ -123,7 +123,7 @@ public final class SoeProtocol {
         zstream.next_in = data.array();
         zstream.next_in_index = offset;
         zstream.next_out_index = offset;
-        zstream.avail_in = data.position() - 4;
+        zstream.avail_in = data.limit() - 4;
         zstream.next_out = out.array();
         zstream.avail_out = 1024;
 
@@ -157,12 +157,11 @@ public final class SoeProtocol {
 
         zstream.next_in = data.array();
         zstream.next_in_index = offset;
-        zstream.avail_in = data.position() - offset;
+        zstream.avail_in = data.limit() - offset;
         
         zstream.next_out = out.array();
         zstream.next_out_index = offset;
         zstream.avail_out = 496;
-
 
         //logger.info("Pre-compress: " + StringUtil.bytesToHex(data.array()));
         
@@ -270,6 +269,8 @@ public final class SoeProtocol {
 
         for( int i = (crcLength - 1); i >= 0; i--)
             data.put((byte)((crc >>> (8 * i)) & 0xFF));
+
+        data.limit(data.position());
     }
 
 	public boolean validate(int seed, ByteBuffer data) {
