@@ -24,12 +24,12 @@ public class SoeAccount implements Account {
     @Getter(AccessLevel.NONE)
     private List<CharacterInfo> characterList = new ArrayList<>();
 
-    String authToken = "";
-    long authExpiration;
-    long lastCharacterCreationTime;
+    private String authToken = "";
+    private long authExpiration;
+    private long lastCharacterCreationTime;
 
     @Getter(AccessLevel.NONE)
-    final String type = "account";
+    private final String type = "account";
 
     public SoeAccount() {}
 
