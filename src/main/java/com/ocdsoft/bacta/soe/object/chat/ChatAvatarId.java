@@ -18,11 +18,11 @@ import java.nio.ByteBuffer;
  */
 public final class ChatAvatarId implements ByteBufferSerializable {
     @Getter
-    private final String gameCode;
+    private String gameCode;
     @Getter
-    private final String cluster;
+    private String cluster;
     @Getter
-    private final String name;
+    private String name;
 
     /**
      * Creates a new ChatAvatarId based on the three components game, server, and username.

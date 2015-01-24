@@ -25,9 +25,6 @@ public class GameServer implements Runnable {
     @Inject
     private GameServerState serverState;
 
-    @Inject
-    private GameServerStatusUpdater gameServerStatusUpdater;
-
     @Override
     public void run() {
         logger.info("Starting");
@@ -43,8 +40,7 @@ public class GameServer implements Runnable {
 
             GameTransceiver transceiver = gameTransceiverFactory.create(bindAddress, port, pingPort, GameConnection.class, sendInterval);
 
-            serverState.setServerStatus(ServerStatus.ONLINE);
-            gameServerStatusUpdater.start();
+            serverState.setServerStatus(ServerStatus.UP);
             transceiver.run();
 
         } catch (Exception e) {

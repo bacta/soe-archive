@@ -45,7 +45,7 @@ public class LoginServer implements Runnable {
         LoginTransceiver transceiver = loginTransceiverFactory.create(bindAddress, port, LoginConnection.class, sendInterval);
 
         logger.info("Listening on port " + port);
-        serverState.setServerStatus(ServerStatus.ONLINE);
+        serverState.setServerStatus(ServerStatus.UP);
         transceiver.run();
     }
 }

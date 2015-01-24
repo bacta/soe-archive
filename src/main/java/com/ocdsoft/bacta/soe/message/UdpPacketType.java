@@ -54,4 +54,5 @@ public enum UdpPacketType implements ByteBufferSerializable {
     public void writeToBuffer(ByteBuffer buffer) {
         buffer.put(value);
     }
+
 }

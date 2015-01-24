@@ -57,6 +57,26 @@ public class ChatRoomData implements ByteBufferSerializable {
         this.serviceName = owner.getCluster();
     }
 
+    public ChatRoomData(ByteBuffer buffer) {
+        roomId = buffer.getInt();
+        passwordProtected = BufferUtil.getBoolean(buffer);
+        passwordProtected = BufferUtil.getBoolean(buffer);
+        nonanonymous = BufferUtil.getBoolean(buffer);
+        persistent = BufferUtil.getBoolean(buffer);
+        membersOnly = BufferUtil.getBoolean(buffer);
+        moderated = BufferUtil.getBoolean(buffer);
+
+        address = BufferUtil.getAscii(buffer);
+
+        owner = new ChatAvatarId(buffer);
+        creator = new ChatAvatarId(buffer);
+
+        title = BufferUtil.getUnicode(buffer);
+
+        buffer.getInt(); //Moderator list
+        buffer.getInt(); //User list
+    }
+
     public String getFullAddress() {
         return address + "@" + serviceName + "." + serverName;
     }

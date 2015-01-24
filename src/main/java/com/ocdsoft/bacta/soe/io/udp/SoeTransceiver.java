@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public abstract class SoeTransceiver<Connection extends SoeUdpConnection> extends UdpTransceiver<Connection> {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass().getSimpleName());
+    private final Logger logger = LoggerFactory.getLogger(SoeTransceiver.class);
 
     private final ServerType serverType;
 

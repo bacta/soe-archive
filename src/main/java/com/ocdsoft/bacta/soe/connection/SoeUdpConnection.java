@@ -58,7 +58,9 @@ public abstract class SoeUdpConnection extends UdpConnection {
     private final FragmentContainer fragmentContainer;
 
     @Getter
-    private long lastActivity = System.currentTimeMillis();
+    private long lastActivity;
+
+//    private final ByteBuffer outgoingBuffer;
 
     public SoeUdpConnection() {
         state = ConnectionState.DISCONNECTED;
@@ -66,6 +68,11 @@ public abstract class SoeUdpConnection extends UdpConnection {
         staleTimeout = Integer.parseInt(messageProperties.getString("staleDisconnect"));
         clientSequenceNumber = new AtomicInteger();
         fragmentContainer = new FragmentContainer();
+        lastActivity = System.currentTimeMillis();
+
+//        int maxQueueSize = Integer.parseInt(messageProperties.getString("MaxQueueSize"));
+//        int udpMaxSize = Integer.parseInt(messageProperties.getString("UdpMaxSize"));
+//        outgoingBuffer = ByteBuffer.allocate(udpMaxSize * maxQueueSize);
     }
 
     public void sendMessage(SoeMessage message) {
@@ -76,7 +83,10 @@ public abstract class SoeUdpConnection extends UdpConnection {
 
     public void sendMessage(GameNetworkMessage message) {
 
-        if (!udpMessageProcessor.addReliable(message.toBuffer())) {
+        ByteBuffer buffer = ByteBuffer.allocate(1500);
+        message.serialize(buffer);
+
+        if (!udpMessageProcessor.addReliable(buffer)) {
             if(getState() == ConnectionState.ONLINE) {
                 setState(ConnectionState.DISCONNECTED);
             }

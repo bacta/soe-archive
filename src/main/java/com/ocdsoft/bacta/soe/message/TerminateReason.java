@@ -43,4 +43,5 @@ public enum TerminateReason implements ByteBufferSerializable {
     public void writeToBuffer(ByteBuffer buffer) {
         buffer.putShort(value);
     }
+
 }

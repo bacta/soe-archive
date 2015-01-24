@@ -10,17 +10,18 @@ import java.nio.ByteBuffer;
 public abstract class GameNetworkMessage {
 
     @Getter
-    private final short priority;
+    protected short priority;
 
     @Getter
-    private final int messageType;
+    protected int messageType;
 
-    public GameNetworkMessage(int priority, int messageType) {
-        this.priority = (short) priority;
-        this.messageType = messageType;
+    public void serialize(ByteBuffer buffer) {
+        buffer.putShort(priority);
+        buffer.putInt(messageType);
     }
 
-    public abstract void serialize(ByteBuffer buffer);
-
-    public abstract void deserialize(ByteBuffer buffer);
+    public void deserialize(ByteBuffer buffer) {
+        priority = buffer.getShort();
+        messageType = buffer.getInt();
+    }
 }
