@@ -84,7 +84,11 @@ public abstract class SoeUdpConnection extends UdpConnection {
     public void sendMessage(GameNetworkMessage message) {
 
         ByteBuffer buffer = ByteBuffer.allocate(1500);
-        message.serialize(buffer);
+
+        buffer.putShort(message.getPriority());
+        buffer.putInt(message.getMessageType());
+
+        message.writeToBuffer(buffer);
 
         if (!udpMessageProcessor.addReliable(buffer)) {
             if(getState() == ConnectionState.ONLINE) {
