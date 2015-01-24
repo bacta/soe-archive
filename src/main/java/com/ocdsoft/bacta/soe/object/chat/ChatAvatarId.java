@@ -1,6 +1,6 @@
 package com.ocdsoft.bacta.soe.object.chat;
 
-import com.ocdsoft.bacta.engine.buffer.ByteBufferSerializable;
+import com.ocdsoft.bacta.engine.buffer.ByteBufferWritable;
 import com.ocdsoft.bacta.engine.utils.BufferUtil;
 import lombok.Getter;
 
@@ -16,7 +16,7 @@ import java.nio.ByteBuffer;
  * This helps to distinguish the chat user from other users who may be connected to the same chat server, yet using
  * different games or the same game on a different game server.
  */
-public final class ChatAvatarId implements ByteBufferSerializable {
+public final class ChatAvatarId implements ByteBufferWritable {
     @Getter
     private String gameCode;
     @Getter

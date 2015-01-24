@@ -7,7 +7,7 @@ import java.nio.ByteBuffer;
 /**
  * Created by Kyle on 3/26/14.
  */
-public abstract class GameNetworkMessage {
+public abstract class GameNetworkMessage  {
 
     @Getter
     protected short priority;

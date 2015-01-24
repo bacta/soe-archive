@@ -1,13 +1,13 @@
 package com.ocdsoft.bacta.soe.message;
 
-import com.ocdsoft.bacta.engine.buffer.ByteBufferSerializable;
+import com.ocdsoft.bacta.engine.buffer.ByteBufferWritable;
 
 import java.nio.ByteBuffer;
 
 /**
  * Created by kburkhardt on 1/9/15.
  */
-public enum TerminateReason implements ByteBufferSerializable {
+public enum TerminateReason implements ByteBufferWritable {
     NONE(0x0, "None"),
     ICMPERROR(0x1, "ICMP Error"),
     TIMEOUT(0x2, "Timeout"),

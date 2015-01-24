@@ -1,6 +1,6 @@
 package com.ocdsoft.bacta.soe.object.chat;
 
-import com.ocdsoft.bacta.engine.buffer.ByteBufferSerializable;
+import com.ocdsoft.bacta.engine.buffer.ByteBufferWritable;
 import com.ocdsoft.bacta.engine.utils.BufferUtil;
 import lombok.Getter;
 import lombok.Setter;
@@ -8,7 +8,7 @@ import lombok.Setter;
 import java.nio.ByteBuffer;
 import java.util.List;
 
-public class ChatRoomData implements ByteBufferSerializable {
+public class ChatRoomData implements ByteBufferWritable {
     private String serverName;
     private String serviceName;
 
