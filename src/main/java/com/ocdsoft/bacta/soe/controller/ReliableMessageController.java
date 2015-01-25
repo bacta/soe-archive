@@ -20,7 +20,7 @@ public class ReliableMessageController implements SoeMessageController {
     private final SoeMessageRouter soeMessageRouter;
 
     @Inject
-    public ReliableMessageController(final SoeMessageRouter soeMessageRouter) {
+    public ReliableMessageController(SoeMessageRouter soeMessageRouter) {
         this.soeMessageRouter = soeMessageRouter;
     }
 

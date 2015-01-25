@@ -5,7 +5,7 @@ import com.google.inject.assistedinject.Assisted;
 import com.ocdsoft.bacta.soe.ServerType;
 import com.ocdsoft.bacta.soe.io.udp.SoeTransceiver;
 import com.ocdsoft.bacta.soe.protocol.SoeProtocol;
-import com.ocdsoft.bacta.soe.router.SoeMessageRouterFactory;
+import com.ocdsoft.bacta.soe.router.SoeMessageRouter;
 
 import java.net.InetAddress;
 
@@ -19,10 +19,10 @@ public class LoginTransceiver extends SoeTransceiver<LoginConnection> {
                             @Assisted("port") int port,
                             @Assisted Class<LoginConnection> gameClientClass,
                             @Assisted("sendQueueInterval") int sendQueueInterval,
-                            SoeMessageRouterFactory soeMessageRouterFactory,
+                            SoeMessageRouter soeMessageRouter,
                             SoeProtocol protocol) {
 
-        super(bindAddress, port, ServerType.LOGIN, gameClientClass, sendQueueInterval, soeMessageRouterFactory.create(ServerType.LOGIN), protocol);
+        super(bindAddress, port, ServerType.LOGIN, gameClientClass, sendQueueInterval, soeMessageRouter, protocol);
 
     }
 }

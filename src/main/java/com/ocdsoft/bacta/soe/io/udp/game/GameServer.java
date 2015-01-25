@@ -31,10 +31,10 @@ public class GameServer implements Runnable {
         try {
 
             InetAddress bindAddress = InetAddress.getByName(
-                    configuration.getStringWithDefault("Bacta/GameServer", "BindIp", "127.0.0.1"));
+                    configuration.getString("Bacta/GameServer", "BindIp"));
 
-            int port = configuration.getIntWithDefault("Bacta/GameServer", "Port", 44463);
-            int sendInterval = configuration.getIntWithDefault("Bacta/GameServer", "SendInterval", 100);
+            int port = configuration.getInt("Bacta/GameServer", "Port");
+            int sendInterval = configuration.getInt("Bacta/GameServer", "SendInterval");
 
             int pingPort = configuration.getIntWithDefault("Bacta/GameServer", "Ping", 44462);
 

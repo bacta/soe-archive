@@ -32,13 +32,13 @@ public class LoginServer implements Runnable {
 
         InetAddress bindAddress;
         try {
-            bindAddress = InetAddress.getByName(configuration.getStringWithDefault("Bacta/LoginServer", "BindIp", "127.0.0.1"));
+            bindAddress = InetAddress.getByName(configuration.getString("Bacta/LoginServer", "BindIp"));
         } catch (UnknownHostException e) {
             bindAddress = null;
             logger.error("Unknown Host", e);
         }
-        int port = configuration.getIntWithDefault("Bacta/LoginServer", "Port", 44453);
-        int sendInterval = configuration.getIntWithDefault("Bacta/LoginServer", "SendInterval", 100);
+        int port = configuration.getInt("Bacta/LoginServer", "Port");
+        int sendInterval = configuration.getInt("Bacta/LoginServer", "SendInterval");
 
         serverState.setServerStatus(ServerStatus.LOADING);
 

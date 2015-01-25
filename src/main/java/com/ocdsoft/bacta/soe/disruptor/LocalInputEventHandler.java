@@ -5,7 +5,6 @@ import com.lmax.disruptor.EventHandler;
 import com.ocdsoft.bacta.soe.ServerState;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 import com.ocdsoft.bacta.soe.router.SoeMessageRouter;
-import com.ocdsoft.bacta.soe.router.SoeMessageRouterFactory;
 import com.ocdsoft.bacta.soe.router.SwgMessageRouter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,9 +20,9 @@ public class LocalInputEventHandler<T extends SoeUdpConnection> implements Event
     private final ServerState serverState;
 
     @Inject
-    public LocalInputEventHandler(SoeMessageRouterFactory routerFactory, ServerState serverState) {
+    public LocalInputEventHandler(SoeMessageRouter soeMessageRouter, ServerState serverState) {
 
-        soeRouter = routerFactory.create(serverState.getServerType());
+        soeRouter = soeMessageRouter;
         swgRouter = null;
         this.serverState = serverState;
     }
