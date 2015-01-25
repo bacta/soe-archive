@@ -15,7 +15,7 @@ import java.net.UnknownHostException;
 
 public class LoginServer implements Runnable {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass().getSimpleName());
+    private static final Logger logger = LoggerFactory.getLogger(LoginServer.class);
 
     @Inject
     private LoginTransceiverFactory loginTransceiverFactory;
