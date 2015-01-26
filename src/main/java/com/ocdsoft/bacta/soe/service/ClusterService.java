@@ -3,7 +3,7 @@ package com.ocdsoft.bacta.soe.service;
 import com.google.gson.internal.LinkedTreeMap;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.ocdsoft.bacta.engine.data.DatabaseConnector;
+import com.ocdsoft.bacta.engine.data.ConnectionDatabaseConnector;
 import com.ocdsoft.bacta.engine.network.client.ServerStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,12 +23,12 @@ public class ClusterService<T> {
 
     private static Logger logger = LoggerFactory.getLogger(ClusterService.class);
 
-    private transient final DatabaseConnector dbConnector;
+    private transient final ConnectionDatabaseConnector dbConnector;
     private transient final Set<T> clusterEntrySet;
     private transient final Constructor<T> clusterEntryConstructor;
 
     @Inject
-    public ClusterService(DatabaseConnector dbConnector, T clusterEntry) throws Exception {
+    public ClusterService(ConnectionDatabaseConnector dbConnector, T clusterEntry) throws Exception {
 
         this.clusterEntrySet = Collections.synchronizedSortedSet(new TreeSet<T>());
         this.dbConnector = dbConnector;
@@ -40,7 +40,7 @@ public class ClusterService<T> {
     private void loadData() throws IllegalAccessException, InvocationTargetException, InstantiationException {
         try {
 
-            LinkedTreeMap<String, LinkedTreeMap<String, Object>> servers = dbConnector.getAdminObject("ClusterList", LinkedTreeMap.class);
+            LinkedTreeMap<String, LinkedTreeMap<String, Object>> servers = dbConnector.getObject("ClusterList", LinkedTreeMap.class);
 
             if (servers != null) {
                 for (String key : servers.keySet()) {
@@ -57,7 +57,7 @@ public class ClusterService<T> {
 
     public void updateClusterInfo(T clusterInfo) {
         clusterEntrySet.add(clusterInfo);
-        dbConnector.updateAdminObject("ClusterList", this);
+        dbConnector.updateObject("ClusterList", this);
     }
 
     public Set<T> getClusterEntries() {

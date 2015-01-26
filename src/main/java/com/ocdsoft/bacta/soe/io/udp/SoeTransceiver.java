@@ -103,7 +103,12 @@ public abstract class SoeTransceiver<Connection extends SoeUdpConnection> extend
 
             Connection connection = connectionMap.get(sender);
 
-            UdpPacketType packetType = UdpPacketType.values()[buffer.get(1)];
+            byte type = buffer.get(1);
+            if(type < 0 || type > 0x1E) {
+                throw new RuntimeException("Type out of range:" + type);
+            }
+
+            UdpPacketType packetType = UdpPacketType.values()[type];
 
             if (packetType == UdpPacketType.cUdpPacketConnect) {
 
@@ -116,13 +121,23 @@ public abstract class SoeTransceiver<Connection extends SoeUdpConnection> extend
                         connectionMap.size());
             } else {
 
+                if(connection == null) {
+                    logger.debug("Unsolicited Message from " + sender);
+                    return;
+                }
+
                 buffer = protocol.decode(connection.getSessionKey(), buffer.order(ByteOrder.LITTLE_ENDIAN));
+
             }
 
-            soeMessageRouter.routeMessage(connection, buffer);
+            if(buffer != null) {
+
+
+                soeMessageRouter.routeMessage(connection, buffer);
+            }
 
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException(buffer.toString(), e);
         }
     }
 
@@ -134,6 +149,7 @@ public abstract class SoeTransceiver<Connection extends SoeUdpConnection> extend
         if (packetType != UdpPacketType.cUdpPacketConfirm) {
             buffer = protocol.encode(connection.getSessionKey(), buffer, true);
             protocol.appendCRC(connection.getSessionKey(), buffer, 2);
+            buffer.rewind();
         }
 
         handleOutgoing(buffer, connection.getRemoteAddress());

@@ -18,24 +18,30 @@ public abstract class SoeMessage {
 
     protected transient final ByteBuffer buffer;
 
-//    protected SoeMessage() {
-//        buffer = ByteBuffer.allocate(496);
-//    }
 
     public SoeMessage(UdpPacketType packetType) {
         buffer = ByteBuffer.allocate(496).order(ByteOrder.BIG_ENDIAN);
 
         this.zeroByte = 0;
         this.packetType = packetType;
+
+        buffer.put(zeroByte);
+        packetType.writeToBuffer(buffer);
     }
 
     public SoeMessage(UdpPacketType packetType, ByteBuffer buffer) {
+        this.buffer = buffer;
+
         this.zeroByte = 0;
         this.packetType = packetType;
-        this.buffer = buffer;
+
+        buffer.put(zeroByte);
+        packetType.writeToBuffer(buffer);
     }
 
     public ByteBuffer slice() {
+        buffer.limit(buffer.position());
+        buffer.rewind();
         return buffer.slice();
     }
 

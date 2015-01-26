@@ -36,20 +36,25 @@ public final class SoeMessageRouterImpl implements SoeMessageRouter {
     public void routeMessage(SoeUdpConnection client, ByteBuffer buffer) {
 
         byte zeroByte = buffer.get();
-        UdpPacketType type = UdpPacketType.values()[buffer.get()];
+        byte type = buffer.get();
+        if(type < 0 || type > 0x1E) {
+            throw new RuntimeException("Type out of range:" + type + " " + buffer.toString() + " " + SoeMessageUtil.bytesToHex(buffer));
+        }
 
-        SoeMessageController controller = controllers.get(type);
+        UdpPacketType packetType = UdpPacketType.values()[type];
+
+        SoeMessageController controller = controllers.get(packetType);
 
         if (controller == null) {
-            logger.error("Unhandled SOE Opcode 0x" + Integer.toHexString(type.getValue()).toUpperCase());
+            logger.error("Unhandled SOE Opcode 0x" + Integer.toHexString(packetType.getValue()).toUpperCase());
             logger.error(SoeMessageUtil.bytesToHex(buffer));
             return;
         }
 
         try {
 
-            //logger.trace("Routing to " + controller.getClass().getSimpleName());
-            controller.handleIncoming(zeroByte, type, client, buffer);
+            logger.trace("Routing to " + controller.getClass().getSimpleName());
+            controller.handleIncoming(zeroByte, packetType, client, buffer);
 
         } catch (Exception e) {
             logger.error("SOE Routing", e);

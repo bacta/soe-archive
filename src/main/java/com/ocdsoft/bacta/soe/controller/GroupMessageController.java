@@ -32,7 +32,7 @@ public class GroupMessageController implements SoeMessageController {
 
             int length = UnsignedUtil.getUnsignedByte(buffer);
             ByteBuffer slicedBuffer = buffer.slice();
-            slicedBuffer.limit(buffer.position() + length);
+            slicedBuffer.limit(length);
 
             soeMessageRouter.routeMessage(connection, slicedBuffer);
 

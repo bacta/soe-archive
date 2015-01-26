@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
@@ -83,12 +84,15 @@ public abstract class SoeUdpConnection extends UdpConnection {
 
     public void sendMessage(GameNetworkMessage message) {
 
-        ByteBuffer buffer = ByteBuffer.allocate(1500);
+        // TODO: Better buffer creation
+        ByteBuffer buffer = ByteBuffer.allocate(1500).order(ByteOrder.LITTLE_ENDIAN);
 
         buffer.putShort(message.getPriority());
         buffer.putInt(message.getMessageType());
 
         message.writeToBuffer(buffer);
+        buffer.limit(buffer.position());
+        buffer.rewind();
 
         if (!udpMessageProcessor.addReliable(buffer)) {
             if(getState() == ConnectionState.ONLINE) {
