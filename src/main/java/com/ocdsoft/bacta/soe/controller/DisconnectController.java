@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 import java.nio.ByteBuffer;
 
 @SoeController(handles = {UdpPacketType.cUdpPacketTerminate})
-public class DisconnectController implements SoeMessageController {
+public class DisconnectController extends BaseSoeController {
 
     private static final Logger logger = LoggerFactory.getLogger(DisconnectController.class);
 

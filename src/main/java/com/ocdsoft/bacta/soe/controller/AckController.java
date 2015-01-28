@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 import java.nio.ByteBuffer;
 
 @SoeController(handles = {UdpPacketType.cUdpPacketAck1})
-public class AckController implements SoeMessageController {
+public class AckController extends BaseSoeController {
 
     private static final Logger logger = LoggerFactory.getLogger(AckController.class);
 

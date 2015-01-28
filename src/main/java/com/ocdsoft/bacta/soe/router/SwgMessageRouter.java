@@ -6,5 +6,4 @@ import java.nio.ByteBuffer;
 
 public interface SwgMessageRouter<Connection extends SoeUdpConnection> {
     void routeMessage(byte priority, int opcode, Connection client, ByteBuffer buffer);
-
 }

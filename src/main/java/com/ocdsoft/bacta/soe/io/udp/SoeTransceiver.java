@@ -155,6 +155,11 @@ public abstract class SoeTransceiver<Connection extends SoeUdpConnection> extend
         handleOutgoing(buffer, connection.getRemoteAddress());
     }
 
+    public void stop() {
+        sendThread.interrupt();
+        super.stop();
+    }
+
     private class SendLoop implements Runnable {
 
         @Override
@@ -162,49 +167,51 @@ public abstract class SoeTransceiver<Connection extends SoeUdpConnection> extend
 
             long nextIteration = 0;
 
-            while (true) {
-                try {
+            try {
+                while (true) {
+
                     long currentTime = System.currentTimeMillis();
+
                     if (nextIteration > currentTime) {
-
-                        try {
-                            Thread.sleep(nextIteration - currentTime);
-
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
+                        Thread.sleep(nextIteration - currentTime);
                     }
 
-                    nextIteration = currentTime + sendQueueInterval;
+                    try {
 
-                    Set<Object> connectionList = connectionMap.keySet();
-                    List<Object> deadClients = new ArrayList<>();
+                        nextIteration = currentTime + sendQueueInterval;
 
-                    for (Object obj : connectionList) {
-                        Connection connection = connectionMap.get(obj);
+                        Set<Object> connectionList = connectionMap.keySet();
+                        List<Object> deadClients = new ArrayList<>();
 
-                        if (connection == null || connection.isStale()) {
-                            deadClients.add(obj);
-                            continue;
+                        for (Object obj : connectionList) {
+                            Connection connection = connectionMap.get(obj);
+
+                            if (connection == null || connection.isStale()) {
+                                deadClients.add(obj);
+                                continue;
+                            }
+
+                            List<ByteBuffer> messages = connection.getPendingMessages();
+
+                            for (ByteBuffer message : messages) {
+                                sendMessage(connection, message);
+                            }
                         }
 
-                        List<ByteBuffer> messages = connection.getPendingMessages();
-
-                        for (ByteBuffer message : messages) {
-                            sendMessage(connection, message);
+                        for (Object key : deadClients) {
+                            logger.debug("Removing client: " + key);
+                            Connection connection = connectionMap.remove(key);
+                            connection.setState(ConnectionState.DISCONNECTED);
                         }
-                    }
 
-                    for (Object key : deadClients) {
-                        logger.debug("Removing client: " + key);
-                        Connection connection = connectionMap.remove(key);
-                        connection.setState(ConnectionState.DISCONNECTED);
+                    } catch (Exception e) {
+                        logger.error("Unknown", e);
                     }
-
-                } catch (Exception e) {
-                    logger.error("Unknown", e);
                 }
+            } catch (InterruptedException e) {
+                logger.warn("Send thread interrupted", e);
             }
         }
+
     }
 }

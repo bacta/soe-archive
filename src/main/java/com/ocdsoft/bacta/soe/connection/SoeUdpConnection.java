@@ -69,7 +69,7 @@ public abstract class SoeUdpConnection extends UdpConnection {
         staleTimeout = Integer.parseInt(messageProperties.getString("staleDisconnect"));
         clientSequenceNumber = new AtomicInteger();
         fragmentContainer = new FragmentContainer();
-        lastActivity = System.currentTimeMillis();
+        keepAlive();
 
 //        int maxQueueSize = Integer.parseInt(messageProperties.getString("MaxQueueSize"));
 //        int udpMaxSize = Integer.parseInt(messageProperties.getString("UdpMaxSize"));
@@ -78,7 +78,7 @@ public abstract class SoeUdpConnection extends UdpConnection {
 
     public void sendMessage(SoeMessage message) {
         if (udpMessageProcessor.addUnreliable(message.slice())) {
-            lastActivity = System.currentTimeMillis();
+            keepAlive();
         }
     }
 
@@ -99,7 +99,7 @@ public abstract class SoeUdpConnection extends UdpConnection {
                 setState(ConnectionState.DISCONNECTED);
             }
         } else {
-            lastActivity = System.currentTimeMillis();
+            keepAlive();
         }
     }
 
@@ -114,14 +114,18 @@ public abstract class SoeUdpConnection extends UdpConnection {
         }
 
         if(!pendingMessageList.isEmpty()) {
-            lastActivity = System.currentTimeMillis();
+            keepAlive();
         }
 
         return pendingMessageList;
     }
 
-    public void sendAck(short sequenceNum) {
+    public void keepAlive() {
         lastActivity = System.currentTimeMillis();
+    }
+
+    public void sendAck(short sequenceNum) {
+        keepAlive();
         sendMessage(new AckAllMessage(sequenceNum));
     }
 
@@ -163,6 +167,10 @@ public abstract class SoeUdpConnection extends UdpConnection {
         }
 
         return null;
+    }
+
+    public void confirm() {
+        // Not implemented in Server based connections
     }
 
     @SuppressWarnings("serial")

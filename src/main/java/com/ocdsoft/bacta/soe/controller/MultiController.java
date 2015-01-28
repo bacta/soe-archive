@@ -1,11 +1,9 @@
 package com.ocdsoft.bacta.soe.controller;
 
-import com.google.inject.Inject;
 import com.ocdsoft.bacta.engine.utils.UnsignedUtil;
 import com.ocdsoft.bacta.soe.SoeController;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 import com.ocdsoft.bacta.soe.message.UdpPacketType;
-import com.ocdsoft.bacta.soe.router.SoeMessageRouter;
 
 import java.nio.ByteBuffer;
 
@@ -40,14 +38,7 @@ import java.nio.ByteBuffer;
  */
 
 @SoeController(handles = {UdpPacketType.cUdpPacketMulti})
-public class MultiController implements SoeMessageController {
-
-    private final SoeMessageRouter soeMessageRouter;
-
-    @Inject
-    public MultiController(final SoeMessageRouter soeMessageRouter) {
-        this.soeMessageRouter = soeMessageRouter;
-    }
+public class MultiController extends BaseSoeController {
 
     @Override
     public void handleIncoming(byte zeroByte, UdpPacketType type, SoeUdpConnection connection, ByteBuffer buffer) {
