@@ -4,6 +4,9 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.ocdsoft.bacta.engine.conf.BactaConfiguration;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
+import com.ocdsoft.bacta.soe.message.ConnectMessage;
+import com.ocdsoft.bacta.soe.message.Terminate;
+import com.ocdsoft.bacta.soe.message.TerminateReason;
 import com.ocdsoft.bacta.soe.message.UdpPacketType;
 import com.ocdsoft.bacta.soe.protocol.SoeProtocol;
 import com.ocdsoft.bacta.soe.router.SoeMessageRouter;
@@ -32,35 +35,46 @@ public class ClientConnection extends SoeUdpConnection implements Runnable {
 
     private final SoeMessageRouter soeMessageRouter;
 
-    private final String loginAddress;
-    private final short loginPort;
-
-    private final String gameAddress;
-    private final short gamePort;
-
     private Channel channel;
     private final Thread sendThread;
+
+    private ClientState clientState;
 
     @Setter
     private Function<Void, Void> connectCallback;
 
-    private InetSocketAddress inetSocketAddress;
+    private final InetSocketAddress loginSocketAddress;
+    private final InetSocketAddress gameSocketAddress;
+
+    private final int udpSize;
+    private final int protocolVersion;
+
+    private final SendLoop sendLoop;
 
     @Inject
     public ClientConnection(final Injector injector, final BactaConfiguration configuration) {
-        loginAddress = configuration.getString("Bacta/LoginServer", "BindIp");
-        loginPort = (short) configuration.getInt("Bacta/LoginServer", "Port");
+        String loginAddress = configuration.getStringWithDefault("Bacta/LoginServer", "BindIp", "127.0.0.1");
+        int loginPort = configuration.getIntWithDefault("Bacta/LoginServer", "Port", 44453);
+        loginSocketAddress = new InetSocketAddress(loginAddress, loginPort);
 
-        gameAddress = configuration.getString("Bacta/GameServer", "BindIp");
-        gamePort = (short) configuration.getInt("Bacta/GameServer", "Port");
+        String gameAddress = configuration.getStringWithDefault("Bacta/GameServer", "BindIp", "127.0.0.1");
+        int gamePort = configuration.getIntWithDefault("Bacta/GameServer", "Port", 44463);
+        gameSocketAddress = new InetSocketAddress(gameAddress, gamePort);
+
 
         soeMessageRouter = new SoeMessageRouter(
                 injector,
-                configuration.getString("Bacta/GameServer", "SoeControllerList"),
-                configuration.getString("Bacta/GameServer", "SwgControllerList")
+                configuration.getStringWithDefault("Bacta/GameServer/Client", "SoeControllerList", "clientsoecontrollers.lst"),
+                configuration.getStringWithDefault("Bacta/GameServer/Client", "SwgControllerList", "clientswgcontrollers.lst")
         );
 
-        sendThread = new Thread(new SendLoop());
+        udpSize = configuration.getIntWithDefault("Bacta/Network", "UdpMaxSize", 496);
+        protocolVersion = configuration.getIntWithDefault("Bacta/Network", "ProtocolVersion", 2);
+
+        clientState = ClientState.NONE;
+
+        sendLoop = new SendLoop();
+        sendThread = new Thread(sendLoop);
         sendThread.start();
     }
 
@@ -93,8 +107,43 @@ public class ClientConnection extends SoeUdpConnection implements Runnable {
     }
 
     @Override
-    public void confirm() {
-        connectCallback.apply(null);
+    public synchronized void connect(final int connectionID) {
+
+        if(clientState == ClientState.NONE) {
+            setRemoteAddress(loginSocketAddress);
+        } else if(clientState == ClientState.LOGIN) {
+            setRemoteAddress(gameSocketAddress);
+        } else {
+            connectCallback.apply(null);
+            return;
+        }
+
+        ConnectMessage connectMessage = new ConnectMessage(protocolVersion, connectionID, udpSize);
+        sendMessage(connectMessage);
+    }
+
+
+    @Override
+    public synchronized void confirm() {
+
+        if(clientState == ClientState.NONE) {
+            clientState = ClientState.LOGIN;
+            terminate(TerminateReason.NONE);
+            connect(getId());
+        } else if(clientState == ClientState.LOGIN) {
+            clientState = ClientState.GAME;
+            connectCallback.apply(null);
+        }
+    }
+
+    @Override
+    public synchronized void terminate(TerminateReason reason) {
+        if(clientState != ClientState.LOGIN) {
+            clientState = ClientState.NONE;
+        }
+
+        Terminate terminate = new Terminate(getId(), reason);
+        sendLoop.flushMessage(terminate.slice());
     }
 
     private class SendLoop implements Runnable {
@@ -105,7 +154,13 @@ public class ClientConnection extends SoeUdpConnection implements Runnable {
             long nextIteration = 0;
 
             try {
+
+                while (channel == null) {
+                    Thread.sleep(500);
+                }
+
                 while (true) {
+
 
                     long currentTime = System.currentTimeMillis();
 
@@ -128,10 +183,10 @@ public class ClientConnection extends SoeUdpConnection implements Runnable {
             }
         }
 
-        private void flushMessage(ByteBuffer buffer) {
+        public void flushMessage(ByteBuffer buffer) {
             UdpPacketType packetType = UdpPacketType.values()[buffer.get(1)];
 
-            if (packetType != UdpPacketType.cUdpPacketConfirm) {
+            if (packetType != UdpPacketType.cUdpPacketConnect) {
                 buffer = protocol.encode(getSessionKey(), buffer, true);
                 protocol.appendCRC(getSessionKey(), buffer, 2);
                 buffer.rewind();
@@ -140,5 +195,11 @@ public class ClientConnection extends SoeUdpConnection implements Runnable {
             DatagramPacket datagramPacket = new DatagramPacket(Unpooled.wrappedBuffer(buffer), getRemoteAddress());
             channel.writeAndFlush(datagramPacket);
         }
+    }
+
+    private enum ClientState {
+        NONE,
+        LOGIN,
+        GAME
     }
 }

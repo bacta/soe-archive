@@ -37,6 +37,7 @@ public class ClientInboundHandler extends SimpleChannelInboundHandler<DatagramPa
         }
 
         if (heapBuffer != null) {
+            heapBuffer.rewind();
             router.routeMessage(connection, heapBuffer);
         }
     }

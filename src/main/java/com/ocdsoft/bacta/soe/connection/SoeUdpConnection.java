@@ -58,6 +58,8 @@ public abstract class SoeUdpConnection extends UdpConnection {
 
     private final FragmentContainer fragmentContainer;
 
+    private final List<ConnectionRoles> roles;
+
     @Getter
     private long lastActivity;
 
@@ -69,6 +71,7 @@ public abstract class SoeUdpConnection extends UdpConnection {
         staleTimeout = Integer.parseInt(messageProperties.getString("staleDisconnect"));
         clientSequenceNumber = new AtomicInteger();
         fragmentContainer = new FragmentContainer();
+        roles = new ArrayList<>();
         keepAlive();
 
 //        int maxQueueSize = Integer.parseInt(messageProperties.getString("MaxQueueSize"));
@@ -169,8 +172,21 @@ public abstract class SoeUdpConnection extends UdpConnection {
         return null;
     }
 
+    public void connect(final int connectionID) {
+        // Not implemented in Server based connections
+    }
+
     public void confirm() {
         // Not implemented in Server based connections
+    }
+
+    public void terminate(TerminateReason reason) {
+        Terminate terminate = new Terminate(id, reason);
+        sendMessage(terminate);
+    }
+
+    public List<ConnectionRoles> getRoles() {
+        return roles;
     }
 
     @SuppressWarnings("serial")

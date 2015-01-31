@@ -2,6 +2,7 @@ package com.ocdsoft.bacta.soe.io.udp;
 
 import com.ocdsoft.bacta.engine.network.client.ConnectionState;
 import com.ocdsoft.bacta.engine.network.io.udp.UdpTransceiver;
+import com.ocdsoft.bacta.engine.utils.BufferUtil;
 import com.ocdsoft.bacta.soe.ServerType;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 import com.ocdsoft.bacta.soe.message.UdpPacketType;
@@ -122,7 +123,7 @@ public abstract class SoeTransceiver<Connection extends SoeUdpConnection> extend
             } else {
 
                 if(connection == null) {
-                    logger.debug("Unsolicited Message from " + sender);
+                    logger.debug("Unsolicited Message from " + sender + ": " + BufferUtil.bytesToHex(buffer));
                     return;
                 }
 

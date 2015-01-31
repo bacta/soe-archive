@@ -5,6 +5,8 @@ import com.ocdsoft.bacta.soe.ServerState;
 import com.ocdsoft.bacta.soe.ServerType;
 import com.ocdsoft.bacta.soe.SwgController;
 import com.ocdsoft.bacta.soe.SwgMessageController;
+import com.ocdsoft.bacta.soe.annotation.RolesAllowed;
+import com.ocdsoft.bacta.soe.connection.ConnectionRoles;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 import com.ocdsoft.bacta.soe.message.GameNetworkMessage;
 import com.ocdsoft.bacta.soe.message.ReliableNetworkMessage;
@@ -64,12 +66,17 @@ public final class SwgDevelopMessageRouter<Connection extends SoeUdpConnection> 
 
         ControllerData controllerData = controllers.get(opcode);
         if(controllerData != null) {
+            if(!hasControllerAccess(connection, controllerData)) {
+                logger.error("Controller security blocked access:" + controllerData.getSwgMessageController().getClass().getName());
+                logger.error("Connection: " + connection.toString());
+                return;
+            }
+
             SwgMessageController controller = controllerData.getSwgMessageController();
             Constructor<? extends GameNetworkMessage> constructor = controllerData.getConstructor();
             try {
 
                 GameNetworkMessage message = constructor.newInstance(buffer);
-
 
                 try {
 
@@ -88,6 +95,10 @@ public final class SwgDevelopMessageRouter<Connection extends SoeUdpConnection> 
         } else {
             handleMissingController(opcode, buffer);
         }
+    }
+
+    private boolean hasControllerAccess(Connection connection, ControllerData controllerData) {
+        return controllerData.containsRoles(connection.getRoles());
     }
 
     private void handleMissingController(int opcode, ByteBuffer buffer) {
@@ -129,7 +140,7 @@ public final class SwgDevelopMessageRouter<Connection extends SoeUdpConnection> 
                 SwgController controllerAnnotation = controllerClass.getAnnotation(SwgController.class);
 
                 if (controllerAnnotation == null) {
-                    logger.info("Missing @SwgController annotation, discarding: " + controllerClass.getName());
+                    logger.warn("Missing @SwgController annotation, discarding: " + controllerClass.getName());
                     continue;
                 }
 
@@ -154,11 +165,24 @@ public final class SwgDevelopMessageRouter<Connection extends SoeUdpConnection> 
                 }
 
 
+                RolesAllowed rolesAllowed = controllerClass.getAnnotation(RolesAllowed.class);
+                if(rolesAllowed == null) {
+                    logger.warn("Missing @RolesAllowed annotation, discarding: " + controllerClass.getName());
+                    continue;
+                }
+
+                ConnectionRoles[] connectionRoles = rolesAllowed.value();
+                if(connectionRoles.length == 0) {
+                    logger.warn("No roles are provided, controller is inaccessible, discarding: " + controllerClass.getName());
+                    continue;
+                }
+
                 SwgMessageController controller = injector.getInstance(controllerClass);
+
                 int hash = SOECRC32.hashCode(handledMessageClass.getSimpleName());
                 Constructor constructor = handledMessageClass.getConstructor(ByteBuffer.class);
 
-                ControllerData newControllerData = new ControllerData(controller, constructor);
+                ControllerData newControllerData = new ControllerData(controller, constructor, connectionRoles);
 
                 if (!controllers.containsKey(hash)) {
                     String propertyName = Integer.toHexString(hash);
@@ -176,16 +200,31 @@ public final class SwgDevelopMessageRouter<Connection extends SoeUdpConnection> 
 
     private class ControllerData {
         @Getter
-        final private SwgMessageController swgMessageController;
+        private final SwgMessageController swgMessageController;
 
         @Getter
-        final private Constructor constructor;
+        private final Constructor constructor;
+
+        @Getter
+        private final ConnectionRoles[] roles;
 
         public ControllerData(final SwgMessageController swgMessageController,
-                              final Constructor constructor) {
+                              final Constructor constructor,
+                              final ConnectionRoles[] roles) {
             this.swgMessageController = swgMessageController;
             this.constructor = constructor;
+            this.roles = roles;
 
+        }
+
+        public boolean containsRoles(List<ConnectionRoles> userRoles) {
+            for(ConnectionRoles role : roles) {
+                if(userRoles.contains(role)) {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 
