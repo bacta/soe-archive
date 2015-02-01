@@ -19,7 +19,7 @@ import java.util.ResourceBundle;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public abstract class SoeUdpConnection extends UdpConnection {
+public class SoeUdpConnection extends UdpConnection {
 
     private static final Logger logger = LoggerFactory.getLogger(SoeUdpConnection.class);
     private static ResourceBundle messageProperties;
@@ -181,12 +181,6 @@ public abstract class SoeUdpConnection extends UdpConnection {
 
     public void confirm() {
         // Not implemented in Server based connections
-    }
-
-    public void terminate(TerminateReason reason) {
-        Terminate terminate = new Terminate(id, reason);
-        sendMessage(terminate);
-        state = ConnectionState.DISCONNECTED;
     }
 
     public List<ConnectionRole> getRoles() {

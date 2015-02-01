@@ -4,7 +4,9 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.ocdsoft.bacta.engine.conf.BactaConfiguration;
 import com.ocdsoft.bacta.engine.network.client.ServerStatus;
+import com.ocdsoft.bacta.soe.ServerType;
 import com.ocdsoft.bacta.soe.connection.ConnectionServerAgent;
+import com.ocdsoft.bacta.soe.io.udp.SoeTransceiver;
 import com.ocdsoft.bacta.soe.router.SoeMessageRouter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,8 +21,6 @@ public class GameServer implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(GameServer.class);
 
-    private final GameTransceiverFactory gameTransceiverFactory;
-
     private final BactaConfiguration configuration;
 
     private final GameServerState serverState;
@@ -29,17 +29,15 @@ public class GameServer implements Runnable {
 
     private final Injector injector;
 
-    private GameTransceiver transceiver;
+    private SoeTransceiver transceiver;
 
     @Inject
     public GameServer(final BactaConfiguration configuration,
-                      final GameTransceiverFactory gameTransceiverFactory,
                       final GameServerState serverState,
                       final ConnectionServerAgent connectionServerAgent,
                       final Injector injector) {
 
         this.configuration = configuration;
-        this.gameTransceiverFactory = gameTransceiverFactory;
         this.serverState = serverState;
         this.connectionServerAgent = connectionServerAgent;
         this.injector = injector;
@@ -53,21 +51,25 @@ public class GameServer implements Runnable {
             Thread agentThread = new Thread(connectionServerAgent);
             agentThread.start();
 
-            InetAddress bindAddress = InetAddress.getByName(
-                    configuration.getString("Bacta/GameServer", "BindIp"));
-
-            int port = configuration.getInt("Bacta/GameServer", "Port");
-            int sendInterval = configuration.getInt("Bacta/GameServer", "SendInterval");
-
-            int pingPort = configuration.getIntWithDefault("Bacta/GameServer", "Ping", 44462);
-
             SoeMessageRouter soeMessageRouter = new SoeMessageRouter(
                     injector,
                     configuration.getString("Bacta/GameServer", "SoeControllerList"),
                     configuration.getString("Bacta/GameServer", "SwgControllerList")
             );
 
-            transceiver = gameTransceiverFactory.create(bindAddress, port, pingPort, GameConnection.class, sendInterval, soeMessageRouter);
+            transceiver = new SoeTransceiver(
+                    InetAddress.getByName(configuration.getString("Bacta/GameServer", "BindIp")),
+                    configuration.getInt("Bacta/GameServer", "Port"),
+                    ServerType.GAME,
+                    configuration.getInt("Bacta/GameServer", "SendInterval"),
+                    soeMessageRouter,
+                    configuration.getStringCollection("Bacta/GameServer", "TrustedClient"));
+
+            Thread pingThread = new Thread(new PingServer(
+                    InetAddress.getByName(configuration.getString("Bacta/GameServer", "BindIp")),
+                    configuration.getIntWithDefault("Bacta/GameServer", "Ping", 44462),
+                    transceiver.getConnectionMap()));
+            pingThread.start();
 
             serverState.setServerStatus(ServerStatus.UP);
             connectionServerAgent.update();

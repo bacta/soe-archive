@@ -1,6 +1,6 @@
 package com.ocdsoft.bacta.soe.io.udp.game;
 
-import com.google.inject.Inject;
+import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,8 +17,7 @@ public class PingServer implements Runnable {
 
     private PingTransceiver pingTransceiver;
 
-    @Inject
-    public PingServer(InetAddress bindAddress, int port, Map<Object, GameConnection> connectionMap) {
+    public PingServer(InetAddress bindAddress, int port, Map<Object, SoeUdpConnection> connectionMap) {
         pingTransceiver = new PingTransceiver(bindAddress, port, connectionMap);
     }
 

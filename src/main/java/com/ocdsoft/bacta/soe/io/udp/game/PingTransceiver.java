@@ -2,6 +2,7 @@ package com.ocdsoft.bacta.soe.io.udp.game;
 
 import com.ocdsoft.bacta.engine.network.client.UdpConnection;
 import com.ocdsoft.bacta.engine.network.io.udp.BasicUdpTransceiver;
+import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 import io.netty.channel.socket.DatagramPacket;
 
 import java.net.InetAddress;
@@ -11,9 +12,9 @@ import java.util.Map;
 
 public final class PingTransceiver extends BasicUdpTransceiver {
 
-    private final Map<Object, GameConnection> connectionMap;
+    private final Map<Object, SoeUdpConnection> connectionMap;
 
-    public PingTransceiver(InetAddress bindAddress, int port, Map<Object, GameConnection> connectionMap) {
+    public PingTransceiver(InetAddress bindAddress, int port, Map<Object, SoeUdpConnection> connectionMap) {
         super(bindAddress, port);
 
         this.connectionMap = connectionMap;
@@ -32,7 +33,7 @@ public final class PingTransceiver extends BasicUdpTransceiver {
     @Override
     public void receiveMessage(InetSocketAddress inetSocketAddress, ByteBuffer buffer) {
 
-        GameConnection connection = connectionMap.get(inetSocketAddress);
+        SoeUdpConnection connection = connectionMap.get(inetSocketAddress);
         if(connection != null) {
 
             ByteBuffer pong = ByteBuffer.allocate(4);

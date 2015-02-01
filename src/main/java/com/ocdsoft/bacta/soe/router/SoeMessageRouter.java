@@ -6,7 +6,6 @@ import com.ocdsoft.bacta.soe.ServerState;
 import com.ocdsoft.bacta.soe.SoeController;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 import com.ocdsoft.bacta.soe.controller.SoeMessageController;
-import com.ocdsoft.bacta.soe.io.udp.game.GameConnection;
 import com.ocdsoft.bacta.soe.message.UdpPacketType;
 import com.ocdsoft.bacta.soe.util.SoeMessageUtil;
 import org.slf4j.Logger;
@@ -82,7 +81,7 @@ public final class SoeMessageRouter {
         ServerState serverState = injector.getInstance(ServerState.class);
         BactaConfiguration configuration = injector.getInstance(BactaConfiguration.class);
 
-        SwgMessageRouter<GameConnection> swgMessageRouter = new SwgDevelopMessageRouter<>(
+        SwgMessageRouter swgMessageRouter = new SwgDevelopMessageRouter(
                 injector,
                 serverState,
                 swgControllerFileName,

@@ -4,6 +4,6 @@ import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 
 import java.nio.ByteBuffer;
 
-public interface SwgMessageRouter<Connection extends SoeUdpConnection> {
-    void routeMessage(byte priority, int opcode, Connection client, ByteBuffer buffer);
+public interface SwgMessageRouter {
+    void routeMessage(byte priority, int opcode, SoeUdpConnection client, ByteBuffer buffer);
 }

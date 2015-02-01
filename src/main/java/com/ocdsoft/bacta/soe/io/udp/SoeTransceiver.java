@@ -9,10 +9,10 @@ import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 import com.ocdsoft.bacta.soe.message.UdpPacketType;
 import com.ocdsoft.bacta.soe.protocol.SoeProtocol;
 import com.ocdsoft.bacta.soe.router.SoeMessageRouter;
+import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Constructor;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Created by kburkhardt on 2/15/14.
  */
 
-public abstract class SoeTransceiver<Connection extends SoeUdpConnection> extends UdpTransceiver<Connection> {
+public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection> {
 
     private final Logger logger = LoggerFactory.getLogger(SoeTransceiver.class);
 
@@ -35,14 +35,10 @@ public abstract class SoeTransceiver<Connection extends SoeUdpConnection> extend
     private final SoeProtocol protocol;
 
     /**
-     * This is a reference to the constructor used to create the clients
-     */
-    protected Constructor<Connection> connectionConstructor;
-
-    /**
      * The structure that holds the "connected" udp clients
      */
-    protected final Map<Object, Connection> connectionMap;
+    @Getter
+    private final Map<Object, SoeUdpConnection> connectionMap;
 
     private final Thread sendThread;
     private final int sendQueueInterval;
@@ -52,10 +48,8 @@ public abstract class SoeTransceiver<Connection extends SoeUdpConnection> extend
     public SoeTransceiver(final InetAddress bindAddress,
                           final int port,
                           final ServerType serverType,
-                          final Class<Connection> connectionClass,
                           final int sendQueueInterval,
                           final SoeMessageRouter soeMessageRouter,
-                          final SoeProtocol soeProtocol,
                           final Collection<String> whitelistedAddresses) {
 
         super(bindAddress, port);
@@ -64,9 +58,8 @@ public abstract class SoeTransceiver<Connection extends SoeUdpConnection> extend
 
             this.serverType = serverType;
             this.sendQueueInterval = sendQueueInterval;
-            connectionConstructor = connectionClass.getConstructor();
             this.soeMessageRouter = soeMessageRouter;
-            this.protocol = soeProtocol;
+            this.protocol = new SoeProtocol();
             this.whitelistedAddresses = whitelistedAddresses;
 
             ResourceBundle bundle = PropertyResourceBundle.getBundle("messageprocessing");
@@ -77,7 +70,7 @@ public abstract class SoeTransceiver<Connection extends SoeUdpConnection> extend
             sendThread = new Thread(new SendLoop());
             sendThread.start();
 
-        } catch (NoSuchMethodException | SecurityException e) {
+        } catch (SecurityException e) {
 
             throw new RuntimeException("Unable to start SOE transceiver", e);
         }
@@ -91,10 +84,10 @@ public abstract class SoeTransceiver<Connection extends SoeUdpConnection> extend
      * @throws Exception
      * @since 1.0
      */
-    protected final Connection createConnection(InetSocketAddress address) throws RuntimeException {
-        Connection connection;
+    protected final SoeUdpConnection createConnection(InetSocketAddress address) throws RuntimeException {
+        SoeUdpConnection connection;
         try {
-            connection = connectionConstructor.newInstance();
+            connection = new SoeUdpConnection();
             if(whitelistedAddresses.contains(address.getHostString())) {
                 connection.addRole(ConnectionRole.WHITELISTED);
                 logger.info("Whitelisted address connected: " + address.getHostString());
@@ -111,7 +104,7 @@ public abstract class SoeTransceiver<Connection extends SoeUdpConnection> extend
 
         try {
 
-            Connection connection = connectionMap.get(sender);
+            SoeUdpConnection connection = connectionMap.get(sender);
 
             byte type = buffer.get(1);
             if(type < 0 || type > 0x1E) {
@@ -152,7 +145,7 @@ public abstract class SoeTransceiver<Connection extends SoeUdpConnection> extend
     }
 
     @Override
-    public void sendMessage(Connection connection, ByteBuffer buffer) {
+    public void sendMessage(SoeUdpConnection connection, ByteBuffer buffer) {
 
         UdpPacketType packetType = UdpPacketType.values()[buffer.get(1)];
 
@@ -194,7 +187,7 @@ public abstract class SoeTransceiver<Connection extends SoeUdpConnection> extend
                         List<Object> deadClients = new ArrayList<>();
 
                         for (Object obj : connectionList) {
-                            Connection connection = connectionMap.get(obj);
+                            SoeUdpConnection connection = connectionMap.get(obj);
 
                             if (connection == null || connection.isStale()) {
                                 deadClients.add(obj);
@@ -210,7 +203,7 @@ public abstract class SoeTransceiver<Connection extends SoeUdpConnection> extend
 
                         for (Object key : deadClients) {
                             logger.debug("Removing client: " + key);
-                            Connection connection = connectionMap.remove(key);
+                            SoeUdpConnection connection = connectionMap.remove(key);
                             connection.setState(ConnectionState.DISCONNECTED);
                         }
 
