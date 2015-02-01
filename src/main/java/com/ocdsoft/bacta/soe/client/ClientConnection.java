@@ -1,8 +1,5 @@
 package com.ocdsoft.bacta.soe.client;
 
-import com.google.inject.Inject;
-import com.google.inject.Injector;
-import com.ocdsoft.bacta.engine.conf.BactaConfiguration;
 import com.ocdsoft.bacta.engine.network.client.ConnectionState;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 import com.ocdsoft.bacta.soe.message.ConnectMessage;
@@ -43,18 +40,12 @@ public class ClientConnection extends SoeUdpConnection implements Runnable {
     private final int protocolVersion;
 
     private final SendLoop sendLoop;
-
-    @Inject
-    public ClientConnection(final Injector injector, final BactaConfiguration configuration) {
-
-        soeMessageRouter = new SoeMessageRouter(
-                injector,
-                configuration.getStringWithDefault("Bacta/GameServer/Client", "SoeControllerList", "clientsoecontrollers.lst"),
-                configuration.getStringWithDefault("Bacta/GameServer/Client", "SwgControllerList", "clientswgcontrollers.lst")
-        );
-
-        udpSize = configuration.getIntWithDefault("Bacta/Network", "UdpMaxSize", 496);
-        protocolVersion = configuration.getIntWithDefault("Bacta/Network", "ProtocolVersion", 2);
+    
+    public ClientConnection(final SoeMessageRouter soeMessageRouter, final int udpSize, final int protocolVersion) {
+        
+        this.soeMessageRouter = soeMessageRouter;
+        this.udpSize = udpSize;
+        this.protocolVersion = protocolVersion;
 
         sendLoop = new SendLoop();
         sendThread = new Thread(sendLoop);
