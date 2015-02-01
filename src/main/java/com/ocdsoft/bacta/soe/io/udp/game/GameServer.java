@@ -31,6 +31,7 @@ public class GameServer implements Runnable {
     @Override
     public void run() {
         logger.info("Starting");
+
         try {
 
             InetAddress bindAddress = InetAddress.getByName(
@@ -41,9 +42,11 @@ public class GameServer implements Runnable {
 
             int pingPort = configuration.getIntWithDefault("Bacta/GameServer", "Ping", 44462);
 
-            GameTransceiver transceiver = gameTransceiverFactory.create(bindAddress, port, pingPort, GameConnection.class, sendInterval);
+            GameTransceiver transceiver = gameTransceiverFactory.create(
+                    bindAddress, port, pingPort, GameConnection.class, sendInterval);
 
             serverState.setServerStatus(ServerStatus.ONLINE);
+
             gameServerStatusUpdater.start();
             transceiver.run();
 

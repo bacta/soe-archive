@@ -7,6 +7,7 @@ import lombok.Getter;
  */
 public enum ServerType {
 
+    CHAT ("chat"),
     LOGIN ("login"),
     GAME ("game"),
     PING ("ping");
