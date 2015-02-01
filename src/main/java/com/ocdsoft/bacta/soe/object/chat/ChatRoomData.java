@@ -1,6 +1,6 @@
 package com.ocdsoft.bacta.soe.object.chat;
 
-import com.ocdsoft.bacta.engine.buffer.ByteBufferSerializable;
+import com.ocdsoft.bacta.engine.buffer.ByteBufferWritable;
 import com.ocdsoft.bacta.engine.utils.BufferUtil;
 import lombok.Getter;
 import lombok.Setter;
@@ -8,7 +8,7 @@ import lombok.Setter;
 import java.nio.ByteBuffer;
 import java.util.List;
 
-public class ChatRoomData implements ByteBufferSerializable {
+public class ChatRoomData implements ByteBufferWritable {
     private String serverName;
     private String serviceName;
 
@@ -55,6 +55,26 @@ public class ChatRoomData implements ByteBufferSerializable {
         this.creator = owner;
         this.serverName = owner.getGameCode();
         this.serviceName = owner.getCluster();
+    }
+
+    public ChatRoomData(ByteBuffer buffer) {
+        roomId = buffer.getInt();
+        passwordProtected = BufferUtil.getBoolean(buffer);
+        passwordProtected = BufferUtil.getBoolean(buffer);
+        nonanonymous = BufferUtil.getBoolean(buffer);
+        persistent = BufferUtil.getBoolean(buffer);
+        membersOnly = BufferUtil.getBoolean(buffer);
+        moderated = BufferUtil.getBoolean(buffer);
+
+        address = BufferUtil.getAscii(buffer);
+
+        owner = new ChatAvatarId(buffer);
+        creator = new ChatAvatarId(buffer);
+
+        title = BufferUtil.getUnicode(buffer);
+
+        buffer.getInt(); //Moderator list
+        buffer.getInt(); //User list
     }
 
     public String getFullAddress() {

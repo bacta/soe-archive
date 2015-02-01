@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
@@ -57,8 +58,12 @@ public abstract class SoeUdpConnection extends UdpConnection {
 
     private final FragmentContainer fragmentContainer;
 
+    private final List<ConnectionRole> roles;
+
     @Getter
-    private long lastActivity = System.currentTimeMillis();
+    private long lastActivity;
+
+//    private final ByteBuffer outgoingBuffer;
 
     public SoeUdpConnection() {
         state = ConnectionState.DISCONNECTED;
@@ -66,22 +71,38 @@ public abstract class SoeUdpConnection extends UdpConnection {
         staleTimeout = Integer.parseInt(messageProperties.getString("staleDisconnect"));
         clientSequenceNumber = new AtomicInteger();
         fragmentContainer = new FragmentContainer();
+        roles = new ArrayList<>();
+        keepAlive();
+
+//        int maxQueueSize = Integer.parseInt(messageProperties.getString("MaxQueueSize"));
+//        int udpMaxSize = Integer.parseInt(messageProperties.getString("UdpMaxSize"));
+//        outgoingBuffer = ByteBuffer.allocate(udpMaxSize * maxQueueSize);
     }
 
     public void sendMessage(SoeMessage message) {
         if (udpMessageProcessor.addUnreliable(message.slice())) {
-            lastActivity = System.currentTimeMillis();
+            keepAlive();
         }
     }
 
     public void sendMessage(GameNetworkMessage message) {
 
-        if (!udpMessageProcessor.addReliable(message.toBuffer())) {
+        // TODO: Better buffer creation
+        ByteBuffer buffer = ByteBuffer.allocate(1500).order(ByteOrder.LITTLE_ENDIAN);
+
+        buffer.putShort(message.getPriority());
+        buffer.putInt(message.getMessageType());
+
+        message.writeToBuffer(buffer);
+        buffer.limit(buffer.position());
+        buffer.rewind();
+
+        if (!udpMessageProcessor.addReliable(buffer)) {
             if(getState() == ConnectionState.ONLINE) {
                 setState(ConnectionState.DISCONNECTED);
             }
         } else {
-            lastActivity = System.currentTimeMillis();
+            keepAlive();
         }
     }
 
@@ -96,14 +117,18 @@ public abstract class SoeUdpConnection extends UdpConnection {
         }
 
         if(!pendingMessageList.isEmpty()) {
-            lastActivity = System.currentTimeMillis();
+            keepAlive();
         }
 
         return pendingMessageList;
     }
 
-    public void sendAck(short sequenceNum) {
+    public void keepAlive() {
         lastActivity = System.currentTimeMillis();
+    }
+
+    public void sendAck(short sequenceNum) {
+        keepAlive();
         sendMessage(new AckAllMessage(sequenceNum));
     }
 
@@ -123,12 +148,15 @@ public abstract class SoeUdpConnection extends UdpConnection {
 
     @Override
     public void setState(ConnectionState state) {
-        this.state = state;
 
-        if(state == ConnectionState.DISCONNECTED) {
+        if(this.state != ConnectionState.DISCONNECTED &&
+                state == ConnectionState.DISCONNECTED) {
+
             Terminate terminate = new Terminate(this.getId(), TerminateReason.NONE);
             sendMessage(terminate);
         }
+
+        this.state = state;
     }
 
     @Override
@@ -145,6 +173,28 @@ public abstract class SoeUdpConnection extends UdpConnection {
         }
 
         return null;
+    }
+
+    public void connect(final int connectionID) {
+        // Not implemented in Server based connections
+    }
+
+    public void confirm() {
+        // Not implemented in Server based connections
+    }
+
+    public void terminate(TerminateReason reason) {
+        Terminate terminate = new Terminate(id, reason);
+        sendMessage(terminate);
+        state = ConnectionState.DISCONNECTED;
+    }
+
+    public List<ConnectionRole> getRoles() {
+        return roles;
+    }
+
+    public void addRole(ConnectionRole role) {
+        roles.add(role);
     }
 
     @SuppressWarnings("serial")

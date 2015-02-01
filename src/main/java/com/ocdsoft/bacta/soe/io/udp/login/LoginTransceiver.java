@@ -1,11 +1,13 @@
 package com.ocdsoft.bacta.soe.io.udp.login;
 
 import com.google.inject.Inject;
+import com.google.inject.Injector;
 import com.google.inject.assistedinject.Assisted;
+import com.ocdsoft.bacta.engine.conf.BactaConfiguration;
 import com.ocdsoft.bacta.soe.ServerType;
 import com.ocdsoft.bacta.soe.io.udp.SoeTransceiver;
 import com.ocdsoft.bacta.soe.protocol.SoeProtocol;
-import com.ocdsoft.bacta.soe.router.SoeMessageRouterFactory;
+import com.ocdsoft.bacta.soe.router.SoeMessageRouter;
 
 import java.net.InetAddress;
 
@@ -19,10 +21,20 @@ public class LoginTransceiver extends SoeTransceiver<LoginConnection> {
                             @Assisted("port") int port,
                             @Assisted Class<LoginConnection> gameClientClass,
                             @Assisted("sendQueueInterval") int sendQueueInterval,
-                            SoeMessageRouterFactory soeMessageRouterFactory,
-                            SoeProtocol protocol) {
+                            @Assisted SoeMessageRouter soeMessageRouter,
+                            final Injector injector,
+                            final SoeProtocol protocol,
+                            final BactaConfiguration configuration) {
 
-        super(bindAddress, port, ServerType.LOGIN, gameClientClass, sendQueueInterval, soeMessageRouterFactory.create(ServerType.LOGIN), protocol);
+        super(bindAddress,
+                port,
+                ServerType.LOGIN,
+                gameClientClass,
+                sendQueueInterval,
+                soeMessageRouter,
+                protocol,
+                configuration.getStringCollection("Bacta/LoginServer", "TrustedClient")
+        );
 
     }
 }

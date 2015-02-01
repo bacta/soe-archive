@@ -69,7 +69,7 @@ import java.nio.ByteBuffer;
 
  */
 @SoeController(handles = {UdpPacketType.cUdpPacketClockSync})
-public class ClockSyncController implements SoeMessageController {
+public class ClockSyncController extends BaseSoeController {
 
     @Override
     public void handleIncoming(byte zeroByte, UdpPacketType type, SoeUdpConnection connection, ByteBuffer buffer) {

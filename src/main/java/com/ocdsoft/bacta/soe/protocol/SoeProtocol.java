@@ -49,12 +49,18 @@ public final class SoeProtocol {
 
 			decrypt(seed, data, offset);
 
-			if(data.get(data.position() - 3) == 1) {
-				return decompress(data, offset);
+			if(data.get(data.limit() - 3) == 1) {
+				data = decompress(data, offset);
 			}
+
+            data.rewind();
+            // Exclude Footer
+            data.limit(data.limit() - 3);
+
+            return data;
 		}
 
-        return data;
+        return null;
 	}
 
 	public ByteBuffer encode(int seed, ByteBuffer data, boolean doCompress) {
@@ -76,16 +82,19 @@ public final class SoeProtocol {
 
 	public void decrypt(int encKey, ByteBuffer data, int offset) {
 
-        int intblocks = (data.position() - 2 - offset) / 4;
-        
+        int intblocks = (data.limit() - 2 - offset) / 4;
+
+        //TODO: Fix this hack
+        data.order(ByteOrder.LITTLE_ENDIAN);
         for (int i = 0; i < intblocks; ++i) {
 
             int nextkey = (int) UnsignedUtil.getUnsignedInt(data, i * 4 + offset);
             data.putInt(i * 4 + offset, nextkey ^ encKey);
             encKey = nextkey;
         }
+        data.order(ByteOrder.BIG_ENDIAN);
 
-        for (int i = 0; i < ((data.position() - 2 - offset) % 4); ++i)
+        for (int i = 0; i < ((data.limit() - 2 - offset) % 4); ++i)
         	data.put(intblocks * 4 + i + offset, (byte)((UnsignedUtil.getUnsignedByte(data, intblocks * 4 + i + offset)) ^ (encKey)));
 
         //logger.debug("Post-decryption: " + StringUtil.bytesToHex(msg.data().array()));
@@ -93,8 +102,8 @@ public final class SoeProtocol {
 
 	public void encrypt(int dencKey, ByteBuffer data, int offset) {
 
-        int intblocks = (data.position() - offset) / 4;
-        int remainderblocks = (data.position() - offset) % 4;
+        int intblocks = (data.limit() - offset) / 4;
+        int remainderblocks = (data.limit() - offset) % 4;
 
         //logger.debug("Pre-decryption: " + StringUtil.bytesToHex(msg.data().array()));
         
@@ -139,7 +148,8 @@ public final class SoeProtocol {
         int newLength = (int)zstream.total_out;
         zstream.inflateEnd();
 
-        out.position(newLength + offset);
+        out.rewind();
+
         //logger.info("Post-decompress: " + StringUtil.bytesToHex(out.array()) + out.readerIndex() + " : " + out.writerIndex());
         
         return out;
@@ -175,6 +185,7 @@ public final class SoeProtocol {
         zstream.deflateEnd();
 
         out.position(newLength + offset);
+        out.limit(newLength + offset + 1);
         //logger.info("Post-compress: " + StringUtil.bytesToHex(out.array()) + out.readerIndex() + " : " + out.writerIndex());
         
         return out;
@@ -196,7 +207,7 @@ public final class SoeProtocol {
         nCrc = (nCrc >>> 8) & 0x00FFFFFF;
         nCrc ^= g_nCrcTable[(nIndex & 0xFF)];
 
-        for( short i = 0; i < data.position() - crcLength; i++ )
+        for( short i = 0; i < data.limit() - crcLength; i++ )
         {
             nIndex = (data.get(i)) ^ nCrc;
             nCrc = (nCrc >>> 8) & 0x00FFFFFF;
@@ -205,8 +216,7 @@ public final class SoeProtocol {
         return ~nCrc;
     }
 
-    public boolean verifyMessage(int crcSeed, ByteBuffer data, int crcLength)
-    {
+    public boolean verifyMessage(int crcSeed, ByteBuffer data, int crcLength) {
 
         boolean doHacks = false;
         boolean crctest = true;
@@ -263,14 +273,12 @@ public final class SoeProtocol {
             
     }
     
-	public void appendCRC(int nCrcSeed, ByteBuffer data, int crcLength)
-    {
+	public void appendCRC(int nCrcSeed, ByteBuffer data, int crcLength) {
         int crc = generateCRC(nCrcSeed, data, 0);
-
-        for( int i = (crcLength - 1); i >= 0; i--)
-            data.put((byte)((crc >>> (8 * i)) & 0xFF));
-
-        data.limit(data.position());
+        data.limit(data.limit() + crcLength);
+        for( int i = (crcLength - 1); i >= 0; i--) {
+            data.put((byte) ((crc >>> (8 * i)) & 0xFF));
+        }
     }
 
 	public boolean validate(int seed, ByteBuffer data) {

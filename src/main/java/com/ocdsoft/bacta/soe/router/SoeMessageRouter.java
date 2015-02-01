@@ -1,78 +1,97 @@
 package com.ocdsoft.bacta.soe.router;
 
-import com.google.inject.Inject;
 import com.google.inject.Injector;
-import com.google.inject.Singleton;
-import com.ocdsoft.bacta.engine.network.ControllerScan;
+import com.ocdsoft.bacta.engine.conf.BactaConfiguration;
 import com.ocdsoft.bacta.soe.ServerState;
 import com.ocdsoft.bacta.soe.SoeController;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 import com.ocdsoft.bacta.soe.controller.SoeMessageController;
+import com.ocdsoft.bacta.soe.io.udp.game.GameConnection;
 import com.ocdsoft.bacta.soe.message.UdpPacketType;
 import com.ocdsoft.bacta.soe.util.SoeMessageUtil;
-import org.reflections.Reflections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HashMap;
-import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
-@ControllerScan(target = "com.ocdsoft.bacta.soe.controller")
-@Singleton
 public final class SoeMessageRouter {
 
     private final static Logger logger = LoggerFactory.getLogger(SoeMessageRouter.class);
 
     private Map<UdpPacketType, SoeMessageController> controllers = new HashMap<>();
 
-    @Inject
-    public SoeMessageRouter(Injector injector, ServerState serverState) {
-        loadControllers(injector);
+    public SoeMessageRouter(Injector injector,
+                            final String soeControllerFileName,
+                            final String swgControllerFileName) {
+
+        loadControllers(injector, soeControllerFileName, swgControllerFileName);
     }
 
     public void routeMessage(SoeUdpConnection client, ByteBuffer buffer) {
 
         byte zeroByte = buffer.get();
-        UdpPacketType type = UdpPacketType.values()[buffer.get()];
+        byte type = buffer.get();
+        if(type < 0 || type > 0x1E) {
+            throw new RuntimeException("Type out of range:" + type + " " + buffer.toString() + " " + SoeMessageUtil.bytesToHex(buffer));
+        }
 
-        SoeMessageController controller = controllers.get(type);
+        UdpPacketType packetType = UdpPacketType.values()[type];
+
+        SoeMessageController controller = controllers.get(packetType);
 
         if (controller == null) {
-            logger.error("Unhandled SOE Opcode 0x" + Integer.toHexString(type.getValue()).toUpperCase());
+            logger.error("Unhandled SOE Opcode 0x" + Integer.toHexString(packetType.getValue()).toUpperCase());
             logger.error(SoeMessageUtil.bytesToHex(buffer));
             return;
         }
 
         try {
 
-            //logger.trace("Routing to " + controller.getClass().getSimpleName());
-            controller.handleIncoming(zeroByte, type, client, buffer);
+            logger.trace("Routing to " + controller.getClass().getSimpleName());
+            controller.handleIncoming(zeroByte, packetType, client, buffer);
 
         } catch (Exception e) {
             logger.error("SOE Routing", e);
         }
     }
 
-    private void loadControllers(Injector injector) {
+    private void loadControllers(final Injector injector,
+                                final String soeControllerFileName,
+                                 final String swgControllerFileName) {
 
-        ControllerScan scanAnnotation = getClass().getAnnotation(ControllerScan.class);
+        File file = new File("../conf/" + soeControllerFileName);
+        if(!file.exists()) {
+            file = new File(getClass().getResource("/" + soeControllerFileName).getFile());
+        }
 
-        if (scanAnnotation == null) {
-            logger.error("Missing @ControllerScan annotation, unable to load controllers");
+        List<String> classNameList;
+        try {
+            classNameList = Files.readAllLines(Paths.get(file.toURI()));
+        } catch (IOException e) {
+            e.printStackTrace();
             return;
         }
 
-        Reflections reflections = new Reflections(scanAnnotation.target());
-        Set<Class<? extends SoeMessageController>> subTypes = reflections.getSubTypesOf(SoeMessageController.class);
+        ServerState serverState = injector.getInstance(ServerState.class);
+        BactaConfiguration configuration = injector.getInstance(BactaConfiguration.class);
 
-        Iterator<Class<? extends SoeMessageController>> iter = subTypes.iterator();
-        while (iter.hasNext()) {
+        SwgMessageRouter<GameConnection> swgMessageRouter = new SwgDevelopMessageRouter<>(
+                injector,
+                serverState,
+                swgControllerFileName,
+                configuration.getBoolean("Bacta/GlobalSettings", "ControllerGeneration"));
+
+        for(String className : classNameList) {
 
             try {
-                Class<? extends SoeMessageController> controllerClass = iter.next();
+                Class<? extends SoeMessageController> controllerClass = (Class<? extends SoeMessageController>) Class.forName(className);
 
                 SoeController controllerAnnotation = controllerClass.getAnnotation(SoeController.class);
 
@@ -82,8 +101,11 @@ public final class SoeMessageRouter {
                 }
 
                 UdpPacketType[] types = controllerAnnotation.handles();
+                logger.debug("Loading SoeMessageController: " + serverState.getServerType() + " " + controllerClass.getSimpleName());
 
                 SoeMessageController controller = injector.getInstance(controllerClass);
+                controller.setSoeMessageRouter(this);
+                controller.setSwgMessageRouter(swgMessageRouter);
 
                 for(UdpPacketType udpPacketType : types) {
 

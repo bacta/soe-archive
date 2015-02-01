@@ -7,7 +7,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -30,13 +29,13 @@ public class ProtocolTest extends MessageDumpLoader {
 				test1.put((byte) b);
 			
 			logger.debug("Decoded");
-            logger.debug("Test: " + BufferUtil.bytesToHex(test1.array()));
+            logger.debug("Test: " + BufferUtil.bytesToHex(test1));
             logger.debug("      " + BufferUtil.bytesToHex(decomp.get(i)));
 
-			test1 = test1.order(ByteOrder.LITTLE_ENDIAN);
+			//test1 = test1.order(ByteOrder.LITTLE_ENDIAN);
 			test1 = protocol.decode(sessionKey, test1);
 
-            logger.debug("      " + BufferUtil.bytesToHex(test1.array()));
+            logger.debug("      " + BufferUtil.bytesToHex(test1));
 
             test1.rewind();
 
@@ -49,8 +48,12 @@ public class ProtocolTest extends MessageDumpLoader {
 				
 				short value = UnsignedUtil.getUnsignedByte(test1);
 
-				if(decCheck != value)
-					fail("Decompression Results do not match at index " + j);
+				if(decCheck != value) {
+                    if (j == decomp.get(i).length - 2) {
+                        fail("Incorrect CRC");
+                    }
+                    fail("Decompression Results do not match at index " + j);
+                }
 			}
 
 			test1 = ByteBuffer.allocate(decomp.get(i).length);
@@ -68,9 +71,7 @@ public class ProtocolTest extends MessageDumpLoader {
 			
 			protocol.appendCRC(sessionKey, test1, 2);
 
-            logger.debug("	   " + BufferUtil.bytesToHex(test1.array()));
-
-            assertTrue(protocol.validate(sessionKey, test1));
+            logger.debug("	   " + BufferUtil.bytesToHex(test1));
 
 			test1.rewind();
 
@@ -83,10 +84,17 @@ public class ProtocolTest extends MessageDumpLoader {
 				
 				short value = UnsignedUtil.getUnsignedByte(test1);
 
-				if(decCheck != value)
-					fail("Encoded Results do not match at index " + j);
+				if(decCheck != value) {
+                    if (j == pre.get(i).length - 2) {
+                        fail("Incorrect CRC");
+                    }
+                    fail("Encoded Results do not match at index " + j);
+                }
 			}
-			
+
+            test1.rewind();
+
+            assertTrue(protocol.validate(sessionKey, test1));
 		}
 	}
 }

@@ -12,7 +12,7 @@ import com.ocdsoft.bacta.soe.service.SessionKeyService;
 import java.nio.ByteBuffer;
 
 @SoeController(handles = {UdpPacketType.cUdpPacketConnect})
-public class ConnectController implements SoeMessageController {
+public class ConnectController extends BaseSoeController {
 
     private final SessionKeyService keyService;
     private final byte cryptMethod;

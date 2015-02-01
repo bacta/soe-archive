@@ -12,9 +12,9 @@ import org.slf4j.LoggerFactory;
 import java.nio.ByteBuffer;
 
 @SoeController(handles = {UdpPacketType.cUdpPacketTerminate})
-public class DisconnectController implements SoeMessageController {
+public class TerminateController extends BaseSoeController {
 
-    private static final Logger logger = LoggerFactory.getLogger(DisconnectController.class);
+    private static final Logger logger = LoggerFactory.getLogger(TerminateController.class);
 
     @Override
     public void handleIncoming(byte zeroByte, UdpPacketType type, SoeUdpConnection connection, ByteBuffer buffer) {

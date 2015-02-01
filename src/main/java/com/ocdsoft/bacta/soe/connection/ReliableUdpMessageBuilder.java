@@ -130,11 +130,12 @@ public class ReliableUdpMessageBuilder implements UdpMessageBuilder<ByteBuffer> 
         if (!iterator.hasNext()) {
             if (pendingContainer != null) {
                 pendingContainer.finish();
-                pendingContainer = null;
                 pendingContainer.addSendAttempt();
                 unacknowledgedQueue.add(pendingContainer);
+                ByteBuffer slice = pendingContainer.slice();
+                pendingContainer = null;
                 lastSend = currentTime;
-                return pendingContainer.slice();
+                return slice;
             }
             return null;
         }

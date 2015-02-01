@@ -2,7 +2,9 @@ package com.ocdsoft.bacta.soe.io.udp;
 
 import com.ocdsoft.bacta.engine.network.client.ConnectionState;
 import com.ocdsoft.bacta.engine.network.io.udp.UdpTransceiver;
+import com.ocdsoft.bacta.engine.utils.BufferUtil;
 import com.ocdsoft.bacta.soe.ServerType;
+import com.ocdsoft.bacta.soe.connection.ConnectionRole;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 import com.ocdsoft.bacta.soe.message.UdpPacketType;
 import com.ocdsoft.bacta.soe.protocol.SoeProtocol;
@@ -24,7 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public abstract class SoeTransceiver<Connection extends SoeUdpConnection> extends UdpTransceiver<Connection> {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass().getSimpleName());
+    private final Logger logger = LoggerFactory.getLogger(SoeTransceiver.class);
 
     private final ServerType serverType;
 
@@ -45,13 +47,16 @@ public abstract class SoeTransceiver<Connection extends SoeUdpConnection> extend
     private final Thread sendThread;
     private final int sendQueueInterval;
 
+    private final Collection<String> whitelistedAddresses;
+
     public SoeTransceiver(final InetAddress bindAddress,
                           final int port,
                           final ServerType serverType,
                           final Class<Connection> connectionClass,
                           final int sendQueueInterval,
                           final SoeMessageRouter soeMessageRouter,
-                          final SoeProtocol soeProtocol) {
+                          final SoeProtocol soeProtocol,
+                          final Collection<String> whitelistedAddresses) {
 
         super(bindAddress, port);
 
@@ -62,6 +67,7 @@ public abstract class SoeTransceiver<Connection extends SoeUdpConnection> extend
             connectionConstructor = connectionClass.getConstructor();
             this.soeMessageRouter = soeMessageRouter;
             this.protocol = soeProtocol;
+            this.whitelistedAddresses = whitelistedAddresses;
 
             ResourceBundle bundle = PropertyResourceBundle.getBundle("messageprocessing");
             protocol.setCompression(bundle.getString("Compression").equalsIgnoreCase("true"));
@@ -89,6 +95,10 @@ public abstract class SoeTransceiver<Connection extends SoeUdpConnection> extend
         Connection connection;
         try {
             connection = connectionConstructor.newInstance();
+            if(whitelistedAddresses.contains(address.getHostString())) {
+                connection.addRole(ConnectionRole.WHITELISTED);
+                logger.info("Whitelisted address connected: " + address.getHostString());
+            }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -103,7 +113,12 @@ public abstract class SoeTransceiver<Connection extends SoeUdpConnection> extend
 
             Connection connection = connectionMap.get(sender);
 
-            UdpPacketType packetType = UdpPacketType.values()[buffer.get(1)];
+            byte type = buffer.get(1);
+            if(type < 0 || type > 0x1E) {
+                throw new RuntimeException("Type out of range:" + type);
+            }
+
+            UdpPacketType packetType = UdpPacketType.values()[type];
 
             if (packetType == UdpPacketType.cUdpPacketConnect) {
 
@@ -116,13 +131,23 @@ public abstract class SoeTransceiver<Connection extends SoeUdpConnection> extend
                         connectionMap.size());
             } else {
 
+                if(connection == null) {
+                    logger.debug("Unsolicited Message from " + sender + ": " + BufferUtil.bytesToHex(buffer));
+                    return;
+                }
+
                 buffer = protocol.decode(connection.getSessionKey(), buffer.order(ByteOrder.LITTLE_ENDIAN));
+
             }
 
-            soeMessageRouter.routeMessage(connection, buffer);
+            if(buffer != null) {
+
+
+                soeMessageRouter.routeMessage(connection, buffer);
+            }
 
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException(buffer.toString(), e);
         }
     }
 
@@ -134,9 +159,15 @@ public abstract class SoeTransceiver<Connection extends SoeUdpConnection> extend
         if (packetType != UdpPacketType.cUdpPacketConfirm) {
             buffer = protocol.encode(connection.getSessionKey(), buffer, true);
             protocol.appendCRC(connection.getSessionKey(), buffer, 2);
+            buffer.rewind();
         }
 
         handleOutgoing(buffer, connection.getRemoteAddress());
+    }
+
+    public void stop() {
+        sendThread.interrupt();
+        super.stop();
     }
 
     private class SendLoop implements Runnable {
@@ -146,49 +177,51 @@ public abstract class SoeTransceiver<Connection extends SoeUdpConnection> extend
 
             long nextIteration = 0;
 
-            while (true) {
-                try {
+            try {
+                while (true) {
+
                     long currentTime = System.currentTimeMillis();
+
                     if (nextIteration > currentTime) {
-
-                        try {
-                            Thread.sleep(nextIteration - currentTime);
-
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
+                        Thread.sleep(nextIteration - currentTime);
                     }
 
-                    nextIteration = currentTime + sendQueueInterval;
+                    try {
 
-                    Set<Object> connectionList = connectionMap.keySet();
-                    List<Object> deadClients = new ArrayList<>();
+                        nextIteration = currentTime + sendQueueInterval;
 
-                    for (Object obj : connectionList) {
-                        Connection connection = connectionMap.get(obj);
+                        Set<Object> connectionList = connectionMap.keySet();
+                        List<Object> deadClients = new ArrayList<>();
 
-                        if (connection == null || connection.isStale()) {
-                            deadClients.add(obj);
-                            continue;
+                        for (Object obj : connectionList) {
+                            Connection connection = connectionMap.get(obj);
+
+                            if (connection == null || connection.isStale()) {
+                                deadClients.add(obj);
+                                continue;
+                            }
+
+                            List<ByteBuffer> messages = connection.getPendingMessages();
+
+                            for (ByteBuffer message : messages) {
+                                sendMessage(connection, message);
+                            }
                         }
 
-                        List<ByteBuffer> messages = connection.getPendingMessages();
-
-                        for (ByteBuffer message : messages) {
-                            sendMessage(connection, message);
+                        for (Object key : deadClients) {
+                            logger.debug("Removing client: " + key);
+                            Connection connection = connectionMap.remove(key);
+                            connection.setState(ConnectionState.DISCONNECTED);
                         }
-                    }
 
-                    for (Object key : deadClients) {
-                        logger.debug("Removing client: " + key);
-                        Connection connection = connectionMap.remove(key);
-                        connection.setState(ConnectionState.DISCONNECTED);
+                    } catch (Exception e) {
+                        logger.error("Unknown", e);
                     }
-
-                } catch (Exception e) {
-                    logger.error("Unknown", e);
                 }
+            } catch (InterruptedException e) {
+                logger.warn("Send thread interrupted", e);
             }
         }
+
     }
 }

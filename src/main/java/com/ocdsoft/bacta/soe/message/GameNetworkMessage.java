@@ -1,24 +1,25 @@
 package com.ocdsoft.bacta.soe.message;
 
-import lombok.Getter;
-
-import java.nio.ByteBuffer;
+import com.ocdsoft.bacta.engine.buffer.ByteBufferWritable;
 
 /**
  * Created by Kyle on 3/26/14.
  */
-public abstract class GameNetworkMessage {
+public abstract class GameNetworkMessage implements ByteBufferWritable {
 
-    @Getter
-    private final int priority;
-
-    @Getter
+    private final short priority;
     private final int messageType;
 
-    public GameNetworkMessage(int priority, int messageType) {
+    protected GameNetworkMessage(final short priority, final int messageType) {
         this.priority = priority;
         this.messageType = messageType;
     }
 
-    public abstract ByteBuffer toBuffer();
+    public short getPriority() {
+        return priority;
+    }
+
+    public int getMessageType() {
+        return messageType;
+    }
 }

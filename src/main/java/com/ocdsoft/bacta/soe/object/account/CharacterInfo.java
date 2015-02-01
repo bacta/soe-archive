@@ -1,6 +1,11 @@
 package com.ocdsoft.bacta.soe.object.account;
 
+import com.ocdsoft.bacta.engine.buffer.ByteBufferWritable;
+import com.ocdsoft.bacta.engine.utils.BufferUtil;
 import lombok.Data;
+import lombok.Getter;
+
+import java.nio.ByteBuffer;
 
 /**
  * 
@@ -26,15 +31,52 @@ F6AB978F   -   bothan female
 E7DA1366   -   ithorian female */
 
 @Data
-public class CharacterInfo {
-    public static final int CT_normal = 0x1;
-    public static final int CT_jedi = 0x2;
-    public static final int CT_spectral = 0x3;
+public final class CharacterInfo implements ByteBufferWritable {
+
 
 	private String name; //UnicodeString
     private int objectTemplateId;
     private long networkId; //NetworkId
     private int clusterId;
-    private int characterType;
+    private Type characterType;
     private boolean disabled;
+
+    public CharacterInfo() {
+    }
+
+    public CharacterInfo(ByteBuffer buffer) {
+        name = BufferUtil.getUnicode(buffer);
+        objectTemplateId = buffer.getInt();
+        networkId = buffer.getLong();
+        clusterId = buffer.getInt();
+        characterType = Type.values()[buffer.getInt()];
+    }
+
+    @Override
+    public void writeToBuffer(ByteBuffer buffer) {
+        BufferUtil.putUnicode(buffer, name);
+        buffer.putInt(objectTemplateId);
+        buffer.putLong(networkId);
+        buffer.putInt(clusterId);
+        characterType.writeToBuffer(buffer);
+    }
+
+    public enum Type implements ByteBufferWritable {
+        NONE(0x0),
+        NORMAL(0x1),
+        JEDI(0x2),
+        SPECTRAL(0x3);
+
+        @Getter
+        private int value;
+
+        private Type(int value) {
+            this.value = value;
+        }
+
+        @Override
+        public void writeToBuffer(ByteBuffer buffer) {
+            buffer.putInt(value);
+        }
+    }
 }

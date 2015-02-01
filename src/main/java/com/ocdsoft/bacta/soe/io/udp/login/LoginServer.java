@@ -1,8 +1,10 @@
 package com.ocdsoft.bacta.soe.io.udp.login;
 
 import com.google.inject.Inject;
+import com.google.inject.Injector;
 import com.ocdsoft.bacta.engine.conf.BactaConfiguration;
 import com.ocdsoft.bacta.engine.network.client.ServerStatus;
+import com.ocdsoft.bacta.soe.router.SoeMessageRouter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,16 +17,29 @@ import java.net.UnknownHostException;
 
 public class LoginServer implements Runnable {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass().getSimpleName());
+    private static final Logger logger = LoggerFactory.getLogger(LoginServer.class);
+
+    private final LoginTransceiverFactory loginTransceiverFactory;
+
+    private final BactaConfiguration configuration;
+
+    private final LoginServerState serverState;
+
+    private final Injector injector;
+
+    private LoginTransceiver loginTransceiver;
 
     @Inject
-    private LoginTransceiverFactory loginTransceiverFactory;
+    public LoginServer(final BactaConfiguration configuration,
+                       final LoginTransceiverFactory loginTransceiverFactory,
+                       final LoginServerState serverState,
+                       final Injector injector) {
 
-    @Inject
-    private BactaConfiguration configuration;
-
-    @Inject
-    private LoginServerState serverState;
+        this.configuration = configuration;
+        this.loginTransceiverFactory = loginTransceiverFactory;
+        this.serverState = serverState;
+        this.injector = injector;
+    }
 
     @Override
     public void run() {
@@ -32,20 +47,32 @@ public class LoginServer implements Runnable {
 
         InetAddress bindAddress;
         try {
-            bindAddress = InetAddress.getByName(configuration.getStringWithDefault("Bacta/LoginServer", "BindIp", "127.0.0.1"));
+            bindAddress = InetAddress.getByName(configuration.getString("Bacta/LoginServer", "BindIp"));
         } catch (UnknownHostException e) {
             bindAddress = null;
             logger.error("Unknown Host", e);
         }
-        int port = configuration.getIntWithDefault("Bacta/LoginServer", "Port", 44453);
-        int sendInterval = configuration.getIntWithDefault("Bacta/LoginServer", "SendInterval", 100);
+        int port = configuration.getInt("Bacta/LoginServer", "Port");
+        int sendInterval = configuration.getInt("Bacta/LoginServer", "SendInterval");
+
+        SoeMessageRouter soeMessageRouter = new SoeMessageRouter(
+                injector,
+                configuration.getString("Bacta/LoginServer", "SoeControllerList"),
+                configuration.getString("Bacta/LoginServer", "SwgControllerList")
+        );
 
         serverState.setServerStatus(ServerStatus.LOADING);
 
-        LoginTransceiver transceiver = loginTransceiverFactory.create(bindAddress, port, LoginConnection.class, sendInterval);
+        loginTransceiver = loginTransceiverFactory.create(bindAddress, port, LoginConnection.class, sendInterval, soeMessageRouter);
 
         logger.info("Listening on port " + port);
-        serverState.setServerStatus(ServerStatus.ONLINE);
-        transceiver.run();
+        serverState.setServerStatus(ServerStatus.UP);
+        loginTransceiver.run();
+    }
+
+    public void stop() {
+        if(loginTransceiver != null) {
+            loginTransceiver.stop();
+        }
     }
 }
