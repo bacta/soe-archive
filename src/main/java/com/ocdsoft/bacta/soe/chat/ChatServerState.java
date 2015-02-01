@@ -1,27 +1,27 @@
-package com.ocdsoft.bacta.soe.io.udp.login;
+package com.ocdsoft.bacta.soe.chat;
 
 import com.ocdsoft.bacta.engine.network.client.ServerStatus;
 import com.ocdsoft.bacta.soe.ServerState;
 import com.ocdsoft.bacta.soe.ServerType;
 
 /**
- * Created by Kyle on 3/22/14.
+ * Created by crush on 2/1/15.
  */
-public class LoginServerState implements ServerState {
+public class ChatServerState implements ServerState {
     private ServerStatus serverStatus;
 
-    public LoginServerState() {
-        serverStatus = ServerStatus.DOWN;
+    public ChatServerState() {
+        this.serverStatus = ServerStatus.DOWN;
     }
 
     @Override
     public ServerType getServerType() {
-        return ServerType.LOGIN;
+        return ServerType.CHAT;
     }
 
     @Override
     public ServerStatus getServerStatus() {
-        return serverStatus;
+        return this.serverStatus;
     }
 
     @Override
@@ -29,4 +29,3 @@ public class LoginServerState implements ServerState {
         this.serverStatus = status;
     }
 }
-

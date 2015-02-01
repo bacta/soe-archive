@@ -8,7 +8,7 @@ import java.util.Random;
 @Singleton
 public class SWGSessionKeyService implements SessionKeyService {
 
-	private Random random = new Random();
+	private final Random random = new Random();
 	
 	@Override
 	public int getNextKey() {

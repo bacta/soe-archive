@@ -1,8 +1,5 @@
 package com.ocdsoft.bacta.soe.client;
 
-import com.google.inject.Inject;
-import com.google.inject.Injector;
-import com.ocdsoft.bacta.engine.conf.BactaConfiguration;
 import com.ocdsoft.bacta.engine.network.client.ConnectionState;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 import com.ocdsoft.bacta.soe.message.ConnectMessage;
@@ -21,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -37,24 +35,18 @@ public class ClientConnection extends SoeUdpConnection implements Runnable {
     private final Thread sendThread;
 
     @Setter
-    private Function<Void, Void> connectCallback;
+    private Consumer<ClientConnection> connectCallback;
 
     private final int udpSize;
     private final int protocolVersion;
 
     private final SendLoop sendLoop;
-
-    @Inject
-    public ClientConnection(final Injector injector, final BactaConfiguration configuration) {
-
-        soeMessageRouter = new SoeMessageRouter(
-                injector,
-                configuration.getStringWithDefault("Bacta/GameServer/Client", "SoeControllerList", "clientsoecontrollers.lst"),
-                configuration.getStringWithDefault("Bacta/GameServer/Client", "SwgControllerList", "clientswgcontrollers.lst")
-        );
-
-        udpSize = configuration.getIntWithDefault("Bacta/Network", "UdpMaxSize", 496);
-        protocolVersion = configuration.getIntWithDefault("Bacta/Network", "ProtocolVersion", 2);
+    
+    public ClientConnection(final SoeMessageRouter soeMessageRouter, final int udpSize, final int protocolVersion) {
+        
+        this.soeMessageRouter = soeMessageRouter;
+        this.udpSize = udpSize;
+        this.protocolVersion = protocolVersion;
 
         sendLoop = new SendLoop();
         sendThread = new Thread(sendLoop);
@@ -63,10 +55,8 @@ public class ClientConnection extends SoeUdpConnection implements Runnable {
 
     @Override
     public void run() {
-
-        Bootstrap b = new Bootstrap();
-
         try {
+            final Bootstrap b = new Bootstrap();
 
             b.group(new NioEventLoopGroup())
                     .channel(NioDatagramChannel.class)
@@ -90,14 +80,14 @@ public class ClientConnection extends SoeUdpConnection implements Runnable {
     }
 
     @Override
-    public synchronized void connect(final int connectionID) {
+    public synchronized void connect(final int connectionId) {
 
         if(getState() == ConnectionState.ONLINE) {
             confirm();
             return;
         }
 
-        ConnectMessage connectMessage = new ConnectMessage(protocolVersion, connectionID, udpSize);
+        ConnectMessage connectMessage = new ConnectMessage(protocolVersion, connectionId, udpSize);
         sendMessage(connectMessage);
     }
 
@@ -106,7 +96,7 @@ public class ClientConnection extends SoeUdpConnection implements Runnable {
     public synchronized void confirm() {
 
         setState(ConnectionState.ONLINE);
-        connectCallback.apply(null);
+        connectCallback.accept(this);
     }
 
     private class SendLoop implements Runnable {

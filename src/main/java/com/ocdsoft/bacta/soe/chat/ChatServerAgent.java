@@ -1,7 +1,13 @@
 package com.ocdsoft.bacta.soe.chat;
 
+import com.ocdsoft.bacta.engine.conf.BactaConfiguration;
 import com.ocdsoft.bacta.engine.network.client.UdpConnection;
 import com.ocdsoft.bacta.engine.network.io.udp.BasicUdpTransceiver;
+import com.ocdsoft.bacta.soe.chat.message.ChatAgentIdentity;
+import com.ocdsoft.bacta.soe.client.ClientConnection;
+import com.ocdsoft.bacta.soe.router.SoeMessageRouter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.String;
 import java.net.InetAddress;
@@ -17,6 +23,16 @@ import java.nio.ByteBuffer;
  * and receive from the server vice versa.
  */
 public final class ChatServerAgent implements ChatModule, MailModule {
+    private static final Logger logger = LoggerFactory.getLogger(ChatServerAgent.class);
+
+    private final ClientConnection connection;
+
+    public ChatServerAgent(final ClientConnection connection) {
+        this.connection = connection;
+
+        this.connection.connect(0xCCCC); //TODO: use session key service to get a generated code.
+    }
+
     @Override
     public void register(ChatAvatarId avatarId) {
 
