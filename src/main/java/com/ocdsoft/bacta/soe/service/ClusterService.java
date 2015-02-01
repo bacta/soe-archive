@@ -5,6 +5,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.ocdsoft.bacta.engine.data.ConnectionDatabaseConnector;
 import com.ocdsoft.bacta.engine.network.client.ServerStatus;
+import com.ocdsoft.bacta.soe.object.ClusterEntryItem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,7 +20,7 @@ import java.util.TreeSet;
  * Created by kburkhardt on 1/18/15.
  */
 @Singleton
-public class ClusterService<T> {
+public class ClusterService<T extends ClusterEntryItem> {
 
     private static Logger logger = LoggerFactory.getLogger(ClusterService.class);
 
@@ -40,13 +41,12 @@ public class ClusterService<T> {
     private void loadData() throws IllegalAccessException, InvocationTargetException, InstantiationException {
         try {
 
-            LinkedTreeMap<String, LinkedTreeMap<String, Object>> servers = dbConnector.getObject("ClusterList", LinkedTreeMap.class);
+            Set<LinkedTreeMap<String, Object>> servers = dbConnector.getObject("ClusterSet", Set.class);
 
             if (servers != null) {
-                for (String key : servers.keySet()) {
-                    Map<String, Object> serverInfo = servers.get(key);
-                    serverInfo.put("status", ServerStatus.DOWN);
-                    T clusterInfo = clusterEntryConstructor.newInstance(serverInfo);
+                for (LinkedTreeMap<String, Object> clusterInfoMap : servers) {
+                    clusterInfoMap.put("status", ServerStatus.DOWN);
+                    T clusterInfo = clusterEntryConstructor.newInstance(clusterInfoMap);
                     clusterEntrySet.add(clusterInfo);
                 }
             }
@@ -55,13 +55,44 @@ public class ClusterService<T> {
         }
     }
 
-    public void updateClusterInfo(T clusterInfo) {
-        clusterEntrySet.add(clusterInfo);
-        dbConnector.updateObject("ClusterList", this);
+    public void updateClusterInfo(T incomingClusterEntry) {
+
+        for(T clusterEntry : clusterEntrySet) {
+            if(clusterEntry.equals(incomingClusterEntry)) {
+                incomingClusterEntry.setId(clusterEntry.getId());
+                logger.debug("Updating cluster entry: " + incomingClusterEntry);
+                clusterEntrySet.add(incomingClusterEntry);
+                update();
+                return;
+            }
+        }
+
+        int incomingClusterId = incomingClusterEntry.getId();
+        for (T clusterEntry : clusterEntrySet) {
+            if (clusterEntry.getId() == incomingClusterId) {
+                logger.error("Server ID already in use: Existing=" + clusterEntry + " Incoming=" + incomingClusterEntry);
+                return;
+            }
+        }
+
+
+        createNewClusterEntry(incomingClusterEntry);
+    }
+
+    private void createNewClusterEntry(T incomingClusterEntry) {
+        int clusterId = dbConnector.nextClusterId();
+        incomingClusterEntry.setId(clusterId);
+        clusterEntrySet.add(incomingClusterEntry);
+        logger.debug("Created new cluster entry: " + incomingClusterEntry);
+        update();
     }
 
     public Set<T> getClusterEntries() {
         return clusterEntrySet;
+    }
+
+    private void update() {
+        dbConnector.updateObject("ClusterSet", clusterEntrySet);
     }
 
 }

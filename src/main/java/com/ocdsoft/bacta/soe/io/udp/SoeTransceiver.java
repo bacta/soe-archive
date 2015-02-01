@@ -4,6 +4,7 @@ import com.ocdsoft.bacta.engine.network.client.ConnectionState;
 import com.ocdsoft.bacta.engine.network.io.udp.UdpTransceiver;
 import com.ocdsoft.bacta.engine.utils.BufferUtil;
 import com.ocdsoft.bacta.soe.ServerType;
+import com.ocdsoft.bacta.soe.connection.ConnectionRole;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 import com.ocdsoft.bacta.soe.message.UdpPacketType;
 import com.ocdsoft.bacta.soe.protocol.SoeProtocol;
@@ -46,13 +47,16 @@ public abstract class SoeTransceiver<Connection extends SoeUdpConnection> extend
     private final Thread sendThread;
     private final int sendQueueInterval;
 
+    private final Collection<String> whitelistedAddresses;
+
     public SoeTransceiver(final InetAddress bindAddress,
                           final int port,
                           final ServerType serverType,
                           final Class<Connection> connectionClass,
                           final int sendQueueInterval,
                           final SoeMessageRouter soeMessageRouter,
-                          final SoeProtocol soeProtocol) {
+                          final SoeProtocol soeProtocol,
+                          final Collection<String> whitelistedAddresses) {
 
         super(bindAddress, port);
 
@@ -63,6 +67,7 @@ public abstract class SoeTransceiver<Connection extends SoeUdpConnection> extend
             connectionConstructor = connectionClass.getConstructor();
             this.soeMessageRouter = soeMessageRouter;
             this.protocol = soeProtocol;
+            this.whitelistedAddresses = whitelistedAddresses;
 
             ResourceBundle bundle = PropertyResourceBundle.getBundle("messageprocessing");
             protocol.setCompression(bundle.getString("Compression").equalsIgnoreCase("true"));
@@ -90,6 +95,10 @@ public abstract class SoeTransceiver<Connection extends SoeUdpConnection> extend
         Connection connection;
         try {
             connection = connectionConstructor.newInstance();
+            if(whitelistedAddresses.contains(address.getHostString())) {
+                connection.addRole(ConnectionRole.WHITELISTED);
+                logger.info("Whitelisted address connected: " + address.getHostString());
+            }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

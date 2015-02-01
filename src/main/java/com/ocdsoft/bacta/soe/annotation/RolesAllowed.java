@@ -1,6 +1,6 @@
 package com.ocdsoft.bacta.soe.annotation;
 
-import com.ocdsoft.bacta.soe.connection.ConnectionRoles;
+import com.ocdsoft.bacta.soe.connection.ConnectionRole;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -13,5 +13,5 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE})
 public @interface RolesAllowed {
-    ConnectionRoles[] value() default {ConnectionRoles.AUTHENTICATED};
+    ConnectionRole[] value() default {ConnectionRole.AUTHENTICATED};
 }

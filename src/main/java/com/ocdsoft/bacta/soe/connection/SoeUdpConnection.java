@@ -58,7 +58,7 @@ public abstract class SoeUdpConnection extends UdpConnection {
 
     private final FragmentContainer fragmentContainer;
 
-    private final List<ConnectionRoles> roles;
+    private final List<ConnectionRole> roles;
 
     @Getter
     private long lastActivity;
@@ -148,12 +148,15 @@ public abstract class SoeUdpConnection extends UdpConnection {
 
     @Override
     public void setState(ConnectionState state) {
-        this.state = state;
 
-        if(state == ConnectionState.DISCONNECTED) {
+        if(this.state != ConnectionState.DISCONNECTED &&
+                state == ConnectionState.DISCONNECTED) {
+
             Terminate terminate = new Terminate(this.getId(), TerminateReason.NONE);
             sendMessage(terminate);
         }
+
+        this.state = state;
     }
 
     @Override
@@ -183,10 +186,15 @@ public abstract class SoeUdpConnection extends UdpConnection {
     public void terminate(TerminateReason reason) {
         Terminate terminate = new Terminate(id, reason);
         sendMessage(terminate);
+        state = ConnectionState.DISCONNECTED;
     }
 
-    public List<ConnectionRoles> getRoles() {
+    public List<ConnectionRole> getRoles() {
         return roles;
+    }
+
+    public void addRole(ConnectionRole role) {
+        roles.add(role);
     }
 
     @SuppressWarnings("serial")

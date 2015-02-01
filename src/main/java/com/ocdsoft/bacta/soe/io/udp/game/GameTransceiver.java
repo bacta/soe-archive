@@ -33,7 +33,8 @@ public class GameTransceiver extends SoeTransceiver<GameConnection> {
                 gameClientClass,
                 sendQueueInterval,
                 soeMessageRouter,
-                protocol
+                protocol,
+                configuration.getStringCollection("Bacta/GameServer", "TrustedClient")
         );
 
         Thread pingThread = new Thread( new PingServer(bindAddress, pingPort, connectionMap));

@@ -32,7 +32,8 @@ public class LoginTransceiver extends SoeTransceiver<LoginConnection> {
                 gameClientClass,
                 sendQueueInterval,
                 soeMessageRouter,
-                protocol
+                protocol,
+                configuration.getStringCollection("Bacta/LoginServer", "TrustedClient")
         );
 
     }

@@ -3,10 +3,9 @@ package com.ocdsoft.bacta.soe.client;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.ocdsoft.bacta.engine.conf.BactaConfiguration;
+import com.ocdsoft.bacta.engine.network.client.ConnectionState;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 import com.ocdsoft.bacta.soe.message.ConnectMessage;
-import com.ocdsoft.bacta.soe.message.Terminate;
-import com.ocdsoft.bacta.soe.message.TerminateReason;
 import com.ocdsoft.bacta.soe.message.UdpPacketType;
 import com.ocdsoft.bacta.soe.protocol.SoeProtocol;
 import com.ocdsoft.bacta.soe.router.SoeMessageRouter;
@@ -20,7 +19,6 @@ import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.function.Function;
@@ -38,13 +36,8 @@ public class ClientConnection extends SoeUdpConnection implements Runnable {
     private Channel channel;
     private final Thread sendThread;
 
-    private ClientState clientState;
-
     @Setter
     private Function<Void, Void> connectCallback;
-
-    private final InetSocketAddress loginSocketAddress;
-    private final InetSocketAddress gameSocketAddress;
 
     private final int udpSize;
     private final int protocolVersion;
@@ -53,14 +46,6 @@ public class ClientConnection extends SoeUdpConnection implements Runnable {
 
     @Inject
     public ClientConnection(final Injector injector, final BactaConfiguration configuration) {
-        String loginAddress = configuration.getStringWithDefault("Bacta/LoginServer", "BindIp", "127.0.0.1");
-        int loginPort = configuration.getIntWithDefault("Bacta/LoginServer", "Port", 44453);
-        loginSocketAddress = new InetSocketAddress(loginAddress, loginPort);
-
-        String gameAddress = configuration.getStringWithDefault("Bacta/GameServer", "BindIp", "127.0.0.1");
-        int gamePort = configuration.getIntWithDefault("Bacta/GameServer", "Port", 44463);
-        gameSocketAddress = new InetSocketAddress(gameAddress, gamePort);
-
 
         soeMessageRouter = new SoeMessageRouter(
                 injector,
@@ -70,8 +55,6 @@ public class ClientConnection extends SoeUdpConnection implements Runnable {
 
         udpSize = configuration.getIntWithDefault("Bacta/Network", "UdpMaxSize", 496);
         protocolVersion = configuration.getIntWithDefault("Bacta/Network", "ProtocolVersion", 2);
-
-        clientState = ClientState.NONE;
 
         sendLoop = new SendLoop();
         sendThread = new Thread(sendLoop);
@@ -109,12 +92,8 @@ public class ClientConnection extends SoeUdpConnection implements Runnable {
     @Override
     public synchronized void connect(final int connectionID) {
 
-        if(clientState == ClientState.NONE) {
-            setRemoteAddress(loginSocketAddress);
-        } else if(clientState == ClientState.LOGIN) {
-            setRemoteAddress(gameSocketAddress);
-        } else {
-            connectCallback.apply(null);
+        if(getState() == ConnectionState.ONLINE) {
+            confirm();
             return;
         }
 
@@ -126,24 +105,8 @@ public class ClientConnection extends SoeUdpConnection implements Runnable {
     @Override
     public synchronized void confirm() {
 
-        if(clientState == ClientState.NONE) {
-            clientState = ClientState.LOGIN;
-            terminate(TerminateReason.NONE);
-            connect(getId());
-        } else if(clientState == ClientState.LOGIN) {
-            clientState = ClientState.GAME;
-            connectCallback.apply(null);
-        }
-    }
-
-    @Override
-    public synchronized void terminate(TerminateReason reason) {
-        if(clientState != ClientState.LOGIN) {
-            clientState = ClientState.NONE;
-        }
-
-        Terminate terminate = new Terminate(getId(), reason);
-        sendLoop.flushMessage(terminate.slice());
+        setState(ConnectionState.ONLINE);
+        connectCallback.apply(null);
     }
 
     private class SendLoop implements Runnable {
@@ -195,11 +158,5 @@ public class ClientConnection extends SoeUdpConnection implements Runnable {
             DatagramPacket datagramPacket = new DatagramPacket(Unpooled.wrappedBuffer(buffer), getRemoteAddress());
             channel.writeAndFlush(datagramPacket);
         }
-    }
-
-    private enum ClientState {
-        NONE,
-        LOGIN,
-        GAME
     }
 }

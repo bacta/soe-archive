@@ -6,7 +6,7 @@ import com.ocdsoft.bacta.soe.ServerType;
 import com.ocdsoft.bacta.soe.SwgController;
 import com.ocdsoft.bacta.soe.SwgMessageController;
 import com.ocdsoft.bacta.soe.annotation.RolesAllowed;
-import com.ocdsoft.bacta.soe.connection.ConnectionRoles;
+import com.ocdsoft.bacta.soe.connection.ConnectionRole;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 import com.ocdsoft.bacta.soe.message.GameNetworkMessage;
 import com.ocdsoft.bacta.soe.message.ReliableNetworkMessage;
@@ -171,12 +171,7 @@ public final class SwgDevelopMessageRouter<Connection extends SoeUdpConnection> 
                     continue;
                 }
 
-                ConnectionRoles[] connectionRoles = rolesAllowed.value();
-                if(connectionRoles.length == 0) {
-                    logger.warn("No roles are provided, controller is inaccessible, discarding: " + controllerClass.getName());
-                    continue;
-                }
-
+                ConnectionRole[] connectionRoles = rolesAllowed.value();
                 SwgMessageController controller = injector.getInstance(controllerClass);
 
                 int hash = SOECRC32.hashCode(handledMessageClass.getSimpleName());
@@ -206,19 +201,19 @@ public final class SwgDevelopMessageRouter<Connection extends SoeUdpConnection> 
         private final Constructor constructor;
 
         @Getter
-        private final ConnectionRoles[] roles;
+        private final ConnectionRole[] roles;
 
         public ControllerData(final SwgMessageController swgMessageController,
                               final Constructor constructor,
-                              final ConnectionRoles[] roles) {
+                              final ConnectionRole[] roles) {
             this.swgMessageController = swgMessageController;
             this.constructor = constructor;
             this.roles = roles;
 
         }
 
-        public boolean containsRoles(List<ConnectionRoles> userRoles) {
-            for(ConnectionRoles role : roles) {
+        public boolean containsRoles(List<ConnectionRole> userRoles) {
+            for(ConnectionRole role : roles) {
                 if(userRoles.contains(role)) {
                     return true;
                 }
