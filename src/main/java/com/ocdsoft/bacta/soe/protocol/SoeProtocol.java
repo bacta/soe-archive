@@ -54,9 +54,6 @@ public final class SoeProtocol {
 			}
 
             data.rewind();
-            // Exclude Footer
-            data.limit(data.limit() - 3);
-
             return data;
 		}
 
@@ -149,7 +146,7 @@ public final class SoeProtocol {
         zstream.inflateEnd();
 
         out.rewind();
-
+        out.limit(newLength + offset);
         //logger.info("Post-decompress: " + StringUtil.bytesToHex(out.array()) + out.readerIndex() + " : " + out.writerIndex());
         
         return out;
