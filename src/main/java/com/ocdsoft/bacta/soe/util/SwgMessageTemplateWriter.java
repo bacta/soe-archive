@@ -29,6 +29,8 @@ public class SwgMessageTemplateWriter {
 
     private final String messageFilePath;
     private final String messageClassPath;
+    
+    private final String controllerFile;
 
     public SwgMessageTemplateWriter(final ServerType serverEnv) {
 
@@ -48,10 +50,12 @@ public class SwgMessageTemplateWriter {
                 System.getProperty("template.classpath").replace(".", "/") +
                 "/controller/" + serverEnv.name().toLowerCase() + "/server/";
         
-        messageClassPath = System.getProperty("template.classpath") + ".message." + serverEnv.name().toLowerCase() + ".server";
+        messageClassPath = System.getProperty("template.classpath") + ".message." + serverEnv.name().toLowerCase() + ".client";
         messageFilePath = System.getProperty("template.filepath") + "/src/main/java/" +
                 System.getProperty("template.classpath").replace(".", "/") +
-                "/message/" + serverEnv.name().toLowerCase() + "/server/";
+                "/message/" + serverEnv.name().toLowerCase() + "/client/";
+
+        controllerFile = System.getProperty("template.filepath") + "/src/main/resources/" + serverEnv.name().toLowerCase() + "swgcontrollers.lst";
     }
 
     public void createFiles(int opcode, ByteBuffer buffer) {
@@ -90,8 +94,8 @@ public class SwgMessageTemplateWriter {
         String messageStruct = SoeMessageUtil.makeMessageStruct(buffer);
         context.put("messageStruct", messageStruct);
 
-        context.put("priority", "0x" + Integer.toHexString(buffer.getShort(6)));
-        context.put("opcode", "0x" + Integer.toHexString(buffer.getInt(8)));
+        context.put("priority", "0x" + Integer.toHexString(buffer.getShort(0)));
+        context.put("opcode", "0x" + Integer.toHexString(buffer.getInt(2)));
 
         /* lets render a template */
 
@@ -147,6 +151,14 @@ public class SwgMessageTemplateWriter {
 
             writer.flush();
             writer.close();
+
+            BufferedWriter controllerFileWriter = new BufferedWriter(new FileWriter(new File(controllerFile), true));
+            controllerFileWriter.append(controllerClassPath + "." + className);
+            controllerFileWriter.newLine();
+
+            controllerFileWriter.flush();
+            controllerFileWriter.close();
+            
         } catch(Exception e) {
             logger.error("Unable to write controller", e);
         }

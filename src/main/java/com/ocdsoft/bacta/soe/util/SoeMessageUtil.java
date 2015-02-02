@@ -1,6 +1,7 @@
 package com.ocdsoft.bacta.soe.util;
 
 import com.ocdsoft.bacta.engine.utils.BufferUtil;
+import org.joda.time.DateTimeZone;
 
 import java.nio.ByteBuffer;
 
@@ -25,4 +26,12 @@ public class SoeMessageUtil {
         return builder.toString();
     }
 
+    public static int getTimeZoneValue() {
+        return DateTimeZone.getDefault().getOffset(null) / 1000;
+    }
+
+    public static String getTimeZoneOffsetFromValue(int value) {
+        DateTimeZone zone = DateTimeZone.forOffsetMillis(value * 1000);
+        return zone.toString();
+    }
 }

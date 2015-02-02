@@ -88,7 +88,7 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection> {
         SoeUdpConnection connection;
         try {
             connection = new SoeUdpConnection();
-            if(whitelistedAddresses.contains(address.getHostString())) {
+            if(whitelistedAddresses != null && whitelistedAddresses.contains(address.getHostString())) {
                 connection.addRole(ConnectionRole.WHITELISTED);
                 logger.info("Whitelisted address connected: " + address.getHostString());
             }

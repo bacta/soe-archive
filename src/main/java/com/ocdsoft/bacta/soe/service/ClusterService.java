@@ -59,6 +59,7 @@ public class ClusterService<T extends ClusterEntryItem> {
 
         for(T clusterEntry : clusterEntrySet) {
             if(clusterEntry.equals(incomingClusterEntry)) {
+                clusterEntrySet.remove(clusterEntry);
                 incomingClusterEntry.setId(clusterEntry.getId());
                 logger.debug("Updating cluster entry: " + incomingClusterEntry);
                 clusterEntrySet.add(incomingClusterEntry);
