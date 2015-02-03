@@ -25,7 +25,7 @@ import java.util.function.Function;
  * Created by kburkhardt on 1/26/15.
  */
 
-public class ClientConnection extends SoeUdpConnection implements Runnable {
+public final class ClientConnection extends SoeUdpConnection implements Runnable {
     private static final Logger logger = LoggerFactory.getLogger(ClientConnection.class);
     private static final SoeProtocol protocol = new SoeProtocol();
 

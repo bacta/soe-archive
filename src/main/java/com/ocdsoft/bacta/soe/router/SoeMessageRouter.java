@@ -2,6 +2,7 @@ package com.ocdsoft.bacta.soe.router;
 
 import com.google.inject.Injector;
 import com.ocdsoft.bacta.engine.conf.BactaConfiguration;
+import com.ocdsoft.bacta.engine.utils.BufferUtil;
 import com.ocdsoft.bacta.soe.ServerState;
 import com.ocdsoft.bacta.soe.SoeController;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
@@ -53,7 +54,7 @@ public final class SoeMessageRouter {
 
         try {
 
-            logger.trace("Routing to " + controller.getClass().getSimpleName());
+            logger.trace("Routing to " + controller.getClass().getSimpleName() + ": " + BufferUtil.bytesToHex(buffer));
             controller.handleIncoming(zeroByte, packetType, client, buffer);
 
         } catch (Exception e) {

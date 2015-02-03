@@ -5,6 +5,7 @@ import org.apache.velocity.Template;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
 import org.apache.velocity.runtime.RuntimeConstants;
+import org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,8 +24,13 @@ public class SwgMessageTemplateWriter {
     private final VelocityEngine ve;
     private final ServerType serverEnv;
 
-    private final String controllerPath;
-    private final String messagePath;
+    private final String controllerClassPath;
+    private final String controllerFilePath;
+
+    private final String messageFilePath;
+    private final String messageClassPath;
+    
+    private final String controllerFile;
 
     public SwgMessageTemplateWriter(final ServerType serverEnv) {
 
@@ -32,85 +38,67 @@ public class SwgMessageTemplateWriter {
 
         ve = new VelocityEngine();
         ve.setProperty(RuntimeConstants.RUNTIME_LOG_LOGSYSTEM_CLASS, logger);
-        ve.setProperty(RuntimeConstants.RESOURCE_LOADER, "class");
+        ve.setProperty(RuntimeConstants.RESOURCE_LOADER, "classpath");
+        ve.setProperty("classpath.resource.loader.class", ClasspathResourceLoader.class.getName());
 
 
         ve.setProperty(RuntimeConstants.FILE_RESOURCE_LOADER_CACHE, "true");
         ve.init();
 
-        controllerPath = System.getProperty("project.classpath") + ".controller." + serverEnv.name().toLowerCase() + ".server";
-        messagePath = System.getProperty("project.classpath") + ".message." + serverEnv.name().toLowerCase() + ".server";
+        controllerClassPath = System.getProperty("template.classpath") + ".controller." + serverEnv.name().toLowerCase() + ".server";
+        controllerFilePath = System.getProperty("template.filepath") + "/src/main/java/" +
+                System.getProperty("template.classpath").replace(".", "/") +
+                "/controller/" + serverEnv.name().toLowerCase() + "/server/";
+        
+        messageClassPath = System.getProperty("template.classpath") + ".message." + serverEnv.name().toLowerCase() + ".client";
+        messageFilePath = System.getProperty("template.filepath") + "/src/main/java/" +
+                System.getProperty("template.classpath").replace(".", "/") +
+                "/message/" + serverEnv.name().toLowerCase() + "/client/";
+
+        controllerFile = System.getProperty("template.filepath") + "/src/main/resources/" + serverEnv.name().toLowerCase() + "swgcontrollers.lst";
     }
 
     public void createFiles(int opcode, ByteBuffer buffer) {
 
         String messageName = ClientString.get(opcode);
-        String messageClass = messagePath + "." + messageName;
-
+        
         if (messageName.isEmpty() || messageName.equalsIgnoreCase("unknown")) {
             logger.error("Unknown message opcode: 0x" + Integer.toHexString(opcode));
             return;
         }
 
         writeMessage(messageName, buffer);
-        writeController(messageName, messageClass);
+        writeController(messageName);
     }
 
     public void deleteFiles(int opcode) {
 
     }
 
-    private void writeController(String messageName, String messageClasspath) {
-
-        String className = messageName + "Controller";
-
-        Template t = ve.getTemplate("/templates/swgcontroller.vm");
-
-        VelocityContext context = new VelocityContext();
-
-        context.put("packageName", messagePath);
-        context.put("messageClasspath", messageClasspath);
-        context.put("serverType", "ServerType." + serverEnv);
-        context.put("messageName", messageName);
-        context.put("messageNameClass", messageName + ".class");
-        context.put("className", className);
-
-        /* lets render a template */
-        String outFileName = System.getProperty("user.dir") + "/swg/src/main/java/com/ocdsoft/bacta/swg/server/" + serverEnv.getGroup() + "/controller/" + className + ".java";
-        try {
-            BufferedWriter writer = new BufferedWriter(new FileWriter(new File(outFileName)));
-
-            if (!ve.evaluate(context, writer, t.getName(), "")) {
-                throw new Exception("Failed to convert the template into class.");
-            }
-
-            t.merge(context, writer);
-
-            writer.flush();
-            writer.close();
-        } catch(Exception e) {
-            logger.error("Unable to write controller", e);
-        }
-    }
-
     private void writeMessage(String messageName, ByteBuffer buffer)  {
 
+        String outFileName = messageFilePath + messageName + ".java";
+        File file = new File(outFileName);
+        if(file.exists()) {
+            logger.info("'" + messageName + "' already exists");
+            return;
+        }
+        
         Template t = ve.getTemplate("/templates/swgmessage.vm");
 
         VelocityContext context = new VelocityContext();
 
-        context.put("packageName", "com.ocdsoft.bacta.swg.server." + serverEnv.getGroup() + ".message");
+        context.put("packageName", messageClassPath);
         context.put("messageName", messageName);
 
         String messageStruct = SoeMessageUtil.makeMessageStruct(buffer);
         context.put("messageStruct", messageStruct);
 
-        context.put("priority", "0x" + Integer.toHexString(buffer.getShort(6)));
-        context.put("opcode", "0x" + Integer.toHexString(buffer.getInt(8)));
+        context.put("priority", "0x" + Integer.toHexString(buffer.getShort(0)));
+        context.put("opcode", "0x" + Integer.toHexString(buffer.getInt(2)));
 
         /* lets render a template */
 
-        String outFileName = System.getProperty("user.dir") + "/swg/src/main/java/com/ocdsoft/bacta/swg/server/" + serverEnv.getGroup() + "/message/" + messageName + ".java";
         try {
             BufferedWriter writer = new BufferedWriter(new FileWriter(new File(outFileName)));
 
@@ -127,4 +115,54 @@ public class SwgMessageTemplateWriter {
         }
 
     }
+    
+    private void writeController(String messageName) {
+
+        String className = messageName + "Controller";
+        
+        String outFileName = controllerFilePath + className + ".java";
+        File file = new File(outFileName);
+        if(file.exists()) {
+            logger.info("'" + className + "' already exists");
+            return;
+        }
+
+        Template t = ve.getTemplate("/templates/swgcontroller.vm");
+
+        VelocityContext context = new VelocityContext();
+
+        context.put("packageName", controllerClassPath);
+        context.put("messageClasspath", messageClassPath);
+        context.put("serverType", "ServerType." + serverEnv);
+        context.put("messageName", messageName);
+        context.put("messageNameClass", messageName + ".class");
+        context.put("className", className);
+
+        /* lets render a template */
+        
+        try {
+            BufferedWriter writer = new BufferedWriter(new FileWriter(new File(outFileName)));
+
+            if (!ve.evaluate(context, writer, t.getName(), "")) {
+                throw new Exception("Failed to convert the template into class.");
+            }
+
+            t.merge(context, writer);
+
+            writer.flush();
+            writer.close();
+
+            BufferedWriter controllerFileWriter = new BufferedWriter(new FileWriter(new File(controllerFile), true));
+            controllerFileWriter.append(controllerClassPath + "." + className);
+            controllerFileWriter.newLine();
+
+            controllerFileWriter.flush();
+            controllerFileWriter.close();
+            
+        } catch(Exception e) {
+            logger.error("Unable to write controller", e);
+        }
+    }
+
+
 }

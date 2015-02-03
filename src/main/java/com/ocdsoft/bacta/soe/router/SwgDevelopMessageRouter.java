@@ -119,6 +119,10 @@ public final class SwgDevelopMessageRouter implements SwgMessageRouter {
 
         for(String className : classNameList) {
 
+            if(className.isEmpty()) {
+                continue;
+            }
+            
             try {
                 Class<? extends SwgMessageController> controllerClass = (Class<? extends SwgMessageController>) Class.forName(className);;
 
@@ -192,13 +196,14 @@ public final class SwgDevelopMessageRouter implements SwgMessageRouter {
         }
 
         public boolean containsRoles(List<ConnectionRole> userRoles) {
+            
             for(ConnectionRole role : roles) {
                 if(userRoles.contains(role)) {
                     return true;
                 }
             }
-
-            return false;
+            
+            return roles.length == 0;
         }
     }
 }

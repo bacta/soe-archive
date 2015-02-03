@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 /**
  *
@@ -27,20 +28,31 @@ public class GameServer implements Runnable {
 
     private final ConnectionServerAgent connectionServerAgent;
 
-    private final Injector injector;
-
-    private SoeTransceiver transceiver;
+    private final SoeTransceiver transceiver;
 
     @Inject
     public GameServer(final BactaConfiguration configuration,
                       final GameServerState serverState,
                       final ConnectionServerAgent connectionServerAgent,
-                      final Injector injector) {
+                      final Injector injector) throws UnknownHostException {
 
         this.configuration = configuration;
         this.serverState = serverState;
         this.connectionServerAgent = connectionServerAgent;
-        this.injector = injector;
+
+        SoeMessageRouter soeMessageRouter = new SoeMessageRouter(
+                injector,
+                configuration.getString("Bacta/GameServer", "SoeControllerList"),
+                configuration.getString("Bacta/GameServer", "SwgControllerList")
+        );
+
+        transceiver = new SoeTransceiver(
+                InetAddress.getByName(configuration.getString("Bacta/GameServer", "BindIp")),
+                configuration.getInt("Bacta/GameServer", "Port"),
+                ServerType.GAME,
+                configuration.getInt("Bacta/GameServer", "SendInterval"),
+                soeMessageRouter,
+                configuration.getStringCollection("Bacta/GameServer", "TrustedClient"));
     }
 
     @Override
@@ -50,20 +62,6 @@ public class GameServer implements Runnable {
 
             Thread agentThread = new Thread(connectionServerAgent);
             agentThread.start();
-
-            SoeMessageRouter soeMessageRouter = new SoeMessageRouter(
-                    injector,
-                    configuration.getString("Bacta/GameServer", "SoeControllerList"),
-                    configuration.getString("Bacta/GameServer", "SwgControllerList")
-            );
-
-            transceiver = new SoeTransceiver(
-                    InetAddress.getByName(configuration.getString("Bacta/GameServer", "BindIp")),
-                    configuration.getInt("Bacta/GameServer", "Port"),
-                    ServerType.GAME,
-                    configuration.getInt("Bacta/GameServer", "SendInterval"),
-                    soeMessageRouter,
-                    configuration.getStringCollection("Bacta/GameServer", "TrustedClient"));
 
             Thread pingThread = new Thread(new PingServer(
                     InetAddress.getByName(configuration.getString("Bacta/GameServer", "BindIp")),

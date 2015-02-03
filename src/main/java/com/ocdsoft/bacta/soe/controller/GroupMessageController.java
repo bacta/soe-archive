@@ -17,7 +17,7 @@ public class GroupMessageController extends BaseSoeController {
     @Override
     public void handleIncoming(byte zeroByte, UdpPacketType type, SoeUdpConnection connection, ByteBuffer buffer) {
 
-        while (buffer.hasRemaining()) {
+        while (buffer.remaining() > 3) {
 
             int length = UnsignedUtil.getUnsignedByte(buffer);
             ByteBuffer slicedBuffer = buffer.slice();
