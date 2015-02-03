@@ -10,9 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
-import java.util.Map;
 
 /**
  * Created by crush on 1/12/2015.
@@ -62,8 +60,8 @@ public final class ChatServer implements Runnable {
         this.chatModule = (ChatModule) chatModuleClass.newInstance();
         this.mailModule = (MailModule) mailModuleClass.newInstance();
 
-        final String soeControllerFileName = configuration.getString("Bacta/ChatServer", "soeControllerFileName");
-        final String swgControllerFileName = configuration.getString("Bacta/ChatServer", "swgControllerFileName");
+        final String soeControllerFileName = configuration.getString("Bacta/ChatServer", "soeControllerList");
+        final String swgControllerFileName = configuration.getString("Bacta/ChatServer", "swgControllerList");
 
         this.router = new SoeMessageRouter(injector, soeControllerFileName, swgControllerFileName);
 
