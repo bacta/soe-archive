@@ -1,5 +1,6 @@
 package com.ocdsoft.bacta.soe.controller;
 
+import com.ocdsoft.bacta.engine.utils.BufferUtil;
 import com.ocdsoft.bacta.engine.utils.UnsignedUtil;
 import com.ocdsoft.bacta.soe.SoeController;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
@@ -19,9 +20,16 @@ public class GroupMessageController extends BaseSoeController {
 
         while (buffer.remaining() > 3) {
 
+            logger.trace("Buffer: {} {}", buffer, BufferUtil.bytesToHex(buffer));
+
             int length = UnsignedUtil.getUnsignedByte(buffer);
+
+            logger.trace("Length: {}", length);
+
             ByteBuffer slicedBuffer = buffer.slice();
             slicedBuffer.limit(length);
+
+            logger.trace("Slice: {} {}", slicedBuffer, BufferUtil.bytesToHex(slicedBuffer));
 
             soeMessageRouter.routeMessage(connection, slicedBuffer);
 
