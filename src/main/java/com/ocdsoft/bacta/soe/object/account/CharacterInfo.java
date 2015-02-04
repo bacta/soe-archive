@@ -31,7 +31,7 @@ F6AB978F   -   bothan female
 E7DA1366   -   ithorian female */
 
 @Data
-public final class CharacterInfo implements ByteBufferWritable {
+public final class CharacterInfo implements ByteBufferWritable, Comparable<CharacterInfo> {
 
 
 	private String name; //UnicodeString
@@ -59,6 +59,11 @@ public final class CharacterInfo implements ByteBufferWritable {
         buffer.putLong(networkId);
         buffer.putInt(clusterId);
         characterType.writeToBuffer(buffer);
+    }
+
+    @Override
+    public int compareTo(CharacterInfo o) {
+        return name.compareTo(o.name);
     }
 
     public enum Type implements ByteBufferWritable {
