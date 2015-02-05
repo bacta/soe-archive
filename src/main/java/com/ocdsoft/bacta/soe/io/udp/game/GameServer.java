@@ -53,6 +53,8 @@ public class GameServer implements Runnable {
                 configuration.getInt("Bacta/GameServer", "SendInterval"),
                 soeMessageRouter,
                 configuration.getStringCollection("Bacta/GameServer", "TrustedClient"));
+
+        connectionServerAgent.setTransceiver(transceiver);
     }
 
     @Override

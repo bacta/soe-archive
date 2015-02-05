@@ -68,6 +68,7 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection> {
             connectionMap = new ConcurrentHashMap<>();
 
             sendThread = new Thread(new SendLoop());
+            sendThread.setName(serverType.name() + " Send Thread");
             sendThread.start();
 
         } catch (SecurityException e) {
@@ -84,7 +85,7 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection> {
      * @throws Exception
      * @since 1.0
      */
-    protected final SoeUdpConnection createConnection(InetSocketAddress address) throws RuntimeException {
+    private final SoeUdpConnection createConnection(InetSocketAddress address) throws RuntimeException {
         SoeUdpConnection connection;
         try {
             connection = new SoeUdpConnection();
@@ -97,6 +98,25 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection> {
         }
         connection.setRemoteAddress(address);
         return connection;
+    }
+
+    public final void createOutgoingConnection(final SoeUdpConnection connection) throws RuntimeException {
+        try {
+            if(whitelistedAddresses != null && whitelistedAddresses.contains(connection.getRemoteAddress().getHostString())) {
+                connection.addRole(ConnectionRole.WHITELISTED);
+                logger.debug("Whitelisted address connected: " + connection.getRemoteAddress().getHostString());
+            }
+
+            connectionMap.put(connection.getRemoteAddress(), connection);
+
+            logger.debug("{} connection to {} now has {} total connected clients.",
+                    connection.getClass().getSimpleName(),
+                    connection.getRemoteAddress(),
+                    connectionMap.size());
+            
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -122,15 +142,17 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection> {
                         connection.getClass().getSimpleName(),
                         sender,
                         connectionMap.size());
-            } else {
+                
+            } else  {
 
                 if(connection == null) {
                     logger.debug("Unsolicited Message from " + sender + ": " + BufferUtil.bytesToHex(buffer));
                     return;
                 }
 
-                buffer = protocol.decode(connection.getSessionKey(), buffer.order(ByteOrder.LITTLE_ENDIAN));
-
+                if (packetType != UdpPacketType.cUdpPacketConfirm) {
+                    buffer = protocol.decode(connection.getSessionKey(), buffer.order(ByteOrder.LITTLE_ENDIAN));
+                }
             }
 
             if(buffer != null) {
@@ -149,7 +171,7 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection> {
 
         UdpPacketType packetType = UdpPacketType.values()[buffer.get(1)];
 
-        if (packetType != UdpPacketType.cUdpPacketConfirm) {
+        if (packetType != UdpPacketType.cUdpPacketConnect && packetType != UdpPacketType.cUdpPacketConfirm) {
             buffer = protocol.encode(connection.getSessionKey(), buffer, true);
             protocol.appendCRC(connection.getSessionKey(), buffer, 2);
             buffer.rewind();

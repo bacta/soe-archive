@@ -18,8 +18,9 @@ import java.util.Queue;
 import java.util.ResourceBundle;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
-public class SoeUdpConnection extends UdpConnection {
+public final class SoeUdpConnection extends UdpConnection {
 
     private static final Logger logger = LoggerFactory.getLogger(SoeUdpConnection.class);
     private static ResourceBundle messageProperties;
@@ -62,6 +63,9 @@ public class SoeUdpConnection extends UdpConnection {
 
     @Getter
     private long lastActivity;
+
+    @Setter
+    private Consumer<SoeUdpConnection> connectCallback;
 
 //    private final ByteBuffer outgoingBuffer;
 
@@ -175,12 +179,21 @@ public class SoeUdpConnection extends UdpConnection {
         return null;
     }
 
-    public void connect(final int connectionID) {
-        // Not implemented in Server based connections
+    public void connect(final int protocolVersion, final int connectionId, final int udpSize) {
+        if(getState() == ConnectionState.ONLINE) {
+            confirm();
+            return;
+        }
+
+        ConnectMessage connectMessage = new ConnectMessage(protocolVersion, connectionId, udpSize);
+        sendMessage(connectMessage);
     }
 
     public void confirm() {
-        // Not implemented in Server based connections
+        setState(ConnectionState.ONLINE);
+        if(connectCallback != null) {
+            connectCallback.accept(this);
+        }
     }
 
     public List<ConnectionRole> getRoles() {

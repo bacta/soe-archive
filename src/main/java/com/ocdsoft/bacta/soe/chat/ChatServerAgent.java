@@ -1,18 +1,8 @@
 package com.ocdsoft.bacta.soe.chat;
 
-import com.ocdsoft.bacta.engine.conf.BactaConfiguration;
-import com.ocdsoft.bacta.engine.network.client.UdpConnection;
-import com.ocdsoft.bacta.engine.network.io.udp.BasicUdpTransceiver;
-import com.ocdsoft.bacta.soe.chat.message.ChatAgentIdentity;
-import com.ocdsoft.bacta.soe.client.ClientConnection;
-import com.ocdsoft.bacta.soe.router.SoeMessageRouter;
+import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.lang.String;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 
 /**
  * Created by crush on 1/7/2015.
@@ -25,12 +15,12 @@ import java.nio.ByteBuffer;
 public final class ChatServerAgent implements ChatModule, MailModule {
     private static final Logger logger = LoggerFactory.getLogger(ChatServerAgent.class);
 
-    private final ClientConnection connection;
+    private final SoeUdpConnection connection;
 
-    public ChatServerAgent(final ClientConnection connection) {
+    public ChatServerAgent(final SoeUdpConnection connection) {
         this.connection = connection;
 
-        this.connection.connect(0xCCCC); //TODO: use session key service to get a generated code.
+        //this.connection.connect(0xCCCC); //TODO: use session key service to get a generated code.
     }
 
     @Override
