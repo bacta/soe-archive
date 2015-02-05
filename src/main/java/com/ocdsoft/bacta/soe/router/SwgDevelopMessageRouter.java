@@ -133,20 +133,7 @@ public final class SwgDevelopMessageRouter implements SwgMessageRouter {
                     continue;
                 }
 
-                Class<?> handledMessageClass = controllerAnnotation.handles();
-
-                boolean match = false;
-
-                for (ServerType server : controllerAnnotation.server()) {
-                    if (server == serverEnv) {
-                        match = true;
-                    }
-                }
-
-                if (!match) {
-                    continue;
-                }
-
+                Class<?> handledMessageClass = controllerAnnotation.value();
 
                 RolesAllowed rolesAllowed = controllerClass.getAnnotation(RolesAllowed.class);
                 if(rolesAllowed == null) {
