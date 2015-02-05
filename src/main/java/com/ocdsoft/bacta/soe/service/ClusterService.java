@@ -55,7 +55,7 @@ public class ClusterService<T extends ClusterEntryItem> {
         }
     }
 
-    public void updateClusterInfo(T incomingClusterEntry) {
+    public T updateClusterInfo(T incomingClusterEntry) {
 
         for(T clusterEntry : clusterEntrySet) {
             if(clusterEntry.equals(incomingClusterEntry)) {
@@ -64,7 +64,7 @@ public class ClusterService<T extends ClusterEntryItem> {
                 logger.debug("Updating cluster entry: " + incomingClusterEntry);
                 clusterEntrySet.add(incomingClusterEntry);
                 update();
-                return;
+                return incomingClusterEntry;
             }
         }
 
@@ -72,12 +72,14 @@ public class ClusterService<T extends ClusterEntryItem> {
         for (T clusterEntry : clusterEntrySet) {
             if (clusterEntry.getId() == incomingClusterId) {
                 logger.error("Server ID already in use: Existing=" + clusterEntry + " Incoming=" + incomingClusterEntry);
-                return;
+                return null;
             }
         }
 
 
         createNewClusterEntry(incomingClusterEntry);
+        
+        return incomingClusterEntry;
     }
 
     private void createNewClusterEntry(T incomingClusterEntry) {
