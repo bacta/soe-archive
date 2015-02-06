@@ -52,12 +52,12 @@ public final class SwgDevelopMessageRouter implements SwgMessageRouter {
         ControllerData controllerData = controllers.get(opcode);
         if(controllerData != null) {
             if(!hasControllerAccess(connection, controllerData)) {
-                logger.error("Controller security blocked access:" + controllerData.getSwgMessageController().getClass().getName());
+                logger.error("Controller security blocked access:" + controllerData.getGameNetworkMessageController().getClass().getName());
                 logger.error("Connection: " + connection.toString());
                 return;
             }
 
-            SwgMessageController controller = controllerData.getSwgMessageController();
+            GameNetworkMessageController controller = controllerData.getGameNetworkMessageController();
             Constructor<? extends GameNetworkMessage> constructor = controllerData.getConstructor();
             try {
 
@@ -120,9 +120,9 @@ public final class SwgDevelopMessageRouter implements SwgMessageRouter {
             }
             
             try {
-                Class<? extends SwgMessageController> controllerClass = (Class<? extends SwgMessageController>) Class.forName(className);
+                Class<? extends GameNetworkMessageController> controllerClass = (Class<? extends GameNetworkMessageController>) Class.forName(className);
 
-                SwgController controllerAnnotation = controllerClass.getAnnotation(SwgController.class);
+                GameNetworkMessageHandled controllerAnnotation = controllerClass.getAnnotation(GameNetworkMessageHandled.class);
 
                 if (controllerAnnotation == null) {
                     logger.warn("Missing @SwgController annotation, discarding: " + controllerClass.getName());
@@ -138,7 +138,7 @@ public final class SwgDevelopMessageRouter implements SwgMessageRouter {
                 }
 
                 ConnectionRole[] connectionRoles = rolesAllowed.value();
-                SwgMessageController controller = injector.getInstance(controllerClass);
+                GameNetworkMessageController controller = injector.getInstance(controllerClass);
 
                 int hash = SOECRC32.hashCode(handledMessageClass.getSimpleName());
                 Constructor constructor = handledMessageClass.getConstructor(ByteBuffer.class);
@@ -161,7 +161,7 @@ public final class SwgDevelopMessageRouter implements SwgMessageRouter {
 
     private class ControllerData {
         @Getter
-        private final SwgMessageController swgMessageController;
+        private final GameNetworkMessageController gameNetworkMessageController;
 
         @Getter
         private final Constructor constructor;
@@ -169,10 +169,10 @@ public final class SwgDevelopMessageRouter implements SwgMessageRouter {
         @Getter
         private final ConnectionRole[] roles;
 
-        public ControllerData(final SwgMessageController swgMessageController,
+        public ControllerData(final GameNetworkMessageController gameNetworkMessageController,
                               final Constructor constructor,
                               final ConnectionRole[] roles) {
-            this.swgMessageController = swgMessageController;
+            this.gameNetworkMessageController = gameNetworkMessageController;
             this.constructor = constructor;
             this.roles = roles;
 
