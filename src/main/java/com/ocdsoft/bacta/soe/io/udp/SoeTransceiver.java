@@ -19,6 +19,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 /**
  * Created by kburkhardt on 2/15/14.
@@ -85,10 +86,10 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection> {
      * @throws Exception
      * @since 1.0
      */
-    private final SoeUdpConnection createConnection(InetSocketAddress address) throws RuntimeException {
+    private final SoeUdpConnection createConnection(final InetSocketAddress address) throws RuntimeException {
         SoeUdpConnection connection;
         try {
-            connection = new SoeUdpConnection();
+            connection = new SoeUdpConnection(address, null);
             if(whitelistedAddresses != null && whitelistedAddresses.contains(address.getHostString())) {
                 connection.addRole(ConnectionRole.WHITELISTED);
                 logger.info("Whitelisted address connected: " + address.getHostString());
@@ -96,12 +97,14 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection> {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        connection.setRemoteAddress(address);
         return connection;
     }
 
-    public final void createOutgoingConnection(final SoeUdpConnection connection) throws RuntimeException {
+    public final SoeUdpConnection createOutgoingConnection(final InetSocketAddress address, final Consumer<SoeUdpConnection> connectCallback) throws RuntimeException {
+
         try {
+            SoeUdpConnection connection = new SoeUdpConnection(address, connectCallback);
+
             if(whitelistedAddresses != null && whitelistedAddresses.contains(connection.getRemoteAddress().getHostString())) {
                 connection.addRole(ConnectionRole.WHITELISTED);
                 logger.debug("Whitelisted address connected: " + connection.getRemoteAddress().getHostString());
@@ -113,6 +116,8 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection> {
                     connection.getClass().getSimpleName(),
                     connection.getRemoteAddress(),
                     connectionMap.size());
+            
+            return connection;
             
         } catch (Exception e) {
             throw new RuntimeException(e);

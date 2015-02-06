@@ -75,9 +75,9 @@ public final class ChatServerAgentService {
     private final ChatServerAgent createAgent() {
         logger.debug("Creating chat agent.");
 
-        final SoeUdpConnection connection = new SoeUdpConnection();
-        connection.setRemoteAddress(this.chatServerAddress);
-        connection.setConnectCallback(this::onAgentConnected);
+//        final SoeUdpConnection connection = new SoeUdpConnection();
+//        connection.setRemoteAddress(this.chatServerAddress);
+//        connection.setConnectCallback(this::onAgentConnected);
 
         return null;
         //return new ChatServerAgent(protocolVersion, connection, udpSize, transceiver);

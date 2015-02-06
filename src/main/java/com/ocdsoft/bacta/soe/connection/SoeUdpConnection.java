@@ -10,6 +10,7 @@ import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
@@ -64,12 +65,12 @@ public final class SoeUdpConnection extends UdpConnection {
     @Getter
     private long lastActivity;
 
-    @Setter
-    private Consumer<SoeUdpConnection> connectCallback;
+    private final Consumer<SoeUdpConnection> connectCallback;
 
-//    private final ByteBuffer outgoingBuffer;
+    public SoeUdpConnection(final InetSocketAddress remoteAddress, final Consumer<SoeUdpConnection> connectCallback) {
+        this.remoteAddress = remoteAddress;
+        this.connectCallback = connectCallback;
 
-    public SoeUdpConnection() {
         state = ConnectionState.DISCONNECTED;
         udpMessageProcessor = new SoeUdpMessageProcessor(this, messageProperties);
         staleTimeout = Integer.parseInt(messageProperties.getString("staleDisconnect"));
@@ -77,11 +78,8 @@ public final class SoeUdpConnection extends UdpConnection {
         fragmentContainer = new FragmentContainer();
         roles = new ArrayList<>();
         keepAlive();
-
-//        int maxQueueSize = Integer.parseInt(messageProperties.getString("MaxQueueSize"));
-//        int udpMaxSize = Integer.parseInt(messageProperties.getString("UdpMaxSize"));
-//        outgoingBuffer = ByteBuffer.allocate(udpMaxSize * maxQueueSize);
     }
+    
 
     public void sendMessage(SoeMessage message) {
         if (udpMessageProcessor.addUnreliable(message.slice())) {
