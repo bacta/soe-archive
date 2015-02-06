@@ -130,39 +130,41 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection> {
         try {
 
             SoeUdpConnection connection = connectionMap.get(sender);
-
+            UdpPacketType packetType;
+            
             byte type = buffer.get(1);
-            if(type < 0 || type > 0x1E) {
-                throw new RuntimeException("Type out of range:" + type);
+            if(type >= 0 && type <= 0x1E) {
+
+                packetType = UdpPacketType.values()[type];
+
+                if (packetType == UdpPacketType.cUdpPacketConnect) {
+
+                    connection = createConnection(sender);
+                    connectionMap.put(sender, connection);
+
+                    logger.debug("{} connection from {} now has {} total connected clients.",
+                            connection.getClass().getSimpleName(),
+                            sender,
+                            connectionMap.size());
+
+                } else {
+
+                    if (connection == null) {
+                        logger.debug("Unsolicited Message from " + sender + ": " + BufferUtil.bytesToHex(buffer));
+                        return;
+                    }
+
+
+                }
+            } else {
+                packetType = UdpPacketType.cUdpPacketZeroEscape;
             }
 
-            UdpPacketType packetType = UdpPacketType.values()[type];
-
-            if (packetType == UdpPacketType.cUdpPacketConnect) {
-
-                connection = createConnection(sender);
-                connectionMap.put(sender, connection);
-
-                logger.debug("{} connection from {} now has {} total connected clients.",
-                        connection.getClass().getSimpleName(),
-                        sender,
-                        connectionMap.size());
-                
-            } else  {
-
-                if(connection == null) {
-                    logger.debug("Unsolicited Message from " + sender + ": " + BufferUtil.bytesToHex(buffer));
-                    return;
-                }
-
-                if (packetType != UdpPacketType.cUdpPacketConfirm) {
-                    buffer = protocol.decode(connection.getSessionKey(), buffer.order(ByteOrder.LITTLE_ENDIAN));
-                }
+            if (packetType != UdpPacketType.cUdpPacketConnect && packetType != UdpPacketType.cUdpPacketConfirm) {
+                buffer = protocol.decode(connection.getSessionKey(), buffer.order(ByteOrder.LITTLE_ENDIAN));
             }
 
             if(buffer != null) {
-
-
                 soeMessageRouter.routeMessage(connection, buffer);
             }
 

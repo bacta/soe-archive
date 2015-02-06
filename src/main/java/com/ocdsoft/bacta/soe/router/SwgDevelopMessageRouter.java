@@ -1,11 +1,7 @@
 package com.ocdsoft.bacta.soe.router;
 
 import com.google.inject.Injector;
-import com.ocdsoft.bacta.soe.ServerState;
-import com.ocdsoft.bacta.soe.ServerType;
-import com.ocdsoft.bacta.soe.SwgController;
-import com.ocdsoft.bacta.soe.SwgMessageController;
-import com.ocdsoft.bacta.soe.annotation.RolesAllowed;
+import com.ocdsoft.bacta.soe.*;
 import com.ocdsoft.bacta.soe.connection.ConnectionRole;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 import com.ocdsoft.bacta.soe.message.GameNetworkMessage;
@@ -124,7 +120,7 @@ public final class SwgDevelopMessageRouter implements SwgMessageRouter {
             }
             
             try {
-                Class<? extends SwgMessageController> controllerClass = (Class<? extends SwgMessageController>) Class.forName(className);;
+                Class<? extends SwgMessageController> controllerClass = (Class<? extends SwgMessageController>) Class.forName(className);
 
                 SwgController controllerAnnotation = controllerClass.getAnnotation(SwgController.class);
 

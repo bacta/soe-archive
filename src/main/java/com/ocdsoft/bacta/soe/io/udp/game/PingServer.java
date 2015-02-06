@@ -13,7 +13,7 @@ import java.util.Map;
 
 public class PingServer implements Runnable {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass().getSimpleName());
+    private final static Logger logger = LoggerFactory.getLogger(PingServer.class);
 
     private PingTransceiver pingTransceiver;
 

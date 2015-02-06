@@ -100,9 +100,9 @@ public class GameServer implements Runnable {
     }
     
     @Singleton
-    static public class CuOutgoingConnectionService implements OutgoingConnectionService {
+    final static public class CuOutgoingConnectionService implements OutgoingConnectionService {
 
-        BiFunction<InetSocketAddress, Consumer<SoeUdpConnection>, SoeUdpConnection> createConnection;
+        private BiFunction<InetSocketAddress, Consumer<SoeUdpConnection>, SoeUdpConnection> createConnection;
 
         @Override
         public SoeUdpConnection createOutgoingConnection(InetSocketAddress address, Consumer<SoeUdpConnection> connectCallback) {

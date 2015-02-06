@@ -14,6 +14,26 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Created by Kyle on 3/26/14.
  */
+
+/**
+ struct UdpManager::ReliableConfig
+ {
+     int maxOutstandingBytes;
+     int maxOutstandingPackets;
+     int maxInstandingPackets;
+     int fragmentSize;
+     int trickleSize;
+     int trickleRate;
+     int resendDelayAdjust;
+     int resendDelayPercent;
+     int resendDelayCap;
+     int congestionWindowMinimum;
+     bool outOfOrder;
+     bool processOnSend;
+     bool coalesce;
+     bool ackDeduping;
+ };
+ */
 public class ReliableUdpMessageBuilder implements UdpMessageBuilder<ByteBuffer> {
 
     public final Logger logger = LoggerFactory.getLogger(getClass());

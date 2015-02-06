@@ -1,7 +1,6 @@
-package com.ocdsoft.bacta.soe.service.impl;
+package com.ocdsoft.bacta.soe.service;
 
 import com.google.inject.Singleton;
-import com.ocdsoft.bacta.soe.service.SessionKeyService;
 
 import java.util.Random;
 

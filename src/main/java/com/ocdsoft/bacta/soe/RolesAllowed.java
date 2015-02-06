@@ -1,4 +1,4 @@
-package com.ocdsoft.bacta.soe.annotation;
+package com.ocdsoft.bacta.soe;
 
 import com.ocdsoft.bacta.soe.connection.ConnectionRole;
 
