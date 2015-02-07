@@ -61,7 +61,9 @@ public class GameServer implements Runnable {
                 soeMessageRouter,
                 configuration.getStringCollection("Bacta/GameServer", "TrustedClient"));
 
-        ((CuOutgoingConnectionService)outgoingConnectionService).createConnection = transceiver::createOutgoingConnection;
+        ((GameOutgoingConnectionService)outgoingConnectionService).createConnection = transceiver::createOutgoingConnection;
+
+        soeMessageRouter.load();
     }
 
     @Override
@@ -101,12 +103,14 @@ public class GameServer implements Runnable {
     }
     
     @Singleton
-    final static public class CuOutgoingConnectionService implements OutgoingConnectionService {
+    final static public class GameOutgoingConnectionService implements OutgoingConnectionService {
 
         private BiFunction<InetSocketAddress, Consumer<SoeUdpConnection>, SoeUdpConnection> createConnection;
 
         @Override
         public SoeUdpConnection createOutgoingConnection(InetSocketAddress address, Consumer<SoeUdpConnection> connectCallback) {
+            if(createConnection == null) return null;
+            
             return createConnection.apply(address, connectCallback);
         }
     }

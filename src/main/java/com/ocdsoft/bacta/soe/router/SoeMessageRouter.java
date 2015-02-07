@@ -27,11 +27,17 @@ public final class SoeMessageRouter {
 
     private Map<UdpPacketType, SoeMessageController> controllers = new HashMap<>();
 
-    public SoeMessageRouter(Injector injector,
+    private final Injector injector;
+    private final String soeControllerFileName;
+    private final String swgControllerFileName;
+
+    public SoeMessageRouter(final Injector injector,
                             final String soeControllerFileName,
                             final String swgControllerFileName) {
-
-        loadControllers(injector, soeControllerFileName, swgControllerFileName);
+        
+        this.injector = injector;
+        this.soeControllerFileName = soeControllerFileName;
+        this.swgControllerFileName = swgControllerFileName;
     }
 
     public void routeMessage(SoeUdpConnection client, ByteBuffer buffer) {
@@ -62,10 +68,8 @@ public final class SoeMessageRouter {
         }
     }
 
-    private void loadControllers(final Injector injector,
-                                final String soeControllerFileName,
-                                 final String swgControllerFileName) {
-
+    public void load() {
+        
         File file = new File("../conf/" + soeControllerFileName);
         if(!file.exists()) {
             file = new File(getClass().getResource("/" + soeControllerFileName).getFile());
@@ -78,6 +82,8 @@ public final class SoeMessageRouter {
             e.printStackTrace();
             return;
         }
+
+        controllers.clear();
 
         ServerState serverState = injector.getInstance(ServerState.class);
         BactaConfiguration configuration = injector.getInstance(BactaConfiguration.class);

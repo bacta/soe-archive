@@ -2,16 +2,22 @@ package com.ocdsoft.bacta.soe.io.udp.login;
 
 import com.google.inject.Inject;
 import com.google.inject.Injector;
+import com.google.inject.Singleton;
 import com.ocdsoft.bacta.engine.conf.BactaConfiguration;
 import com.ocdsoft.bacta.engine.network.client.ServerStatus;
 import com.ocdsoft.bacta.soe.ServerType;
+import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 import com.ocdsoft.bacta.soe.io.udp.SoeTransceiver;
 import com.ocdsoft.bacta.soe.router.SoeMessageRouter;
+import com.ocdsoft.bacta.soe.service.OutgoingConnectionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
 
 /**
  * Created by kburkhardt on 2/14/14.
@@ -30,6 +36,7 @@ public class LoginServer implements Runnable {
     @Inject
     public LoginServer(final BactaConfiguration configuration,
                        final LoginServerState serverState,
+                       final OutgoingConnectionService outgoingConnectionService,
                        final Injector injector) throws UnknownHostException {
 
         this.configuration = configuration;
@@ -51,6 +58,9 @@ public class LoginServer implements Runnable {
                 soeMessageRouter,
                 configuration.getStringCollection("Bacta/LoginServer", "TrustedClient"));
 
+        ((LoginOutgoingConnectionService)outgoingConnectionService).createConnection = transceiver::createOutgoingConnection;
+
+        soeMessageRouter.load();
     }
 
     @Override
@@ -70,6 +80,19 @@ public class LoginServer implements Runnable {
     public void stop() {
         if(transceiver != null) {
             transceiver.stop();
+        }
+    }
+
+    @Singleton
+    final static public class LoginOutgoingConnectionService implements OutgoingConnectionService {
+
+        private BiFunction<InetSocketAddress, Consumer<SoeUdpConnection>, SoeUdpConnection> createConnection;
+
+        @Override
+        public SoeUdpConnection createOutgoingConnection(InetSocketAddress address, Consumer<SoeUdpConnection> connectCallback) {
+            if(createConnection == null) return null;
+
+            return createConnection.apply(address, connectCallback);
         }
     }
 }
