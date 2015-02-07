@@ -70,6 +70,7 @@ public class GameServer implements Runnable {
         try {
 
             Thread agentThread = new Thread(connectionServerAgent);
+            agentThread.setName("Connection Server Agent");
             agentThread.start();
 
             Thread pingThread = new Thread(new PingServer(

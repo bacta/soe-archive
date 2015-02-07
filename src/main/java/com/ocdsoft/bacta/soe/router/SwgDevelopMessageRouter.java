@@ -129,13 +129,15 @@ public final class SwgDevelopMessageRouter implements SwgMessageRouter {
                     continue;
                 }
 
-                Class<?> handledMessageClass = controllerAnnotation.value();
 
                 RolesAllowed rolesAllowed = controllerClass.getAnnotation(RolesAllowed.class);
                 if(rolesAllowed == null) {
                     logger.warn("Missing @RolesAllowed annotation, discarding: " + controllerClass.getName());
                     continue;
                 }
+
+                Class<?> handledMessageClass = controllerAnnotation.value();
+
 
                 ConnectionRole[] connectionRoles = rolesAllowed.value();
                 GameNetworkMessageController controller = injector.getInstance(controllerClass);

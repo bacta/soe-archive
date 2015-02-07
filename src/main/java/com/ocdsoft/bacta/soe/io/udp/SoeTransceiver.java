@@ -70,7 +70,6 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection> {
 
             sendThread = new Thread(new SendLoop());
             sendThread.setName(serverType.name() + " Send Thread");
-            sendThread.start();
 
         } catch (SecurityException e) {
 
@@ -187,6 +186,12 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection> {
         handleOutgoing(buffer, connection.getRemoteAddress());
     }
 
+    @Override
+    public final void run() {
+        sendThread.start();
+        super.run();
+    }
+
     public void stop() {
         sendThread.interrupt();
         super.stop();
@@ -198,8 +203,13 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection> {
         public void run() {
 
             long nextIteration = 0;
-
+            
             try {
+
+                while(ctx == null) {
+                    Thread.sleep(100);
+                }
+                
                 while (true) {
 
                     long currentTime = System.currentTimeMillis();
