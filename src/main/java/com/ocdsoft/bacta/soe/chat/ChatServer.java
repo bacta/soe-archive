@@ -3,6 +3,7 @@ package com.ocdsoft.bacta.soe.chat;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.ocdsoft.bacta.engine.conf.BactaConfiguration;
+import com.ocdsoft.bacta.engine.network.client.ServerStatus;
 import com.ocdsoft.bacta.soe.ServerType;
 import com.ocdsoft.bacta.soe.io.udp.SoeTransceiver;
 import com.ocdsoft.bacta.soe.router.SoeMessageRouter;
@@ -18,6 +19,7 @@ import java.net.UnknownHostException;
 public final class ChatServer implements Runnable {
     private static final Logger logger = LoggerFactory.getLogger(ChatServer.class);
 
+    private final ChatServerState serverState;
     private final SoeTransceiver transceiver;
     private final SoeMessageRouter router;
     private final ChatModule chatModule;
@@ -25,16 +27,19 @@ public final class ChatServer implements Runnable {
 
     @Inject
     public ChatServer(final BactaConfiguration configuration,
+                      final ChatServerState serverState,
                       final Injector injector) throws
             ClassNotFoundException,
             IllegalAccessException,
             UnknownHostException,
             InstantiationException {
 
-        final InetAddress bindHost = InetAddress.getByName(configuration.getString("Bacta/ChatServer", "bindHost"));
+        this.serverState = serverState;
+
+        final InetAddress bindAddress = InetAddress.getByName(configuration.getString("Bacta/ChatServer", "bindAddress"));
         final int bindPort = configuration.getInt("Bacta/ChatServer", "bindPort");
 
-        logger.info("Binding to [{}:{}].", bindHost.getHostName(), bindPort);
+        logger.info("Binding to [{}:{}].", bindAddress.getHostName(), bindPort);
 
         final String chatModuleType = configuration.getString("Bacta/ChatServer", "chatModule");
         final String mailModuleType = configuration.getString("Bacta/ChatServer", "mailModule");
@@ -66,7 +71,7 @@ public final class ChatServer implements Runnable {
         this.router = new SoeMessageRouter(injector, soeControllerFileName, swgControllerFileName);
 
         this.transceiver = new SoeTransceiver(
-                bindHost,
+                bindAddress,
                 bindPort,
                 ServerType.CHAT,
                 configuration.getInt("Bacta/ChatServer", "sendInterval"),
@@ -76,5 +81,24 @@ public final class ChatServer implements Runnable {
 
     @Override
     public void run() {
+        logger.info("Starting.");
+
+        try {
+
+            serverState.setServerStatus(ServerStatus.UP);
+
+            transceiver.run();
+
+            serverState.setServerStatus(ServerStatus.DOWN);
+
+        } catch (Exception ex) {
+            logger.error("Error in chat transceiver.", ex);
+        }
+    }
+
+    public void stop() {
+        if (transceiver != null) {
+            transceiver.stop();
+        }
     }
 }
