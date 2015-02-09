@@ -1,6 +1,7 @@
 package com.ocdsoft.bacta.soe.connection;
 
 import com.ocdsoft.bacta.engine.network.client.UdpMessageBuilder;
+import com.ocdsoft.bacta.soe.io.udp.NetworkConfiguration;
 import com.ocdsoft.bacta.soe.message.MultiMessage;
 import com.ocdsoft.bacta.soe.util.SoeMessageUtil;
 import org.slf4j.Logger;
@@ -8,7 +9,6 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.util.Queue;
-import java.util.ResourceBundle;
 import java.util.concurrent.ArrayBlockingQueue;
 
 /**
@@ -19,23 +19,21 @@ public class SoeUdpMessageBuilder implements UdpMessageBuilder<ByteBuffer> {
     private final Logger logger = LoggerFactory.getLogger(getClass().getSimpleName());
 
     private final Queue<ByteBuffer> bufferList;
-    private final int udpMaxMultiPayload;
+    private final NetworkConfiguration configuration;
     private MultiMessage pendingMulti;
     private ByteBuffer pendingBuffer;
-    private boolean multiMessages;
 
-    public SoeUdpMessageBuilder(int udpMaxMultiPayload, final ResourceBundle messageProperties) {
-        bufferList = new ArrayBlockingQueue<>(500);
-        this.udpMaxMultiPayload = udpMaxMultiPayload;
+    public SoeUdpMessageBuilder(final NetworkConfiguration configuration) {
+        this.configuration = configuration;
+        bufferList = new ArrayBlockingQueue<>(configuration.getMaxOutstandingPackets());
         pendingMulti = null;
         pendingBuffer = null;
-        multiMessages = Boolean.parseBoolean(messageProperties.getString("MultiSoeMessages"));
     }
 
     @Override
     public synchronized boolean add(ByteBuffer buffer) {
 
-        if(!multiMessages) {
+        if(!configuration.isMultiSoeMessages()) {
             return bufferList.add(buffer);
         }
 
@@ -45,7 +43,7 @@ public class SoeUdpMessageBuilder implements UdpMessageBuilder<ByteBuffer> {
         logger.trace("  Pending Buffer: " + (pendingBuffer != null));
 
         if(pendingMulti != null) {
-            if(pendingMulti.size() + buffer.remaining() <= udpMaxMultiPayload) {
+            if(pendingMulti.size() + buffer.remaining() <= configuration.getMaxMultiPayload()) {
                 pendingMulti.add(buffer);
                 logger.trace("Appending: " + SoeMessageUtil.bytesToHex(buffer));
             } else {
@@ -57,7 +55,7 @@ public class SoeUdpMessageBuilder implements UdpMessageBuilder<ByteBuffer> {
             }
         } else {
             if(pendingBuffer != null) {
-                if(pendingBuffer.remaining() + buffer.remaining() <= udpMaxMultiPayload) {
+                if(pendingBuffer.remaining() + buffer.remaining() <= configuration.getMaxMultiPayload()) {
                     pendingMulti = new MultiMessage(pendingBuffer, buffer);
                     logger.trace("Combining: " + SoeMessageUtil.bytesToHex(pendingBuffer));
                     logger.trace("Combining: " + SoeMessageUtil.bytesToHex(buffer));

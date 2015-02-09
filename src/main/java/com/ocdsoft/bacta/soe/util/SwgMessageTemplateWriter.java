@@ -45,14 +45,14 @@ public class SwgMessageTemplateWriter {
         ve.setProperty(RuntimeConstants.FILE_RESOURCE_LOADER_CACHE, "true");
         ve.init();
 
-        controllerClassPath = System.getProperty("template.classpath") + ".controller." + serverEnv.name().toLowerCase() + ".server";
+        controllerClassPath = System.getProperty("base.classpath") + ".controller." + serverEnv.name().toLowerCase() + ".server";
         controllerFilePath = System.getProperty("template.filepath") + "/src/main/java/" +
-                System.getProperty("template.classpath").replace(".", "/") +
+                System.getProperty("base.classpath").replace(".", "/") +
                 "/controller/" + serverEnv.name().toLowerCase() + "/server/";
         
-        messageClassPath = System.getProperty("template.classpath") + ".message." + serverEnv.name().toLowerCase() + ".client";
+        messageClassPath = System.getProperty("base.classpath") + ".message." + serverEnv.name().toLowerCase() + ".client";
         messageFilePath = System.getProperty("template.filepath") + "/src/main/java/" +
-                System.getProperty("template.classpath").replace(".", "/") +
+                System.getProperty("base.classpath").replace(".", "/") +
                 "/message/" + serverEnv.name().toLowerCase() + "/client/";
 
         controllerFile = System.getProperty("template.filepath") + "/src/main/resources/" + serverEnv.name().toLowerCase() + "swgcontrollers.lst";

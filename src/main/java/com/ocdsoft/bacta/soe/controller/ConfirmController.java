@@ -2,6 +2,7 @@ package com.ocdsoft.bacta.soe.controller;
 
 import com.ocdsoft.bacta.engine.utils.BufferUtil;
 import com.ocdsoft.bacta.soe.SoeController;
+import com.ocdsoft.bacta.soe.connection.EncryptMethod;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 import com.ocdsoft.bacta.soe.message.UdpPacketType;
 
@@ -14,16 +15,20 @@ public class ConfirmController extends BaseSoeController {
     public void handleIncoming(byte zeroByte, UdpPacketType type, SoeUdpConnection connection, ByteBuffer buffer) {
 
         int connectionID = buffer.getInt();
-        int sessionKey = buffer.getInt();
-        byte crcLength = buffer.get();
-        boolean useComp = BufferUtil.getBoolean(buffer);
+        int encryptCode = buffer.getInt();
+        byte crcBytes = buffer.get();
+        boolean compression = BufferUtil.getBoolean(buffer);
         byte cryptMethod = buffer.get();
-        int udpSize = buffer.getInt();
+        int maxRawPacketSize = buffer.getInt();
 
         connection.setId(connectionID);
-        connection.setSessionKey(sessionKey);
-        connection.setUdpSize(udpSize);
-
+        
+        connection.getConfiguration().setEncryptCode(encryptCode);
+        connection.getConfiguration().setMaxRawPacketSize(maxRawPacketSize);
+        connection.getConfiguration().setCrcBytes(crcBytes);
+        connection.getConfiguration().setEncryptMethod(EncryptMethod.values()[cryptMethod]);
+        connection.getConfiguration().setCompression(compression);
+        
         connection.confirm();
     }
 }

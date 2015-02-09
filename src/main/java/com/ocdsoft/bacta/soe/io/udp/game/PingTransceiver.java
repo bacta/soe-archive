@@ -1,23 +1,18 @@
 package com.ocdsoft.bacta.soe.io.udp.game;
 
-import com.ocdsoft.bacta.engine.network.client.UdpConnection;
 import com.ocdsoft.bacta.engine.network.io.udp.BasicUdpTransceiver;
-import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 import io.netty.channel.socket.DatagramPacket;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.util.Map;
 
 public final class PingTransceiver extends BasicUdpTransceiver {
 
-    private final Map<Object, SoeUdpConnection> connectionMap;
 
-    public PingTransceiver(InetAddress bindAddress, int port, Map<Object, SoeUdpConnection> connectionMap) {
+    public PingTransceiver(InetAddress bindAddress, int port) {
         super(bindAddress, port);
 
-        this.connectionMap = connectionMap;
     }
 
     @Override
@@ -26,20 +21,20 @@ public final class PingTransceiver extends BasicUdpTransceiver {
     }
 
     @Override
-    public void sendMessage(UdpConnection udpConnection, ByteBuffer buffer) {
-        handleOutgoing(buffer, udpConnection.getRemoteAddress());
+    public void sendMessage(InetSocketAddress inetSocketAddress, ByteBuffer buffer) {
+        handleOutgoing(buffer, inetSocketAddress);
     }
 
     @Override
     public void receiveMessage(InetSocketAddress inetSocketAddress, ByteBuffer buffer) {
 
-        SoeUdpConnection connection = connectionMap.get(inetSocketAddress);
-        if(connection != null) {
 
-            ByteBuffer pong = ByteBuffer.allocate(4);
-            pong.putInt(buffer.getInt());
+        ByteBuffer pong = ByteBuffer.allocate(4);
+        pong.putInt(buffer.getInt());
+        pong.rewind();
 
-            sendMessage(connection, pong);
-        }
+        sendMessage(inetSocketAddress, pong);
+
     }
+
 }

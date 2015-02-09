@@ -1,6 +1,5 @@
 package com.ocdsoft.bacta.soe.service;
 
-import com.google.gson.internal.LinkedTreeMap;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.ocdsoft.bacta.engine.data.ConnectionDatabaseConnector;
@@ -41,10 +40,10 @@ public class ClusterService<T extends ClusterEntryItem> {
     private void loadData() throws IllegalAccessException, InvocationTargetException, InstantiationException {
         try {
 
-            Set<LinkedTreeMap<String, Object>> servers = dbConnector.getObject("ClusterSet", Set.class);
+            Set<Map<String, Object>> servers = dbConnector.getObject("ClusterSet", Set.class);
 
             if (servers != null) {
-                for (LinkedTreeMap<String, Object> clusterInfoMap : servers) {
+                for (Map<String, Object> clusterInfoMap : servers) {
                     clusterInfoMap.put("status", ServerStatus.DOWN);
                     T clusterInfo = clusterEntryConstructor.newInstance(clusterInfoMap);
                     clusterEntrySet.add(clusterInfo);

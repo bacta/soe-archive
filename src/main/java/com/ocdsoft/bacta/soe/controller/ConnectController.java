@@ -3,44 +3,79 @@ package com.ocdsoft.bacta.soe.controller;
 import com.google.inject.Inject;
 import com.ocdsoft.bacta.engine.network.client.ConnectionState;
 import com.ocdsoft.bacta.soe.SoeController;
+import com.ocdsoft.bacta.soe.connection.Configuration;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
+import com.ocdsoft.bacta.soe.io.udp.NetworkConfiguration;
 import com.ocdsoft.bacta.soe.message.ConfirmMessage;
+import com.ocdsoft.bacta.soe.message.TerminateReason;
 import com.ocdsoft.bacta.soe.message.UdpPacketType;
 import com.ocdsoft.bacta.soe.protocol.SoeProtocol;
 import com.ocdsoft.bacta.soe.service.SessionKeyService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import javax.management.MBeanServer;
+import java.lang.management.ManagementFactory;
 import java.nio.ByteBuffer;
 
 @SoeController(handles = {UdpPacketType.cUdpPacketConnect})
 public class ConnectController extends BaseSoeController {
+    private static final Logger logger = LoggerFactory.getLogger(ConnectController.class);
 
+    private final NetworkConfiguration networkConfiguration;
     private final SessionKeyService keyService;
-    private final byte cryptMethod;
-    private final byte crcLength;
-    private final boolean useComp;
+    private final MBeanServer mBeanServer;
 
     @Inject
-    public ConnectController(SessionKeyService keyService, SoeProtocol protocol) {
+    public ConnectController(final SessionKeyService keyService, final SoeProtocol protocol, final NetworkConfiguration networkConfiguration) {
+        this.networkConfiguration = networkConfiguration;
         this.keyService = keyService;
-        this.cryptMethod = protocol.getEncryptionID();
-        this.crcLength = 2;
-        this.useComp = true;
+        this.mBeanServer = ManagementFactory.getPlatformMBeanServer();
     }
 
     @Override
     public void handleIncoming(byte zeroByte, UdpPacketType type, SoeUdpConnection connection, ByteBuffer buffer) {
 
         int protocolVersion = buffer.getInt();
+        
+        if(protocolVersion != networkConfiguration.getProtocolVersion()) {
+            connection.terminate(TerminateReason.REFUSED);
+            logger.warn("Client from '{}' attempted to use a non-supported protocol version: {}" + connection.getRemoteAddress().getHostString(), protocolVersion);
+            return;
+        }
+        
         int connectionId = buffer.getInt();
-        int udpSize = buffer.getInt();
-        int sessionKey = keyService.getNextKey();
+        int maxRawPacketSize = buffer.getInt();
+        int encryptCode = keyService.getNextKey();
 
+        Configuration configuration = connection.getConfiguration();
         connection.setId(connectionId);
-        connection.setSessionKey(sessionKey);
+        
+        configuration.setEncryptCode(encryptCode);
+        configuration.setMaxRawPacketSize(maxRawPacketSize);
+        
         connection.setState(ConnectionState.ONLINE);
-        connection.setUdpSize(udpSize);
 
-        ConfirmMessage response = new ConfirmMessage(crcLength, connectionId, sessionKey, cryptMethod, useComp, udpSize);
+        ConfirmMessage response = new ConfirmMessage(
+                networkConfiguration.getCrcBytes(), 
+                connectionId, encryptCode, 
+                networkConfiguration.getEncryptMethod(), 
+                networkConfiguration.isCompression(), 
+                maxRawPacketSize
+        );
+        
         connection.sendMessage(response);
+
+        if(!networkConfiguration.isDisableInstrumentation()) {
+            try {
+
+                if (!mBeanServer.isRegistered(connection.getBeanName())) {
+                    mBeanServer.registerMBean(connection, connection.getBeanName());
+                }
+
+            } catch (Exception e) {
+                logger.error("Unable to register bean", e);
+            }
+        }
     }
 }

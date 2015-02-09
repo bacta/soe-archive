@@ -1,13 +1,14 @@
 package com.ocdsoft.bacta.soe.message;
 
 import com.ocdsoft.bacta.engine.utils.BufferUtil;
+import com.ocdsoft.bacta.soe.connection.EncryptMethod;
 
 public final class ConfirmMessage extends SoeMessage {
 
 	public ConfirmMessage(final byte crcLength,
                           final int connectionID,
                           final int sessionKey,
-                          final byte cryptMethod,
+                          final EncryptMethod encryptMethod,
                           final boolean useComp,
                           final int udpSize) {
 
@@ -17,7 +18,7 @@ public final class ConfirmMessage extends SoeMessage {
         buffer.putInt(sessionKey);
 		buffer.put(crcLength);
 		BufferUtil.putBoolean(buffer, useComp);
-		buffer.put(cryptMethod);
+        encryptMethod.writeToBuffer(buffer);
         buffer.putInt(udpSize);
 	}
 }

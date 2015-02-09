@@ -38,13 +38,13 @@ public class SoeMarshallingConsumer<T extends SoeUdpConnection> implements Event
 
             if (op > 0x2 && op != 0x4) {
                 try {
-                    buffer = protocol.encode(client.getSessionKey(), buffer, true);
+                    buffer = protocol.encode(client.getConfiguration().getEncryptCode(), buffer, true);
 
-                    protocol.appendCRC(client.getSessionKey(), buffer, 2);
+                    protocol.appendCRC(client.getConfiguration().getEncryptCode(), buffer, 2);
 
                     messageList.set(i, buffer);
 
-                    if (!protocol.validate(client.getSessionKey(), buffer)) {
+                    if (!protocol.validate(client.getConfiguration().getEncryptCode(), buffer)) {
                         logger.info("Invalid Packet");
                     }
                 } catch (Exception e) {
