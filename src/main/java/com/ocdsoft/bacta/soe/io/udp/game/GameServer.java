@@ -1,5 +1,7 @@
 package com.ocdsoft.bacta.soe.io.udp.game;
 
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.health.HealthCheckRegistry;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Singleton;
@@ -8,6 +10,7 @@ import com.ocdsoft.bacta.engine.network.client.ServerStatus;
 import com.ocdsoft.bacta.soe.ServerType;
 import com.ocdsoft.bacta.soe.connection.ConnectionServerAgent;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
+import com.ocdsoft.bacta.soe.io.udp.NetworkConfiguration;
 import com.ocdsoft.bacta.soe.io.udp.SoeTransceiver;
 import com.ocdsoft.bacta.soe.router.SoeMessageRouter;
 import com.ocdsoft.bacta.soe.service.OutgoingConnectionService;
@@ -41,7 +44,9 @@ public class GameServer implements Runnable {
                       final GameServerState serverState,
                       final ConnectionServerAgent connectionServerAgent,
                       final OutgoingConnectionService outgoingConnectionService,
-                      final Injector injector) throws UnknownHostException {
+                      final Injector injector,
+                      final MetricRegistry metricRegistry,
+                      final HealthCheckRegistry healthCheckRegistry) throws UnknownHostException {
 
         this.configuration = configuration;
         this.serverState = serverState;
@@ -54,10 +59,11 @@ public class GameServer implements Runnable {
         );
 
         transceiver = new SoeTransceiver(
+                metricRegistry,
+                injector.getInstance(NetworkConfiguration.class),
                 InetAddress.getByName(configuration.getString("Bacta/GameServer", "BindIp")),
                 configuration.getInt("Bacta/GameServer", "Port"),
                 ServerType.GAME,
-                configuration.getInt("Bacta/GameServer", "SendInterval"),
                 soeMessageRouter,
                 configuration.getStringCollection("Bacta/GameServer", "TrustedClient"));
 
@@ -77,8 +83,7 @@ public class GameServer implements Runnable {
 
             Thread pingThread = new Thread(new PingServer(
                     InetAddress.getByName(configuration.getString("Bacta/GameServer", "BindIp")),
-                    configuration.getIntWithDefault("Bacta/GameServer", "Ping", 44462),
-                    transceiver.getConnectionMap()));
+                    configuration.getIntWithDefault("Bacta/GameServer", "Ping", 44462)));
             pingThread.start();
 
             serverState.setServerStatus(ServerStatus.UP);
@@ -108,7 +113,7 @@ public class GameServer implements Runnable {
         private BiFunction<InetSocketAddress, Consumer<SoeUdpConnection>, SoeUdpConnection> createConnection;
 
         @Override
-        public SoeUdpConnection createOutgoingConnection(InetSocketAddress address, Consumer<SoeUdpConnection> connectCallback) {
+        public SoeUdpConnection createOutgoingConnection(final InetSocketAddress address, final Consumer<SoeUdpConnection> connectCallback) {
             if(createConnection == null) return null;
             
             return createConnection.apply(address, connectCallback);

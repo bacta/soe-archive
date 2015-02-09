@@ -56,6 +56,8 @@ public final class SwgDevelopMessageRouter implements SwgMessageRouter {
                 logger.error("Connection: " + connection.toString());
                 return;
             }
+            
+            connection.increaseGameNetworkMessageReceived();
 
             GameNetworkMessageController controller = controllerData.getGameNetworkMessageController();
             Constructor<? extends GameNetworkMessage> constructor = controllerData.getConstructor();

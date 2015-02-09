@@ -1,8 +1,10 @@
 package com.ocdsoft.bacta.soe.connection;
 
+import com.codahale.metrics.annotation.Counted;
 import com.ocdsoft.bacta.engine.network.client.ConnectionState;
 import com.ocdsoft.bacta.engine.network.client.UdpConnection;
 import com.ocdsoft.bacta.engine.network.client.UdpMessageProcessor;
+import com.ocdsoft.bacta.soe.io.udp.NetworkConfiguration;
 import com.ocdsoft.bacta.soe.message.*;
 import com.ocdsoft.bacta.soe.util.SoeMessageUtil;
 import lombok.Getter;
@@ -10,37 +12,27 @@ import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.management.MalformedObjectNameException;
+import javax.management.ObjectName;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
-import java.util.ResourceBundle;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-public final class SoeUdpConnection extends UdpConnection {
+public final class SoeUdpConnection extends UdpConnection implements SoeUdpConnectionMBean {
 
     private static final Logger logger = LoggerFactory.getLogger(SoeUdpConnection.class);
-    private static ResourceBundle messageProperties;
-
-    static {
-        messageProperties = ResourceBundle.getBundle("messageprocessing");
-    }
 
     @Getter
-    @Setter
     private int id;
-
+    
     @Getter
-    @Setter
-    private int udpSize;
-
-    @Getter
-    @Setter
-    private int sessionKey;
+    private final Configuration configuration;
 
     @Getter
     @Setter
@@ -49,9 +41,7 @@ public final class SoeUdpConnection extends UdpConnection {
     @Getter
     @Setter
     private String accountUsername;
-
-    private final int staleTimeout;
-
+    
     private ConnectionState state;
 
     private final UdpMessageProcessor<ByteBuffer> udpMessageProcessor;
@@ -66,29 +56,86 @@ public final class SoeUdpConnection extends UdpConnection {
     private long lastActivity;
 
     private final Consumer<SoeUdpConnection> connectCallback;
+    
+    @Getter
+    private final AtomicInteger gameNetworkMessagesSent;
 
-    public SoeUdpConnection(final InetSocketAddress remoteAddress, final Consumer<SoeUdpConnection> connectCallback) {
+    @Getter
+    private final AtomicInteger protocolMessagesSent;
+
+    @Getter
+    private final AtomicInteger protocolMessagesReceived;
+
+    @Getter
+    private final AtomicInteger gameNetworkMessagesReceived;
+
+    @Getter
+    private TerminateReason terminateReason = TerminateReason.NONE;
+
+    @Getter
+    private ObjectName beanName;
+
+    public SoeUdpConnection(final NetworkConfiguration networkConfiguration,
+                            final InetSocketAddress remoteAddress,
+                            final ConnectionState connectionState,
+                            final Consumer<SoeUdpConnection> connectCallback) {
+        
         this.remoteAddress = remoteAddress;
         this.connectCallback = connectCallback;
+        this.state = connectionState;
 
-        state = ConnectionState.DISCONNECTED;
-        udpMessageProcessor = new SoeUdpMessageProcessor(this, messageProperties);
-        staleTimeout = Integer.parseInt(messageProperties.getString("staleDisconnect"));
+        this.configuration = new Configuration(
+                networkConfiguration.getCrcBytes(),
+                networkConfiguration.getEncryptMethod(),
+                networkConfiguration.getMaxRawPacketSize(),
+                networkConfiguration.isCompression()
+        );
+
+        udpMessageProcessor = new SoeUdpMessageProcessor(this, networkConfiguration);
         clientSequenceNumber = new AtomicInteger();
         fragmentContainer = new FragmentContainer();
         roles = new ArrayList<>();
-        keepAlive();
+        gameNetworkMessagesSent = new AtomicInteger();
+        protocolMessagesSent = new AtomicInteger();
+
+        protocolMessagesReceived = new AtomicInteger();
+        gameNetworkMessagesReceived = new AtomicInteger();
+        
+        updateLastActivity();
     }
     
+    public void setId(int id) {
+        this.id = id;
+        try {
+            this.beanName = new ObjectName("Bacta:type=SoeUdpConnection,id=" + id);
+        } catch (MalformedObjectNameException e) {
+            logger.error("Unable to create bean name", e);
+            this.beanName = null;
+        }
+    }
+    
+    public void increaseProtocolMessageReceived() {
+        protocolMessagesReceived.incrementAndGet();
+    }
 
+    public void increaseGameNetworkMessageReceived() {
+        gameNetworkMessagesReceived.incrementAndGet();
+    }
+
+    @Counted
     public void sendMessage(SoeMessage message) {
+
+        protocolMessagesSent.getAndIncrement();
+        
         if (udpMessageProcessor.addUnreliable(message.slice())) {
-            keepAlive();
+            updateLastActivity();
         }
     }
 
     public void sendMessage(GameNetworkMessage message) {
 
+        gameNetworkMessagesSent.incrementAndGet();
+        
         // TODO: Better buffer creation
         ByteBuffer buffer = ByteBuffer.allocate(1500).order(ByteOrder.LITTLE_ENDIAN);
 
@@ -104,7 +151,7 @@ public final class SoeUdpConnection extends UdpConnection {
                 setState(ConnectionState.DISCONNECTED);
             }
         } else {
-            keepAlive();
+            updateLastActivity();
         }
     }
 
@@ -119,18 +166,18 @@ public final class SoeUdpConnection extends UdpConnection {
         }
 
         if(!pendingMessageList.isEmpty()) {
-            keepAlive();
+            updateLastActivity();
         }
 
         return pendingMessageList;
     }
 
-    public void keepAlive() {
+    public void updateLastActivity() {
         lastActivity = System.currentTimeMillis();
     }
 
     public void sendAck(short sequenceNum) {
-        keepAlive();
+        updateLastActivity();
         sendMessage(new AckAllMessage(sequenceNum));
     }
 
@@ -138,26 +185,9 @@ public final class SoeUdpConnection extends UdpConnection {
         clientSequenceNumber.set(sequenceNum);
         udpMessageProcessor.acknowledge(sequenceNum);
     }
-
-    /**
-     * Idle timeout
-     *
-     * @return
-     */
-    public boolean isStale() {
-        return (System.currentTimeMillis() - lastActivity > (staleTimeout));
-    }
-
+    
     @Override
     public void setState(ConnectionState state) {
-
-        if(this.state != ConnectionState.DISCONNECTED &&
-                state == ConnectionState.DISCONNECTED) {
-
-            Terminate terminate = new Terminate(this.getId(), TerminateReason.NONE);
-            sendMessage(terminate);
-        }
-
         this.state = state;
     }
 
@@ -192,6 +222,14 @@ public final class SoeUdpConnection extends UdpConnection {
         if(connectCallback != null) {
             connectCallback.accept(this);
         }
+    }
+    
+    public void terminate(TerminateReason reason) {
+        Terminate terminate = new Terminate(this.getId(), reason);
+        sendMessage(terminate);
+        
+        setState(ConnectionState.DISCONNECTED);
+        terminateReason = reason;
     }
 
     public List<ConnectionRole> getRoles() {

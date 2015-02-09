@@ -1,7 +1,7 @@
 package com.ocdsoft.bacta.soe.connection;
 
-import com.ocdsoft.bacta.engine.network.client.ConnectionState;
 import com.ocdsoft.bacta.engine.network.client.UdpMessageBuilder;
+import com.ocdsoft.bacta.soe.io.udp.NetworkConfiguration;
 import com.ocdsoft.bacta.soe.message.ReliableNetworkMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,48 +36,30 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class ReliableUdpMessageBuilder implements UdpMessageBuilder<ByteBuffer> {
 
-    public final Logger logger = LoggerFactory.getLogger(getClass());
+    public final static Logger logger = LoggerFactory.getLogger(ReliableUdpMessageBuilder.class);
 
+    private final NetworkConfiguration configuration;
     private final AtomicInteger sequenceNum = new AtomicInteger();
     private final Set<ReliableNetworkMessage> containerList;
-    private final int maxQueueSize;
-    private final int udpMaxReliablePayload;
-    private final int udpMaxFragmentedPayload;
-    private final int unacknowledgedLimit;
-    private long lastAck;
-    private long lastSend;
-    private int resendDelay;
-    private float resendDelayPercentage;
-    private int noDataTimeout;
+    private final int maxOutstandingPackets;
+
     private final SoeUdpConnection connection;
 
     private ReliableNetworkMessage pendingContainer;
-    private boolean combineGameMessages;
 
     private final Queue<ReliableNetworkMessage> unacknowledgedQueue;
 
-    public ReliableUdpMessageBuilder(SoeUdpConnection connection, final ResourceBundle messageProperties) {
+    public ReliableUdpMessageBuilder(final SoeUdpConnection connection, final NetworkConfiguration configuration) {
 
         this.connection = connection;
-        int udpMaxSize = Integer.parseInt(messageProperties.getString("UdpMaxSize"));
-        int footerLength = Integer.parseInt(messageProperties.getString("FooterLength"));
-        this.udpMaxReliablePayload = udpMaxSize - footerLength - 4;
-        this.udpMaxFragmentedPayload = udpMaxSize - footerLength - 8;
-
-        this.resendDelay = Integer.parseInt(messageProperties.getString("ResendDelayAdjust"));
-        this.resendDelayPercentage = Float.parseFloat(messageProperties.getString("ResendDelayAdjust")) / 100.f;
-
-        this.maxQueueSize = Integer.parseInt(messageProperties.getString("MaxQueueSize"));
-        this.unacknowledgedLimit = Integer.parseInt(messageProperties.getString("UnacknowledgedLimit"));
-        this.noDataTimeout = Integer.parseInt(messageProperties.getString("noDataTimeout"));
-        this.combineGameMessages = Boolean.parseBoolean(messageProperties.getString("MultiGameMessages"));
-        lastAck = 0;
-        lastSend = 0;
+        this.configuration = configuration;
+        
+        this.maxOutstandingPackets = configuration.getMaxOutstandingPackets();
 
         containerList = Collections.synchronizedSet(new TreeSet<ReliableNetworkMessage>());
         pendingContainer = null;
 
-        unacknowledgedQueue = new PriorityBlockingQueue<>(unacknowledgedLimit);
+        unacknowledgedQueue = new PriorityBlockingQueue<>(maxOutstandingPackets);
     }
 
     private short getAndIncrement() {
@@ -94,12 +76,12 @@ public class ReliableUdpMessageBuilder implements UdpMessageBuilder<ByteBuffer> 
     @Override
     public synchronized boolean add(ByteBuffer buffer) {
 
-        if (unacknowledgedQueue.size() >= unacknowledgedLimit) {
+        if (unacknowledgedQueue.size() >= maxOutstandingPackets) {
             return false;
         }
 
         if (pendingContainer != null) {
-            if (combineGameMessages && pendingContainer.size() + buffer.limit() + 1 <= udpMaxReliablePayload) {
+            if (configuration.isMultiGameMessages() && pendingContainer.size() + buffer.limit() + 1 <= configuration.getMaxReliablePayload()) {
                 return pendingContainer.addMessage(buffer);
             }
             pendingContainer.finish();
@@ -108,7 +90,7 @@ public class ReliableUdpMessageBuilder implements UdpMessageBuilder<ByteBuffer> 
         }
 
         // Fragment large message
-        if (buffer.limit() > udpMaxReliablePayload) {
+        if (buffer.limit() > configuration.getMaxReliablePayload()) {
 
             if(pendingContainer != null) {
                 pendingContainer.finish();
@@ -132,14 +114,9 @@ public class ReliableUdpMessageBuilder implements UdpMessageBuilder<ByteBuffer> 
     @Override
     public synchronized ByteBuffer buildNext() {
 
-        long currentTime = System.currentTimeMillis();
-
-        if(currentTime - connection.getLastActivity() > noDataTimeout) {
-            connection.setState(ConnectionState.LINKDEAD);
-        }
 //
 //        for(ReliableNetworkMessage message : unacknowledgedQueue) {
-//            if(currentTime - message.getLastSendAttempt() > 10000 + message.getSendAttempts() * (resendDelayPercentage * resendDelay)) {
+//            if(currentTime - message.getLastSendAttempt() > 10000 + message.getSendAttempts() * (resendDelayPercentage * resendDelayAdjust)) {
 //                message.addSendAttempt();
 //                return message.getBuffer().slice();
 //            }
@@ -154,7 +131,6 @@ public class ReliableUdpMessageBuilder implements UdpMessageBuilder<ByteBuffer> 
                 unacknowledgedQueue.add(pendingContainer);
                 ByteBuffer slice = pendingContainer.slice();
                 pendingContainer = null;
-                lastSend = currentTime;
                 return slice;
             }
             return null;
@@ -164,14 +140,13 @@ public class ReliableUdpMessageBuilder implements UdpMessageBuilder<ByteBuffer> 
         containerList.remove(message);
         message.addSendAttempt();
         unacknowledgedQueue.add(message);
-        lastSend = currentTime;
         return message.slice();
     }
 
     @Override
     public void acknowledge(short sequenceNumber) {
         logger.debug("Client Ack: " + sequenceNumber);
-        lastAck = System.currentTimeMillis();
+
         while (!unacknowledgedQueue.isEmpty() &&
                 (unacknowledgedQueue.peek().getSequenceNumber() <= sequenceNumber)) {
             unacknowledgedQueue.poll();
@@ -198,8 +173,12 @@ public class ReliableUdpMessageBuilder implements UdpMessageBuilder<ByteBuffer> 
         public ReliableNetworkMessage next() {
 
             int messageSize;
-            if (buffer.remaining() > udpMaxFragmentedPayload) {
-                messageSize = udpMaxFragmentedPayload;
+            int maxFragmentPayload = configuration.getMaxReliablePayload();
+            if(first) {
+                maxFragmentPayload -=4;
+            }
+            if (buffer.remaining() > maxFragmentPayload) {
+                messageSize = maxFragmentPayload;
             } else {
                 messageSize = buffer.remaining();
             }

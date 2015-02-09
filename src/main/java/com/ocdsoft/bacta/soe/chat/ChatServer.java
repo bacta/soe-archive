@@ -1,10 +1,12 @@
 package com.ocdsoft.bacta.soe.chat;
 
+import com.codahale.metrics.MetricRegistry;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.ocdsoft.bacta.engine.conf.BactaConfiguration;
 import com.ocdsoft.bacta.engine.network.client.ServerStatus;
 import com.ocdsoft.bacta.soe.ServerType;
+import com.ocdsoft.bacta.soe.io.udp.NetworkConfiguration;
 import com.ocdsoft.bacta.soe.io.udp.SoeTransceiver;
 import com.ocdsoft.bacta.soe.router.SoeMessageRouter;
 import org.slf4j.Logger;
@@ -28,7 +30,8 @@ public final class ChatServer implements Runnable {
     @Inject
     public ChatServer(final BactaConfiguration configuration,
                       final ChatServerState serverState,
-                      final Injector injector) throws
+                      final Injector injector,
+                      final MetricRegistry metricRegistry) throws
             ClassNotFoundException,
             IllegalAccessException,
             UnknownHostException,
@@ -71,10 +74,11 @@ public final class ChatServer implements Runnable {
         this.router = new SoeMessageRouter(injector, soeControllerFileName, swgControllerFileName);
 
         this.transceiver = new SoeTransceiver(
+                metricRegistry,
+                injector.getInstance(NetworkConfiguration.class),
                 bindAddress,
                 bindPort,
                 ServerType.CHAT,
-                configuration.getInt("Bacta/ChatServer", "sendInterval"),
                 this.router,
                 configuration.getStringCollection("Bacta/ChatServer", "trustedClient"));
     }

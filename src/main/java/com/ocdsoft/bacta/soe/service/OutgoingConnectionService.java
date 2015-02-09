@@ -9,5 +9,5 @@ import java.util.function.Consumer;
  * Created by kburkhardt on 2/5/15.
  */
 public interface OutgoingConnectionService {
-    SoeUdpConnection createOutgoingConnection(InetSocketAddress inetSocketAddress, Consumer<SoeUdpConnection> connectCallback);
+    SoeUdpConnection createOutgoingConnection(final InetSocketAddress inetSocketAddress, final Consumer<SoeUdpConnection> connectCallback);
 }

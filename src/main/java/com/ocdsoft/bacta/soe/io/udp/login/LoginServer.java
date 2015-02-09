@@ -1,5 +1,6 @@
 package com.ocdsoft.bacta.soe.io.udp.login;
 
+import com.codahale.metrics.MetricRegistry;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Singleton;
@@ -7,6 +8,7 @@ import com.ocdsoft.bacta.engine.conf.BactaConfiguration;
 import com.ocdsoft.bacta.engine.network.client.ServerStatus;
 import com.ocdsoft.bacta.soe.ServerType;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
+import com.ocdsoft.bacta.soe.io.udp.NetworkConfiguration;
 import com.ocdsoft.bacta.soe.io.udp.SoeTransceiver;
 import com.ocdsoft.bacta.soe.router.SoeMessageRouter;
 import com.ocdsoft.bacta.soe.service.OutgoingConnectionService;
@@ -37,7 +39,8 @@ public class LoginServer implements Runnable {
     public LoginServer(final BactaConfiguration configuration,
                        final LoginServerState serverState,
                        final OutgoingConnectionService outgoingConnectionService,
-                       final Injector injector) throws UnknownHostException {
+                       final Injector injector,
+                       final MetricRegistry metricRegistry) throws UnknownHostException {
 
         this.configuration = configuration;
         this.serverState = serverState;
@@ -51,10 +54,11 @@ public class LoginServer implements Runnable {
         serverState.setServerStatus(ServerStatus.LOADING);
 
         transceiver = new SoeTransceiver(
+                metricRegistry,
+                injector.getInstance(NetworkConfiguration.class),
                 InetAddress.getByName(configuration.getString("Bacta/LoginServer", "BindIp")),
                 configuration.getInt("Bacta/LoginServer", "Port"),
-                ServerType.GAME,
-                configuration.getInt("Bacta/LoginServer", "SendInterval"),
+                ServerType.LOGIN,
                 soeMessageRouter,
                 configuration.getStringCollection("Bacta/LoginServer", "TrustedClient"));
 
@@ -89,7 +93,7 @@ public class LoginServer implements Runnable {
         private BiFunction<InetSocketAddress, Consumer<SoeUdpConnection>, SoeUdpConnection> createConnection;
 
         @Override
-        public SoeUdpConnection createOutgoingConnection(InetSocketAddress address, Consumer<SoeUdpConnection> connectCallback) {
+        public SoeUdpConnection createOutgoingConnection(final InetSocketAddress address, final Consumer<SoeUdpConnection> connectCallback) {
             if(createConnection == null) return null;
 
             return createConnection.apply(address, connectCallback);

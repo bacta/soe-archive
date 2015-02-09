@@ -3,11 +3,11 @@ package com.ocdsoft.bacta.soe.connection;
 import com.ocdsoft.bacta.engine.network.client.ConnectionState;
 import com.ocdsoft.bacta.engine.network.client.UdpMessageBuilder;
 import com.ocdsoft.bacta.engine.network.client.UdpMessageProcessor;
+import com.ocdsoft.bacta.soe.io.udp.NetworkConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
-import java.util.ResourceBundle;
 
 /**
  * @author kyle
@@ -19,20 +19,16 @@ public final class SoeUdpMessageProcessor implements UdpMessageProcessor<ByteBuf
     private final UdpMessageBuilder<ByteBuffer> udpMessageBuilder;
     private final UdpMessageBuilder<ByteBuffer> reliableUdpMessageBuilder;
 
-    private final int udpMaxSize;
+    private final NetworkConfiguration configuration;
     private final SoeUdpConnection connection;
 
-    public SoeUdpMessageProcessor(SoeUdpConnection connection, final ResourceBundle messageProperties) {
+    public SoeUdpMessageProcessor(final SoeUdpConnection connection, final NetworkConfiguration configuration) {
 
         this.connection = connection;
+        this.configuration = configuration;
 
-        this.udpMaxSize = Integer.parseInt(messageProperties.getString("UdpMaxSize"));
-        int footerLength = Integer.parseInt(messageProperties.getString("FooterLength"));
-
-        int udpMaxMultiPayload = udpMaxSize - footerLength - 3;
-
-        reliableUdpMessageBuilder = new ReliableUdpMessageBuilder(connection, messageProperties);
-        udpMessageBuilder = new SoeUdpMessageBuilder(udpMaxMultiPayload, messageProperties);
+        reliableUdpMessageBuilder = new ReliableUdpMessageBuilder(connection, configuration);
+        udpMessageBuilder = new SoeUdpMessageBuilder(configuration);
     }
 
     @Override
@@ -55,11 +51,15 @@ public final class SoeUdpMessageProcessor implements UdpMessageProcessor<ByteBuf
 
         flushReliable();
         ByteBuffer message = udpMessageBuilder.buildNext();
-        if (message != null && message.remaining() > udpMaxSize) {
-            throw new RuntimeException("Sending packet that exceeds " + udpMaxSize + " bytes");
+        if (message != null && message.remaining() > configuration.getMaxRawPacketSize()) {
+            throw new RuntimeException("Sending packet that exceeds " + configuration.getMaxRawPacketSize() + " bytes");
         }
+        
+        if(message != null) {
+            connection.updateLastActivity();
+        }
+        
         return message;
-
     }
 
     @Override
@@ -67,6 +67,7 @@ public final class SoeUdpMessageProcessor implements UdpMessageProcessor<ByteBuf
         if(connection.getState() != ConnectionState.ONLINE) {
             connection.setState(ConnectionState.ONLINE);
         }
+        connection.updateLastActivity();
         reliableUdpMessageBuilder.acknowledge(reliableSequence);
     }
 

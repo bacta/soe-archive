@@ -11,7 +11,7 @@ public class KeepAliveController extends BaseSoeController {
 
     @Override
     public void handleIncoming(byte zeroByte, UdpPacketType type, SoeUdpConnection connection, ByteBuffer buffer) {
-        connection.keepAlive();
+        connection.updateLastActivity();
     }
 
 }
