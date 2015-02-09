@@ -36,7 +36,7 @@ public final class ChatServerAgentService {
 
         final InetSocketAddress chatServerAddress = new InetSocketAddress(
                 configuration.getString("Bacta/GameServer", "chatServerAddress"),
-                configuration.getShort("Bacta/GameServer", "chatServerPort"));
+                configuration.getInt("Bacta/GameServer", "chatServerPort"));
 
         this.chatServerConnection = connectionService.createOutgoingConnection(
                 chatServerAddress,

@@ -95,7 +95,6 @@ public class SOECRC32 {
         return ~crc;
 	}
 
-
 	public static int[] getCRC32Table() {
 		return crc_table;
 	}
