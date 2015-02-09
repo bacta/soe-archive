@@ -9,18 +9,21 @@ import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 import com.ocdsoft.bacta.soe.controller.SoeMessageController;
 import com.ocdsoft.bacta.soe.message.UdpPacketType;
 import com.ocdsoft.bacta.soe.util.SoeMessageUtil;
+import org.reflections.Reflections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.IOException;
+import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.HashMap;
-import java.util.List;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 
+/**
+ * Controllers are required to exist in the com.ocdsoft.bacta.soe.controller package to 
+ * be loaded.
+ */
 public final class SoeMessageRouter {
 
     private final static Logger logger = LoggerFactory.getLogger(SoeMessageRouter.class);
@@ -70,18 +73,11 @@ public final class SoeMessageRouter {
 
     public void load() {
         
-        File file = new File("../conf/" + soeControllerFileName);
-        if(!file.exists()) {
-            file = new File(getClass().getResource("/" + soeControllerFileName).getFile());
-        }
+        Reflections reflections = new Reflections("com.ocdsoft.bacta.soe.controller");
 
-        List<String> classNameList;
-        try {
-            classNameList = Files.readAllLines(Paths.get(file.toURI()));
-        } catch (IOException e) {
-            e.printStackTrace();
-            return;
-        }
+        Set<Class<? extends SoeMessageController>> subTypes = reflections.getSubTypesOf(SoeMessageController.class);
+
+        Iterator<Class<? extends SoeMessageController>> iter = subTypes.iterator();
 
         controllers.clear();
 
@@ -92,13 +88,18 @@ public final class SoeMessageRouter {
                 injector,
                 serverState,
                 swgControllerFileName,
-                configuration.getBoolean("Bacta/GlobalSettings", "ControllerGeneration"));
+                configuration.getBoolean("SharedNetwork", "generateControllers"));
 
-        for(String className : classNameList) {
+        while (iter.hasNext()) {
 
             try {
-                Class<? extends SoeMessageController> controllerClass = (Class<? extends SoeMessageController>) Class.forName(className);
-
+                
+                Class<? extends SoeMessageController> controllerClass = iter.next();
+                
+                if(Modifier.isAbstract(controllerClass.getModifiers())) {
+                    continue;
+                }
+                
                 SoeController controllerAnnotation = controllerClass.getAnnotation(SoeController.class);
 
                 if (controllerAnnotation == null) {
@@ -116,7 +117,7 @@ public final class SoeMessageRouter {
                 for(UdpPacketType udpPacketType : types) {
 
                     if (!controllers.containsKey(udpPacketType)) {
-                        //logger.debug("Adding SOE controller for: " + handledMessageClass.getSimpleName());
+                        logger.trace("Adding SOE controller: " + controller.getClass().getSimpleName());
                         synchronized (controllers) {
                             controllers.put(udpPacketType, controller);
                         }

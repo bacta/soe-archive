@@ -12,16 +12,16 @@ import com.ocdsoft.bacta.soe.util.SwgMessageTemplateWriter;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import lombok.Getter;
+import org.reflections.Reflections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 public final class SwgDevelopMessageRouter implements SwgMessageRouter {
     private static final Logger logger = LoggerFactory.getLogger(SwgDevelopMessageRouter.class);
@@ -102,27 +102,23 @@ public final class SwgDevelopMessageRouter implements SwgMessageRouter {
 
     private void loadControllers(final Injector injector, final String controllerFileName) {
 
-        File file = new File("../conf/" + controllerFileName);
-        if(!file.exists()) {
-            file = new File(getClass().getResource("/" + controllerFileName).getFile());
-        }
+        String projectClassPath = System.getProperty("base.classpath");
+        Reflections reflections = new Reflections(projectClassPath + ".controller." + serverEnv.name().toLowerCase());
 
-        List<String> classNameList;
-        try {
-            classNameList = Files.readAllLines(Paths.get(file.toURI()));
-        } catch (IOException e) {
-            e.printStackTrace();
-            return;
-        }
+        Set<Class<? extends GameNetworkMessageController>> subTypes = reflections.getSubTypesOf(GameNetworkMessageController.class);
 
-        for(String className : classNameList) {
+        Iterator<Class<? extends GameNetworkMessageController>> iter = subTypes.iterator();
 
-            if(className.isEmpty()) {
-                continue;
-            }
-            
+        while (iter.hasNext()) {
+
+            Class<? extends GameNetworkMessageController> controllerClass = iter.next();
+
             try {
-                Class<? extends GameNetworkMessageController> controllerClass = (Class<? extends GameNetworkMessageController>) Class.forName(className);
+
+
+                if (Modifier.isAbstract(controllerClass.getModifiers())) {
+                    continue;
+                }
 
                 GameNetworkMessageHandled controllerAnnotation = controllerClass.getAnnotation(GameNetworkMessageHandled.class);
 
@@ -133,7 +129,7 @@ public final class SwgDevelopMessageRouter implements SwgMessageRouter {
 
 
                 RolesAllowed rolesAllowed = controllerClass.getAnnotation(RolesAllowed.class);
-                if(rolesAllowed == null) {
+                if (rolesAllowed == null) {
                     logger.warn("Missing @RolesAllowed annotation, discarding: " + controllerClass.getName());
                     continue;
                 }
@@ -158,7 +154,7 @@ public final class SwgDevelopMessageRouter implements SwgMessageRouter {
                     }
                 }
             } catch (Exception e) {
-                logger.error("Unable to add controller: " + className, e);
+                logger.error("Unable to add controller: " + controllerClass.getName(), e);
             }
         }
     }
