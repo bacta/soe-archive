@@ -54,8 +54,7 @@ public class GameServer implements Runnable {
 
         SoeMessageRouter soeMessageRouter = new SoeMessageRouter(
                 injector,
-                configuration.getString("Bacta/GameServer", "SoeControllerList"),
-                configuration.getString("Bacta/GameServer", "SwgControllerList")
+                configuration.getStringCollection("Bacta/GameServer", "swgControllerClasspath")
         );
 
         transceiver = new SoeTransceiver(

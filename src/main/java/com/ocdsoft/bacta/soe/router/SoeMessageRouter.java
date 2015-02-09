@@ -15,10 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Controllers are required to exist in the com.ocdsoft.bacta.soe.controller package to 
@@ -31,16 +28,12 @@ public final class SoeMessageRouter {
     private Map<UdpPacketType, SoeMessageController> controllers = new HashMap<>();
 
     private final Injector injector;
-    private final String soeControllerFileName;
-    private final String swgControllerFileName;
+    private final Collection<String> swgControllerClasspaths;
 
-    public SoeMessageRouter(final Injector injector,
-                            final String soeControllerFileName,
-                            final String swgControllerFileName) {
+    public SoeMessageRouter(final Injector injector, final Collection<String> swgControllerClasspaths) {
         
         this.injector = injector;
-        this.soeControllerFileName = soeControllerFileName;
-        this.swgControllerFileName = swgControllerFileName;
+        this.swgControllerClasspaths = swgControllerClasspaths;
     }
 
     public void routeMessage(SoeUdpConnection client, ByteBuffer buffer) {
@@ -87,7 +80,7 @@ public final class SoeMessageRouter {
         SwgMessageRouter swgMessageRouter = new SwgDevelopMessageRouter(
                 injector,
                 serverState,
-                swgControllerFileName,
+                swgControllerClasspaths,
                 configuration.getBoolean("SharedNetwork", "generateControllers"));
 
         while (iter.hasNext()) {

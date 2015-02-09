@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.Collection;
 
 /**
  * Created by crush on 1/12/2015.
@@ -68,10 +69,9 @@ public final class ChatServer implements Runnable {
         this.chatModule = (ChatModule) chatModuleClass.newInstance();
         this.mailModule = (MailModule) mailModuleClass.newInstance();
 
-        final String soeControllerFileName = configuration.getString("Bacta/ChatServer", "soeControllerList");
-        final String swgControllerFileName = configuration.getString("Bacta/ChatServer", "swgControllerList");
+        final Collection<String> swgControllerClasspaths = configuration.getStringCollection("Bacta/ChatServer", "swgControllerClasspaths");
 
-        this.router = new SoeMessageRouter(injector, soeControllerFileName, swgControllerFileName);
+        this.router = new SoeMessageRouter(injector, swgControllerClasspaths);
 
         this.transceiver = new SoeTransceiver(
                 metricRegistry,

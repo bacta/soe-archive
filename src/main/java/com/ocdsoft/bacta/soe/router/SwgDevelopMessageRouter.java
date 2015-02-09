@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -36,14 +37,14 @@ public final class SwgDevelopMessageRouter implements SwgMessageRouter {
 
     public SwgDevelopMessageRouter(final Injector injector,
                                    final ServerState serverState,
-                                   final String controllerFileName,
+                                   final Collection<String> swgControllerClasspaths,
                                    final boolean developmentMode) {
 
         this.serverEnv = serverState.getServerType();
         this.developmentMode = developmentMode;
         swgMessageTemplateWriter = new SwgMessageTemplateWriter(serverEnv);
 
-        loadControllers(injector, controllerFileName);
+        loadControllers(injector, swgControllerClasspaths);
     }
 
     @Override
@@ -100,62 +101,79 @@ public final class SwgDevelopMessageRouter implements SwgMessageRouter {
         logger.error(SoeMessageUtil.bytesToHex(buffer));
     }
 
-    private void loadControllers(final Injector injector, final String controllerFileName) {
+    private void loadControllers(final Injector injector, final Collection<String> swgControllerClasspaths) {
 
-        String projectClassPath = System.getProperty("base.classpath");
-        Reflections reflections = new Reflections(projectClassPath + ".controller." + serverEnv.name().toLowerCase());
-
-        Set<Class<? extends GameNetworkMessageController>> subTypes = reflections.getSubTypesOf(GameNetworkMessageController.class);
-
-        Iterator<Class<? extends GameNetworkMessageController>> iter = subTypes.iterator();
-
-        while (iter.hasNext()) {
-
-            Class<? extends GameNetworkMessageController> controllerClass = iter.next();
+        for(String classPath : swgControllerClasspaths) {
 
             try {
+            
+                Class<? extends GameNetworkMessageController> controllerClass = (Class<? extends GameNetworkMessageController>) Class.forName(classPath);
 
+                logger.info("Loading GameNetworkMessageController '{}'", classPath);
 
-                if (Modifier.isAbstract(controllerClass.getModifiers())) {
-                    continue;
-                }
+                loadControllerClass(injector, controllerClass);
+                continue;
+                
+            } catch (ClassNotFoundException e) {  }
 
-                GameNetworkMessageHandled controllerAnnotation = controllerClass.getAnnotation(GameNetworkMessageHandled.class);
+            logger.info("Loading GameNetworkMessageControllers from classpath: '{}'", classPath);
 
-                if (controllerAnnotation == null) {
-                    logger.warn("Missing @SwgController annotation, discarding: " + controllerClass.getName());
-                    continue;
-                }
+            Reflections reflections = new Reflections(classPath);
 
+            Set<Class<? extends GameNetworkMessageController>> subTypes = reflections.getSubTypesOf(GameNetworkMessageController.class);
 
-                RolesAllowed rolesAllowed = controllerClass.getAnnotation(RolesAllowed.class);
-                if (rolesAllowed == null) {
-                    logger.warn("Missing @RolesAllowed annotation, discarding: " + controllerClass.getName());
-                    continue;
-                }
+            Iterator<Class<? extends GameNetworkMessageController>> iter = subTypes.iterator();
 
-                Class<?> handledMessageClass = controllerAnnotation.value();
-
-
-                ConnectionRole[] connectionRoles = rolesAllowed.value();
-                GameNetworkMessageController controller = injector.getInstance(controllerClass);
-
-                int hash = SOECRC32.hashCode(handledMessageClass.getSimpleName());
-                Constructor constructor = handledMessageClass.getConstructor(ByteBuffer.class);
-
-                ControllerData newControllerData = new ControllerData(controller, constructor, connectionRoles);
-
-                if (!controllers.containsKey(hash)) {
-                    String propertyName = Integer.toHexString(hash);
-                    logger.debug("Adding Controller for " + serverEnv + ": " + controllerClass.getName() + " " + ClientString.get(propertyName) + "' 0x" + propertyName);
-
-                    synchronized (controllers) {
-                        controllers.put(hash, newControllerData);
-                    }
-                }
-            } catch (Exception e) {
-                logger.error("Unable to add controller: " + controllerClass.getName(), e);
+            while (iter.hasNext()) {
+                Class<? extends GameNetworkMessageController> controllerClass = iter.next();
+                loadControllerClass(injector, controllerClass);
             }
+        }
+    }
+    
+    private void loadControllerClass(final Injector injector, Class<? extends GameNetworkMessageController> controllerClass) {
+
+        try {
+            
+            if (Modifier.isAbstract(controllerClass.getModifiers())) {
+                return;
+            }
+
+            GameNetworkMessageHandled controllerAnnotation = controllerClass.getAnnotation(GameNetworkMessageHandled.class);
+
+            if (controllerAnnotation == null) {
+                logger.warn("Missing @SwgController annotation, discarding: " + controllerClass.getName());
+                return;
+            }
+
+
+            RolesAllowed rolesAllowed = controllerClass.getAnnotation(RolesAllowed.class);
+            if (rolesAllowed == null) {
+                logger.warn("Missing @RolesAllowed annotation, discarding: " + controllerClass.getName());
+                return;
+            }
+
+            Class<?> handledMessageClass = controllerAnnotation.value();
+
+
+            ConnectionRole[] connectionRoles = rolesAllowed.value();
+            GameNetworkMessageController controller = injector.getInstance(controllerClass);
+
+            int hash = SOECRC32.hashCode(handledMessageClass.getSimpleName());
+            Constructor constructor = handledMessageClass.getConstructor(ByteBuffer.class);
+
+            ControllerData newControllerData = new ControllerData(controller, constructor, connectionRoles);
+
+            if (!controllers.containsKey(hash)) {
+                String propertyName = Integer.toHexString(hash);
+                logger.debug("Adding Controller for " + serverEnv + ": " + controllerClass.getName() + " " + ClientString.get(propertyName) + "' 0x" + propertyName);
+
+                synchronized (controllers) {
+                    controllers.put(hash, newControllerData);
+                }
+            }
+        } catch (Exception e) {
+            logger.error("Unable to add controller: " + controllerClass.getName(), e);
         }
     }
 

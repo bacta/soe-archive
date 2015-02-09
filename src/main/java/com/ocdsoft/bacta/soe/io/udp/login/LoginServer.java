@@ -47,8 +47,7 @@ public class LoginServer implements Runnable {
 
         SoeMessageRouter soeMessageRouter = new SoeMessageRouter(
                 injector,
-                configuration.getString("Bacta/LoginServer", "SoeControllerList"),
-                configuration.getString("Bacta/LoginServer", "SwgControllerList")
+                configuration.getStringCollection("Bacta/LoginServer", "swgControllerClasspath")
         );
 
         serverState.setServerStatus(ServerStatus.LOADING);
