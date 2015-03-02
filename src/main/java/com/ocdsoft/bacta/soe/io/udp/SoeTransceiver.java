@@ -1,9 +1,7 @@
 package com.ocdsoft.bacta.soe.io.udp;
 
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.Histogram;
-import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.*;
+import com.codahale.metrics.Timer;
 import com.ocdsoft.bacta.engine.network.client.ConnectionState;
 import com.ocdsoft.bacta.engine.network.io.udp.UdpTransceiver;
 import com.ocdsoft.bacta.engine.utils.BufferUtil;
@@ -12,7 +10,7 @@ import com.ocdsoft.bacta.soe.connection.ConnectionRole;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 import com.ocdsoft.bacta.soe.message.UdpPacketType;
 import com.ocdsoft.bacta.soe.protocol.SoeProtocol;
-import com.ocdsoft.bacta.soe.router.SoeMessageRouter;
+import com.ocdsoft.bacta.soe.router.SoeDevelopMessageRouter;
 import org.apache.commons.modeler.Registry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,7 +34,7 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
 
     private final static Logger logger = LoggerFactory.getLogger(SoeTransceiver.class);
 
-    private final SoeMessageRouter soeMessageRouter;
+    private final SoeDevelopMessageRouter soeMessageRouter;
 
     private final SoeProtocol protocol;
 
@@ -51,6 +49,7 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
     
     private final Counter incomingMessages;
     private final Counter outgoingMessages;
+    private final Timer sendTimer;
     private final Histogram sendQueueSizes;
 
     // Connection Id generator
@@ -65,7 +64,7 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
                           final InetAddress bindAddress,
                           final int port,
                           final ServerType serverType,
-                          final SoeMessageRouter soeMessageRouter,
+                          final SoeDevelopMessageRouter soeMessageRouter,
                           final Collection<String> whitelistedAddresses) {
 
         super(bindAddress, port);
@@ -87,8 +86,9 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
 
         outgoingMessages = metrics.counter(MetricRegistry.name(SoeTransceiver.class, "message", "outgoing"));
         incomingMessages = metrics.counter(MetricRegistry.name(SoeTransceiver.class, "message", "incoming"));
-        sendQueueSizes = metrics.histogram(MetricRegistry.name("Bacta", SoeTransceiver.class.getSimpleName(), "outgoing-queue"));
-
+        sendQueueSizes = metrics.histogram(MetricRegistry.name(SoeTransceiver.class, "message", "outgoing-queue"));
+        sendTimer = metrics.timer(MetricRegistry.name(SoeTransceiver.class, "message", "send-timer"));
+        
         metrics.register(MetricRegistry.name(SoeTransceiver.class, "connections", "active"),
                 new Gauge<Integer>() {
                     @Override
@@ -285,9 +285,11 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
                     if (nextIteration > currentTime) {
                         Thread.sleep(nextIteration - currentTime);
                     }
+                    
+                    Timer.Context context = sendTimer.time();
 
                     try {
-
+                        
                         nextIteration = currentTime + configuration.getNetworkThreadSleepTimeMs();
 
                         Set<Object> connectionList = connectionMap.keySet();
@@ -324,6 +326,7 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
                     } catch (Exception e) {
                         logger.error("Unknown", e);
                     }
+                    context.stop();
                 }
             } catch (InterruptedException e) {
                 logger.warn("Send thread interrupted", e);

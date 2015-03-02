@@ -1,9 +1,14 @@
 package com.ocdsoft.bacta.soe.util;
 
+import com.google.common.io.Files;
 import com.ocdsoft.bacta.engine.utils.BufferUtil;
 import org.joda.time.DateTimeZone;
 
+import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.util.List;
 
 public class SoeMessageUtil {
 
@@ -33,5 +38,9 @@ public class SoeMessageUtil {
     public static String getTimeZoneOffsetFromValue(int value) {
         DateTimeZone zone = DateTimeZone.forOffsetMillis(value * 1000);
         return zone.toString();
+    }
+    
+    public static List<List<Byte>> readTextPacketDump(final File file) throws IOException {
+        return Files.readLines(file, Charset.defaultCharset(), new MultiMessageLineProcessor());
     }
 }

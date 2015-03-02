@@ -10,7 +10,7 @@ import com.ocdsoft.bacta.soe.ServerType;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 import com.ocdsoft.bacta.soe.io.udp.NetworkConfiguration;
 import com.ocdsoft.bacta.soe.io.udp.SoeTransceiver;
-import com.ocdsoft.bacta.soe.router.SoeMessageRouter;
+import com.ocdsoft.bacta.soe.router.SoeDevelopMessageRouter;
 import com.ocdsoft.bacta.soe.service.OutgoingConnectionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +45,7 @@ public class LoginServer implements Runnable {
         this.configuration = configuration;
         this.serverState = serverState;
 
-        SoeMessageRouter soeMessageRouter = new SoeMessageRouter(
+        SoeDevelopMessageRouter soeMessageRouter = new SoeDevelopMessageRouter(
                 injector,
                 configuration.getStringCollection("Bacta/LoginServer", "swgControllerClasspath")
         );

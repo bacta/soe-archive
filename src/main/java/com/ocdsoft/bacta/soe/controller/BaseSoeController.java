@@ -6,7 +6,7 @@ import com.ocdsoft.bacta.soe.router.SwgMessageRouter;
 /**
  * Created by kburkhardt on 1/26/15.
  */
-public abstract class BaseSoeController implements SoeMessageController{
+public abstract class BaseSoeController implements SoeMessageController {
 
     protected SoeMessageRouter soeMessageRouter;
     protected SwgMessageRouter swgMessageRouter;

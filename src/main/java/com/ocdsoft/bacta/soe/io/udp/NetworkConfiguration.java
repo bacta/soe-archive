@@ -61,7 +61,8 @@ public final class NetworkConfiguration {
         compression = configuration.getBooleanWithDefault("SharedNetwork", "compression", true);
         networkThreadSleepTimeMs = configuration.getIntWithDefault("SharedNetwork", "networkThreadSleepTimeMs", 20);
         reportUdpDisconnects = configuration.getBooleanWithDefault("SharedNetwork", "reportUdpDisconnects", false);
-        encryptMethod = EncryptMethod.valueOf(configuration.getStringWithDefault("SharedNetwork", "encryptMethod", "XOR"));
+        String method = configuration.getStringWithDefault("SharedNetwork", "encryptMethod", "XOR");
+        encryptMethod = EncryptMethod.valueOf(method != null ? method : "NONE");
         resendDelayAdjust = configuration.getIntWithDefault("SharedNetwork", "resendDelayAdjust", 500);
         resendDelayPercent = configuration.getIntWithDefault("SharedNetwork", "resendDelayPercent", 125);
         noDataTimeout = configuration.getIntWithDefault("SharedNetwork", "noDataTimeout", 46000);

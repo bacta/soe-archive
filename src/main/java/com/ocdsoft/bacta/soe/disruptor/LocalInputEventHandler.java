@@ -4,7 +4,7 @@ import com.google.inject.Inject;
 import com.lmax.disruptor.EventHandler;
 import com.ocdsoft.bacta.soe.ServerState;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
-import com.ocdsoft.bacta.soe.router.SoeMessageRouter;
+import com.ocdsoft.bacta.soe.router.SoeDevelopMessageRouter;
 import com.ocdsoft.bacta.soe.router.SwgMessageRouter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,12 +15,12 @@ public class LocalInputEventHandler<T extends SoeUdpConnection> implements Event
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass().getSimpleName());
 
-    private final SoeMessageRouter soeRouter;
+    private final SoeDevelopMessageRouter soeRouter;
     private final SwgMessageRouter swgRouter;
     private final ServerState serverState;
 
     @Inject
-    public LocalInputEventHandler(SoeMessageRouter soeMessageRouter, ServerState serverState) {
+    public LocalInputEventHandler(SoeDevelopMessageRouter soeMessageRouter, ServerState serverState) {
 
         soeRouter = soeMessageRouter;
         swgRouter = null;
