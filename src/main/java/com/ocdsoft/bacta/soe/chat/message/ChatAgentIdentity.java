@@ -43,4 +43,9 @@ public class ChatAgentIdentity extends GameNetworkMessage {
         BufferUtil.putAscii(buffer, address);
         buffer.putShort(port);
     }
+
+    @Override
+    public void readFromBuffer(ByteBuffer buffer) {
+
+    }
 }

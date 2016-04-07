@@ -1,4 +1,4 @@
-package com.ocdsoft.bacta.soe.router;
+package com.ocdsoft.bacta.soe.dispatch;
 
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 
@@ -7,7 +7,7 @@ import java.nio.ByteBuffer;
 /**
  * Created by kburkhardt on 2/10/15.
  */
-public interface SoeMessageRouter {
-    void routeMessage(SoeUdpConnection client, ByteBuffer buffer);
+public interface SoeMessageDispatcher {
+    void dispatch(SoeUdpConnection client, ByteBuffer buffer);
     void load();
 }

@@ -70,7 +70,7 @@ public class MultiController extends BaseSoeController {
 
             logger.trace("Slice: {} {}", slicedMessage, BufferUtil.bytesToHex(slicedMessage));
 
-            soeMessageRouter.routeMessage(connection, slicedMessage);
+            soeMessageDispatcher.dispatch(connection, slicedMessage);
             
             buffer.position(buffer.position() + length);
         }

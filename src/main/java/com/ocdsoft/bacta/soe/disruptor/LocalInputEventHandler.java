@@ -4,8 +4,8 @@ import com.google.inject.Inject;
 import com.lmax.disruptor.EventHandler;
 import com.ocdsoft.bacta.soe.ServerState;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
-import com.ocdsoft.bacta.soe.router.SoeDevelopMessageRouter;
-import com.ocdsoft.bacta.soe.router.SwgMessageRouter;
+import com.ocdsoft.bacta.soe.dispatch.SoeDevelopMessageDispatcher;
+import com.ocdsoft.bacta.soe.dispatch.SwgMessageDispatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,12 +15,12 @@ public class LocalInputEventHandler<T extends SoeUdpConnection> implements Event
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass().getSimpleName());
 
-    private final SoeDevelopMessageRouter soeRouter;
-    private final SwgMessageRouter swgRouter;
+    private final SoeDevelopMessageDispatcher soeRouter;
+    private final SwgMessageDispatcher swgRouter;
     private final ServerState serverState;
 
     @Inject
-    public LocalInputEventHandler(SoeDevelopMessageRouter soeMessageRouter, ServerState serverState) {
+    public LocalInputEventHandler(SoeDevelopMessageDispatcher soeMessageRouter, ServerState serverState) {
 
         soeRouter = soeMessageRouter;
         swgRouter = null;
@@ -38,11 +38,11 @@ public class LocalInputEventHandler<T extends SoeUdpConnection> implements Event
 
             int opcode = buffer.getInt();
 
-            //swgRouter.routeMessage(opcode, client, bactaBuffer);
+            //swgRouter.dispatch(opcode, client, bactaBuffer);
 
         } else {
 
-           // soeRouter.routeMessage(buffer.getShort(), client, buffer);
+           // soeRouter.dispatch(buffer.getShort(), client, buffer);
 
         }
     }

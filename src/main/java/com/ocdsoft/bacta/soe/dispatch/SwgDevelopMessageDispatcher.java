@@ -1,4 +1,4 @@
-package com.ocdsoft.bacta.soe.router;
+package com.ocdsoft.bacta.soe.dispatch;
 
 import com.google.inject.Injector;
 import com.ocdsoft.bacta.soe.*;
@@ -24,8 +24,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-public final class SwgDevelopMessageRouter implements SwgMessageRouter {
-    private static final Logger logger = LoggerFactory.getLogger(SwgDevelopMessageRouter.class);
+public final class SwgDevelopMessageDispatcher implements SwgMessageDispatcher {
+    private static final Logger logger = LoggerFactory.getLogger(SwgDevelopMessageDispatcher.class);
 
     private final boolean developmentMode;
 
@@ -35,10 +35,10 @@ public final class SwgDevelopMessageRouter implements SwgMessageRouter {
 
     private final SwgMessageTemplateWriter swgMessageTemplateWriter;
 
-    public SwgDevelopMessageRouter(final Injector injector,
-                                   final ServerState serverState,
-                                   final Collection<String> swgControllerClasspaths,
-                                   final boolean developmentMode) {
+    public SwgDevelopMessageDispatcher(final Injector injector,
+                                       final ServerState serverState,
+                                       final Collection<String> swgControllerClasspaths,
+                                       final boolean developmentMode) {
 
         this.serverEnv = serverState.getServerType();
         this.developmentMode = developmentMode;
@@ -48,7 +48,7 @@ public final class SwgDevelopMessageRouter implements SwgMessageRouter {
     }
 
     @Override
-    public void routeMessage(byte priority, int opcode, SoeUdpConnection connection, ByteBuffer buffer) {
+    public void dispatch(byte priority, int opcode, SoeUdpConnection connection, ByteBuffer buffer) {
 
         ControllerData controllerData = controllers.get(opcode);
         if(controllerData != null) {

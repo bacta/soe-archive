@@ -73,4 +73,9 @@ public class ChatSystemMessage extends GameNetworkMessage {
         BufferUtil.putUnicode(buffer, message);
         buffer.putInt(0);
     }
+
+    @Override
+    public void readFromBuffer(ByteBuffer buffer) {
+
+    }
 }

@@ -1,23 +1,21 @@
 package com.ocdsoft.bacta.soe.controller;
 
-import com.ocdsoft.bacta.soe.router.SoeMessageRouter;
-import com.ocdsoft.bacta.soe.router.SwgMessageRouter;
+import com.ocdsoft.bacta.soe.dispatch.SoeMessageDispatcher;
+import com.ocdsoft.bacta.soe.dispatch.SwgMessageDispatcher;
 
 /**
  * Created by kburkhardt on 1/26/15.
  */
 public abstract class BaseSoeController implements SoeMessageController {
 
-    protected SoeMessageRouter soeMessageRouter;
-    protected SwgMessageRouter swgMessageRouter;
+    protected SoeMessageDispatcher soeMessageDispatcher;
+    protected SwgMessageDispatcher swgMessageDispatcher;
 
-    @Override
-    public void setSoeMessageRouter(final SoeMessageRouter soeMessageRouter) {
-        this.soeMessageRouter = soeMessageRouter;
+    public void setSoeMessageDispatcher(final SoeMessageDispatcher soeMessageDispatcher) {
+        this.soeMessageDispatcher = soeMessageDispatcher;
     }
 
-    @Override
-    public void setSwgMessageRouter(final SwgMessageRouter swgMessageRouter) {
-        this.swgMessageRouter = swgMessageRouter;
+    public void setSwgMessageDispatcher(final SwgMessageDispatcher swgMessageDispatcher) {
+        this.swgMessageDispatcher = swgMessageDispatcher;
     }
 }

@@ -8,7 +8,7 @@ import com.ocdsoft.bacta.engine.network.client.ServerStatus;
 import com.ocdsoft.bacta.soe.ServerType;
 import com.ocdsoft.bacta.soe.io.udp.NetworkConfiguration;
 import com.ocdsoft.bacta.soe.io.udp.SoeTransceiver;
-import com.ocdsoft.bacta.soe.router.SoeDevelopMessageRouter;
+import com.ocdsoft.bacta.soe.dispatch.SoeDevelopMessageDispatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,7 +24,7 @@ public final class ChatServer implements Runnable {
 
     private final ChatServerState serverState;
     private final SoeTransceiver transceiver;
-    private final SoeDevelopMessageRouter router;
+    private final SoeDevelopMessageDispatcher router;
     private final ChatModule chatModule;
     private final MailModule mailModule;
 
@@ -71,7 +71,7 @@ public final class ChatServer implements Runnable {
 
         final Collection<String> swgControllerClasspaths = configuration.getStringCollection("Bacta/ChatServer", "swgControllerClasspaths");
 
-        this.router = new SoeDevelopMessageRouter(injector, swgControllerClasspaths);
+        this.router = new SoeDevelopMessageDispatcher(injector, swgControllerClasspaths);
 
         this.transceiver = new SoeTransceiver(
                 metricRegistry,

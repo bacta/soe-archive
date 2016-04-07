@@ -21,7 +21,7 @@ public class ZeroEscapeController extends BaseSoeController {
 
         buffer.order(ByteOrder.LITTLE_ENDIAN);
         int opcode = buffer.getInt();
-        swgMessageRouter.routeMessage(zeroByte, opcode, connection, buffer);
+        swgMessageDispatcher.dispatch(zeroByte, opcode, connection, buffer);
     }
 
 }

@@ -12,7 +12,7 @@ import com.ocdsoft.bacta.soe.connection.ConnectionServerAgent;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 import com.ocdsoft.bacta.soe.io.udp.NetworkConfiguration;
 import com.ocdsoft.bacta.soe.io.udp.SoeTransceiver;
-import com.ocdsoft.bacta.soe.router.SoeDevelopMessageRouter;
+import com.ocdsoft.bacta.soe.dispatch.SoeDevelopMessageDispatcher;
 import com.ocdsoft.bacta.soe.service.OutgoingConnectionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,7 +52,7 @@ public class GameServer implements Runnable {
         this.serverState = serverState;
         this.connectionServerAgent = connectionServerAgent;
 
-        SoeDevelopMessageRouter soeMessageRouter = new SoeDevelopMessageRouter(
+        SoeDevelopMessageDispatcher soeMessageRouter = new SoeDevelopMessageDispatcher(
                 injector,
                 configuration.getStringCollection("Bacta/GameServer", "swgControllerClasspath")
         );

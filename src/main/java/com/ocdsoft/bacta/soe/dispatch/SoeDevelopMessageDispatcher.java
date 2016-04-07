@@ -1,4 +1,4 @@
-package com.ocdsoft.bacta.soe.router;
+package com.ocdsoft.bacta.soe.dispatch;
 
 import com.google.inject.Injector;
 import com.ocdsoft.bacta.engine.conf.BactaConfiguration;
@@ -21,23 +21,23 @@ import java.util.*;
  * Controllers are required to exist in the com.ocdsoft.bacta.soe.controller package to 
  * be loaded.
  */
-public final class SoeDevelopMessageRouter implements SoeMessageRouter {
+public final class SoeDevelopMessageDispatcher implements SoeMessageDispatcher {
 
-    private final static Logger logger = LoggerFactory.getLogger(SoeDevelopMessageRouter.class);
+    private final static Logger logger = LoggerFactory.getLogger(SoeDevelopMessageDispatcher.class);
 
     private Map<UdpPacketType, SoeMessageController> controllers = new HashMap<>();
 
     private final Injector injector;
     private final Collection<String> swgControllerClasspaths;
 
-    public SoeDevelopMessageRouter(final Injector injector, final Collection<String> swgControllerClasspaths) {
+    public SoeDevelopMessageDispatcher(final Injector injector, final Collection<String> swgControllerClasspaths) {
         
         this.injector = injector;
         this.swgControllerClasspaths = swgControllerClasspaths;
     }
 
     @Override
-    public void routeMessage(SoeUdpConnection client, ByteBuffer buffer) {
+    public void dispatch(SoeUdpConnection client, ByteBuffer buffer) {
 
         byte zeroByte = buffer.get();
         byte type = buffer.get();
@@ -79,7 +79,7 @@ public final class SoeDevelopMessageRouter implements SoeMessageRouter {
         ServerState serverState = injector.getInstance(ServerState.class);
         BactaConfiguration configuration = injector.getInstance(BactaConfiguration.class);
 
-        SwgMessageRouter swgMessageRouter = new SwgDevelopMessageRouter(
+        SwgMessageDispatcher swgMessageDispatcher = new SwgDevelopMessageDispatcher(
                 injector,
                 serverState,
                 swgControllerClasspaths,
@@ -106,8 +106,8 @@ public final class SoeDevelopMessageRouter implements SoeMessageRouter {
                 logger.debug("Loading SoeMessageController: " + serverState.getServerType() + " " + controllerClass.getSimpleName());
 
                 SoeMessageController controller = injector.getInstance(controllerClass);
-                controller.setSoeMessageRouter(this);
-                controller.setSwgMessageRouter(swgMessageRouter);
+                controller.setSoeMessageDispatcher(this);
+                controller.setSwgMessageDispatcher(swgMessageDispatcher);
 
                 for(UdpPacketType udpPacketType : types) {
 

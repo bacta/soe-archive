@@ -29,7 +29,7 @@ public class ReliableMessageController extends BaseSoeController {
 
             try {
 
-                soeMessageRouter.routeMessage(connection, buffer);
+                soeMessageDispatcher.dispatch(connection, buffer);
 
             } catch (Exception e) {
                 logger.error("Unable to handle ZeroEscape", e);

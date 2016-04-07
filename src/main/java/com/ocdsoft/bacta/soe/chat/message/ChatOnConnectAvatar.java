@@ -29,4 +29,9 @@ public class ChatOnConnectAvatar extends GameNetworkMessage{
     public void writeToBuffer(final ByteBuffer buffer) {
         
     }
+
+    @Override
+    public void readFromBuffer(ByteBuffer buffer) {
+
+    }
 }

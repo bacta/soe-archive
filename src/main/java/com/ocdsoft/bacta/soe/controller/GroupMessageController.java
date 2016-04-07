@@ -31,7 +31,7 @@ public class GroupMessageController extends BaseSoeController {
 
             logger.trace("Slice: {} {}", slicedBuffer, BufferUtil.bytesToHex(slicedBuffer));
 
-            soeMessageRouter.routeMessage(connection, slicedBuffer);
+            soeMessageDispatcher.dispatch(connection, slicedBuffer);
 
             buffer.position(buffer.position() + length);
         }

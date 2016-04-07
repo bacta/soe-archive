@@ -10,7 +10,7 @@ import com.ocdsoft.bacta.soe.connection.ConnectionRole;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 import com.ocdsoft.bacta.soe.message.UdpPacketType;
 import com.ocdsoft.bacta.soe.protocol.SoeProtocol;
-import com.ocdsoft.bacta.soe.router.SoeDevelopMessageRouter;
+import com.ocdsoft.bacta.soe.dispatch.SoeDevelopMessageDispatcher;
 import org.apache.commons.modeler.Registry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +34,7 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
 
     private final static Logger logger = LoggerFactory.getLogger(SoeTransceiver.class);
 
-    private final SoeDevelopMessageRouter soeMessageRouter;
+    private final SoeDevelopMessageDispatcher soeMessageRouter;
 
     private final SoeProtocol protocol;
 
@@ -64,7 +64,7 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
                           final InetAddress bindAddress,
                           final int port,
                           final ServerType serverType,
-                          final SoeDevelopMessageRouter soeMessageRouter,
+                          final SoeDevelopMessageDispatcher soeMessageRouter,
                           final Collection<String> whitelistedAddresses) {
 
         super(bindAddress, port);
@@ -231,7 +231,7 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
 
             if(buffer != null) {
                 connection.increaseProtocolMessageReceived();
-                soeMessageRouter.routeMessage(connection, buffer);
+                soeMessageRouter.dispatch(connection, buffer);
             }
 
         } catch (Exception e) {

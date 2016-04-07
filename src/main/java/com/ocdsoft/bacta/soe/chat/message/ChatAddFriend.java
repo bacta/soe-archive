@@ -26,4 +26,9 @@ public class ChatAddFriend extends GameNetworkMessage {
     public void writeToBuffer(ByteBuffer buffer) {
 
     }
+
+    @Override
+    public void readFromBuffer(ByteBuffer buffer) {
+
+    }
 }
