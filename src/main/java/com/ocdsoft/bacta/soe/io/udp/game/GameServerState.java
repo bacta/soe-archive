@@ -5,8 +5,10 @@ import com.ocdsoft.bacta.soe.ServerState;
 /**
  * Created by kburkhardt on 1/24/15.
  */
-public interface GameServerState<Data> extends ServerState {
-    void setId(int id);
-    int getId();
-    Data getClusterEntry();
+
+/**
+ * GameServerState holds the cluster ID for the server
+ */
+public interface GameServerState extends ServerState {
+
 }

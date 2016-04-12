@@ -1,6 +1,7 @@
 package com.ocdsoft.bacta.soe.dispatch;
 
 import com.google.inject.Injector;
+import com.google.inject.Singleton;
 import com.ocdsoft.bacta.engine.conf.BactaConfiguration;
 import com.ocdsoft.bacta.engine.utils.BufferUtil;
 import com.ocdsoft.bacta.soe.ServerState;
@@ -21,16 +22,17 @@ import java.util.*;
  * Controllers are required to exist in the com.ocdsoft.bacta.soe.controller package to 
  * be loaded.
  */
-public final class SoeDevelopMessageDispatcher implements SoeMessageDispatcher {
+@Singleton
+public final class SoeDevMessageDispatcher implements SoeMessageDispatcher {
 
-    private final static Logger logger = LoggerFactory.getLogger(SoeDevelopMessageDispatcher.class);
+    private final static Logger logger = LoggerFactory.getLogger(SoeDevMessageDispatcher.class);
 
     private Map<UdpPacketType, SoeMessageController> controllers = new HashMap<>();
 
     private final Injector injector;
     private final Collection<String> swgControllerClasspaths;
 
-    public SoeDevelopMessageDispatcher(final Injector injector, final Collection<String> swgControllerClasspaths) {
+    public SoeDevMessageDispatcher(final Injector injector, final Collection<String> swgControllerClasspaths) {
         
         this.injector = injector;
         this.swgControllerClasspaths = swgControllerClasspaths;
@@ -68,7 +70,7 @@ public final class SoeDevelopMessageDispatcher implements SoeMessageDispatcher {
     @Override
     public void load() {
         
-        Reflections reflections = new Reflections("com.ocdsoft.bacta.soe.controller");
+        Reflections reflections = new Reflections();
 
         Set<Class<? extends SoeMessageController>> subTypes = reflections.getSubTypesOf(SoeMessageController.class);
 
@@ -79,7 +81,7 @@ public final class SoeDevelopMessageDispatcher implements SoeMessageDispatcher {
         ServerState serverState = injector.getInstance(ServerState.class);
         BactaConfiguration configuration = injector.getInstance(BactaConfiguration.class);
 
-        SwgMessageDispatcher swgMessageDispatcher = new SwgDevelopMessageDispatcher(
+        GameNetworkMessageDispatcher gameNetworkMessageDispatcher = new GameNetworkDevMessageDispatcher(
                 injector,
                 serverState,
                 swgControllerClasspaths,
@@ -107,7 +109,7 @@ public final class SoeDevelopMessageDispatcher implements SoeMessageDispatcher {
 
                 SoeMessageController controller = injector.getInstance(controllerClass);
                 controller.setSoeMessageDispatcher(this);
-                controller.setSwgMessageDispatcher(swgMessageDispatcher);
+                controller.setGameNetworkMessageDispatcher(gameNetworkMessageDispatcher);
 
                 for(UdpPacketType udpPacketType : types) {
 

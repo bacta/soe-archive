@@ -17,9 +17,9 @@ import java.nio.ByteBuffer;
 /**
  * Created by kburkhardt on 1/31/15.
  */
-public class SwgMessageTemplateWriter {
+public class GameNetworkMessageTemplateWriter {
 
-    private static final Logger logger = LoggerFactory.getLogger(SwgMessageTemplateWriter.class);
+    private static final Logger logger = LoggerFactory.getLogger(GameNetworkMessageTemplateWriter.class);
 
     private final VelocityEngine ve;
     private final ServerType serverEnv;
@@ -32,7 +32,7 @@ public class SwgMessageTemplateWriter {
     
     private final String controllerFile;
 
-    public SwgMessageTemplateWriter(final ServerType serverEnv) {
+    public GameNetworkMessageTemplateWriter(final ServerType serverEnv) {
 
         this.serverEnv = serverEnv;
 
@@ -45,17 +45,15 @@ public class SwgMessageTemplateWriter {
         ve.setProperty(RuntimeConstants.FILE_RESOURCE_LOADER_CACHE, "true");
         ve.init();
 
-        controllerClassPath = System.getProperty("base.classpath") + ".controller." + serverEnv.name().toLowerCase() + ".server";
+        controllerClassPath = System.getProperty("base.classpath") + ".controller";
         controllerFilePath = System.getProperty("template.filepath") + "/src/main/java/" +
-                System.getProperty("base.classpath").replace(".", "/") +
-                "/controller/" + serverEnv.name().toLowerCase() + "/server/";
+                System.getProperty("base.classpath").replace(".", "/") + "/controller/";
         
-        messageClassPath = System.getProperty("base.classpath") + ".message." + serverEnv.name().toLowerCase() + ".client";
+        messageClassPath = System.getProperty("base.classpath") + ".message";
         messageFilePath = System.getProperty("template.filepath") + "/src/main/java/" +
-                System.getProperty("base.classpath").replace(".", "/") +
-                "/message/" + serverEnv.name().toLowerCase() + "/client/";
+                System.getProperty("base.classpath").replace(".", "/") + "/message/";
 
-        controllerFile = System.getProperty("template.filepath") + "/src/main/resources/" + serverEnv.name().toLowerCase() + "swgcontrollers.lst";
+        controllerFile = System.getProperty("template.filepath") + "/src/main/resources/swgcontrollers.lst";
     }
 
     public void createFiles(int opcode, ByteBuffer buffer) {

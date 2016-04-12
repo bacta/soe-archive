@@ -75,6 +75,15 @@ public final class SoeUdpConnection extends UdpConnection implements SoeUdpConne
     @Getter
     private ObjectName beanName;
 
+    //TODO: Make setters only work once?
+    @Getter
+    @Setter
+    private long currentNetworkId;
+
+    @Getter
+    @Setter
+    private String currentCharName;
+
     public SoeUdpConnection(final NetworkConfiguration networkConfiguration,
                             final InetSocketAddress remoteAddress,
                             final ConnectionState connectionState,
@@ -162,7 +171,7 @@ public final class SoeUdpConnection extends UdpConnection implements SoeUdpConne
         ByteBuffer buffer;
         while ((buffer = udpMessageProcessor.processNext()) != null) {
             pendingMessageList.add(buffer);
-            logger.trace("Sending: " + SoeMessageUtil.bytesToHex(buffer));
+            logger.trace("Sending: {}", SoeMessageUtil.bytesToHex(buffer));
         }
 
         if(!pendingMessageList.isEmpty()) {

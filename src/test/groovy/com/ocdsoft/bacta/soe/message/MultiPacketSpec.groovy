@@ -5,8 +5,8 @@ import com.ocdsoft.bacta.engine.network.client.ConnectionState
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection
 import com.ocdsoft.bacta.soe.controller.*
 import com.ocdsoft.bacta.soe.io.udp.NetworkConfiguration
-import com.ocdsoft.bacta.soe.dispatch.SoeDevelopMessageDispatcher
-import com.ocdsoft.bacta.soe.dispatch.SwgMessageDispatcher
+import com.ocdsoft.bacta.soe.dispatch.SoeDevMessageDispatcher
+import com.ocdsoft.bacta.soe.dispatch.GameNetworkMessageDispatcher
 import com.ocdsoft.bacta.soe.util.SoeMessageUtil
 import spock.lang.Shared
 import spock.lang.Specification
@@ -28,7 +28,7 @@ class MultiPacketSpec extends Specification {
 
         processedPackets = new ArrayList<ByteBuffer>()
         
-        soeMessageRouter = new SoeDevelopMessageDispatcher(null, null)
+        soeMessageRouter = new SoeDevMessageDispatcher(null, null)
         loadControllers(soeMessageRouter.metaClass.getProperty(soeMessageRouter, "controllers"))
 
     }
@@ -59,7 +59,7 @@ class MultiPacketSpec extends Specification {
     
     def loadControllers(controllers) {
 
-        def swgMessageRouter = Mock(SwgMessageDispatcher) {
+        def swgMessageRouter = Mock(GameNetworkMessageDispatcher) {
             dispatch(_,_,_,_) >> { byte zeroByte, int opcode, SoeUdpConnection connection, ByteBuffer buffer ->
                 processedPackets.add(buffer)
             }
@@ -71,25 +71,25 @@ class MultiPacketSpec extends Specification {
 
         def multiController = new MultiController()
         multiController.setSoeMessageDispatcher(soeMessageRouter)
-        multiController.setSwgMessageDispatcher(swgMessageRouter)
+        multiController.setGameNetworkMessageDispatcher(swgMessageRouter)
 
         controllers.put(UdpPacketType.cUdpPacketMulti, multiController)
 
         def reliableController = new ReliableMessageController()
         reliableController.setSoeMessageDispatcher(soeMessageRouter)
-        reliableController.setSwgMessageDispatcher(swgMessageRouter)
+        reliableController.setGameNetworkMessageDispatcher(swgMessageRouter)
 
         controllers.put(UdpPacketType.cUdpPacketReliable1, reliableController)
 
         def groupController = new GroupMessageController()
         groupController.setSoeMessageDispatcher(soeMessageRouter)
-        groupController.setSwgMessageDispatcher(swgMessageRouter)
+        groupController.setGameNetworkMessageDispatcher(swgMessageRouter)
 
         controllers.put(UdpPacketType.cUdpPacketGroup, groupController)
 
         def zeroController = new ZeroEscapeController()
         zeroController.setSoeMessageDispatcher(soeMessageRouter)
-        zeroController.setSwgMessageDispatcher(swgMessageRouter)
+        zeroController.setGameNetworkMessageDispatcher(swgMessageRouter)
 
         controllers.put(UdpPacketType.cUdpPacketZeroEscape, zeroController)
 

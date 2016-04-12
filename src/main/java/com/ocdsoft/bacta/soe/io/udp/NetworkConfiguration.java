@@ -6,33 +6,42 @@ import com.ocdsoft.bacta.engine.conf.BactaConfiguration;
 import com.ocdsoft.bacta.soe.connection.EncryptMethod;
 import lombok.Getter;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.Collection;
+
 /**
  * Created by kburkhardt on 2/7/15.
  */
 @Singleton
+@Getter
 public final class NetworkConfiguration {
-    
-    @Getter private final int protocolVersion;
-    @Getter private final int maxRawPacketSize;
-    @Getter private final byte crcBytes;
-    @Getter private final EncryptMethod encryptMethod;
 
-    @Getter private final boolean compression;
-    @Getter private final int networkThreadSleepTimeMs;
+    private final InetAddress bindIp;
+    private final int port;
+    private final Collection<String> trustedClients;
 
-    @Getter private final boolean reportUdpDisconnects;
+    private final int protocolVersion;
+    private final int maxRawPacketSize;
+    private final byte crcBytes;
+    private final EncryptMethod encryptMethod;
 
-    @Getter private final int resendDelayAdjust;
-    @Getter private final int resendDelayPercent;
+    private final boolean compression;
+    private final int networkThreadSleepTimeMs;
 
-    @Getter private final int noDataTimeout;
-    @Getter private final int maxInstandingPackets;
-    @Getter private final int maxOutstandingPackets;
+    private final boolean reportUdpDisconnects;
 
-    @Getter private final boolean multiSoeMessages; 
-    @Getter private final boolean multiGameMessages;
+    private final int resendDelayAdjust;
+    private final int resendDelayPercent;
 
-    @Getter private final boolean disableInstrumentation;
+    private final int noDataTimeout;
+    private final int maxInstandingPackets;
+    private final int maxOutstandingPackets;
+
+    private final boolean multiSoeMessages;
+    private final boolean multiGameMessages;
+
+    private final boolean disableInstrumentation;
     
 //    logAllNetworkTraffic = false
 //    incomingBufferSize = 4194304
@@ -54,7 +63,10 @@ public final class NetworkConfiguration {
 //    logConnectionOpenedClosed = false
     
     @Inject
-    public NetworkConfiguration(final BactaConfiguration configuration) {
+    public NetworkConfiguration(final BactaConfiguration configuration) throws UnknownHostException {
+        bindIp = InetAddress.getByName(configuration.getString("Bacta/GameServer", "BindIp"));
+        port = configuration.getInt("Bacta/GameServer", "Port");
+        trustedClients = configuration.getStringCollection("Bacta/GameServer", "TrustedClient");
         protocolVersion = configuration.getIntWithDefault("SharedNetwork", "protocolVersion", 2);
         maxRawPacketSize = configuration.getIntWithDefault("SharedNetwork", "maxRawPacketSize", 496);
         crcBytes = configuration.getByteWithDefault("SharedNetwork", "crcBytes", (byte) 2);

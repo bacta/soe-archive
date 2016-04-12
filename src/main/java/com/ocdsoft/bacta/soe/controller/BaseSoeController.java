@@ -1,7 +1,7 @@
 package com.ocdsoft.bacta.soe.controller;
 
 import com.ocdsoft.bacta.soe.dispatch.SoeMessageDispatcher;
-import com.ocdsoft.bacta.soe.dispatch.SwgMessageDispatcher;
+import com.ocdsoft.bacta.soe.dispatch.GameNetworkMessageDispatcher;
 
 /**
  * Created by kburkhardt on 1/26/15.
@@ -9,13 +9,13 @@ import com.ocdsoft.bacta.soe.dispatch.SwgMessageDispatcher;
 public abstract class BaseSoeController implements SoeMessageController {
 
     protected SoeMessageDispatcher soeMessageDispatcher;
-    protected SwgMessageDispatcher swgMessageDispatcher;
+    protected GameNetworkMessageDispatcher gameNetworkMessageDispatcher;
 
     public void setSoeMessageDispatcher(final SoeMessageDispatcher soeMessageDispatcher) {
         this.soeMessageDispatcher = soeMessageDispatcher;
     }
 
-    public void setSwgMessageDispatcher(final SwgMessageDispatcher swgMessageDispatcher) {
-        this.swgMessageDispatcher = swgMessageDispatcher;
+    public void setGameNetworkMessageDispatcher(final GameNetworkMessageDispatcher gameNetworkMessageDispatcher) {
+        this.gameNetworkMessageDispatcher = gameNetworkMessageDispatcher;
     }
 }

@@ -2,6 +2,7 @@ package com.ocdsoft.bacta.soe.util;
 
 import com.google.common.io.Files;
 import com.ocdsoft.bacta.engine.utils.BufferUtil;
+import com.ocdsoft.bacta.soe.message.GameNetworkMessage;
 import org.joda.time.DateTimeZone;
 
 import java.io.File;
@@ -42,5 +43,11 @@ public class SoeMessageUtil {
     
     public static List<List<Byte>> readTextPacketDump(final File file) throws IOException {
         return Files.readLines(file, Charset.defaultCharset(), new MultiMessageLineProcessor());
+    }
+
+    public static String bytesToHex(GameNetworkMessage message) {
+        ByteBuffer buffer = ByteBuffer.allocate(1024);
+        message.writeToBuffer(buffer);
+        return BufferUtil.bytesToHex(buffer);
     }
 }

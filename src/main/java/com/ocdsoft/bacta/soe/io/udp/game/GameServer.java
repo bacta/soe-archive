@@ -3,16 +3,15 @@ package com.ocdsoft.bacta.soe.io.udp.game;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.health.HealthCheckRegistry;
 import com.google.inject.Inject;
-import com.google.inject.Injector;
 import com.google.inject.Singleton;
 import com.ocdsoft.bacta.engine.conf.BactaConfiguration;
 import com.ocdsoft.bacta.engine.network.client.ServerStatus;
 import com.ocdsoft.bacta.soe.ServerType;
 import com.ocdsoft.bacta.soe.connection.ConnectionServerAgent;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
+import com.ocdsoft.bacta.soe.dispatch.SoeMessageDispatcher;
 import com.ocdsoft.bacta.soe.io.udp.NetworkConfiguration;
 import com.ocdsoft.bacta.soe.io.udp.SoeTransceiver;
-import com.ocdsoft.bacta.soe.dispatch.SoeDevelopMessageDispatcher;
 import com.ocdsoft.bacta.soe.service.OutgoingConnectionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,56 +23,51 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 /**
- *
+ * GameServer is the main class which starts the services running for the game
  */
+public final class GameServer implements Runnable {
 
-public class GameServer implements Runnable {
+    private static final Logger LOGGER = LoggerFactory.getLogger(GameServer.class);
 
-    private static final Logger logger = LoggerFactory.getLogger(GameServer.class);
-
+    /**
+     * The server-wide configuration object
+     */
     private final BactaConfiguration configuration;
 
+    /**
+     * Various metadata about the game server
+     */
     private final GameServerState serverState;
 
+    /**
+     * The ConnectionServerAgent communicates the status of this GameServer to the connection server
+     */
     private final ConnectionServerAgent connectionServerAgent;
 
+    /**
+     * The transceiver receives and transmits all the messages
+     */
     private final SoeTransceiver transceiver;
 
     @Inject
     public GameServer(final BactaConfiguration configuration,
                       final GameServerState serverState,
-                      final ConnectionServerAgent connectionServerAgent,
+                      final SoeTransceiver transceiver,
                       final OutgoingConnectionService outgoingConnectionService,
-                      final Injector injector,
-                      final MetricRegistry metricRegistry,
-                      final HealthCheckRegistry healthCheckRegistry) throws UnknownHostException {
+                      final ConnectionServerAgent connectionServerAgent) throws UnknownHostException {
 
         this.configuration = configuration;
         this.serverState = serverState;
+        this.transceiver = transceiver;
         this.connectionServerAgent = connectionServerAgent;
 
-        SoeDevelopMessageDispatcher soeMessageRouter = new SoeDevelopMessageDispatcher(
-                injector,
-                configuration.getStringCollection("Bacta/GameServer", "swgControllerClasspath")
-        );
-
-        transceiver = new SoeTransceiver(
-                metricRegistry,
-                injector.getInstance(NetworkConfiguration.class),
-                InetAddress.getByName(configuration.getString("Bacta/GameServer", "BindIp")),
-                configuration.getInt("Bacta/GameServer", "Port"),
-                ServerType.GAME,
-                soeMessageRouter,
-                configuration.getStringCollection("Bacta/GameServer", "TrustedClient"));
-
+        // One might consider this a hack
         ((GameOutgoingConnectionService)outgoingConnectionService).createConnection = transceiver::createOutgoingConnection;
-
-        soeMessageRouter.load();
     }
 
     @Override
     public void run() {
-        logger.info("Starting");
+        LOGGER.info("Starting");
         try {
 
             Thread agentThread = new Thread(connectionServerAgent);
@@ -96,7 +90,7 @@ public class GameServer implements Runnable {
             agentThread.interrupt();
 
         } catch (Exception e) {
-            logger.error("Error starting game transceiver", e);
+            LOGGER.error("Error starting game transceiver", e);
         }
     }
 
@@ -105,7 +99,11 @@ public class GameServer implements Runnable {
             transceiver.stop();
         }
     }
-    
+
+    /**
+     * GameOutgoingConnectionService uses a function reference to the {@link SoeTransceiver#createOutgoingConnection(InetSocketAddress, Consumer)}
+     * method to provide various services with a consistent manner in which to initialize outgoing communication
+     */
     @Singleton
     final static public class GameOutgoingConnectionService implements OutgoingConnectionService {
 

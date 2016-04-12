@@ -1,7 +1,9 @@
 package com.ocdsoft.bacta.soe.object;
 
 import com.ocdsoft.bacta.engine.buffer.ByteBufferSerializable;
+import com.ocdsoft.bacta.engine.utils.BufferUtil;
 import lombok.Data;
+import org.magnos.steer.vec.Vec3;
 
 import javax.vecmath.Quat4f;
 import javax.vecmath.Vector3f;
@@ -13,51 +15,51 @@ import java.nio.ByteBuffer;
 @Data
 public class Transform implements ByteBufferSerializable {
 
-    private final Quat4f orientation;
-    private final Vector3f position;
+    private Quat4f orientation;
+    private Vec3 position;
 
     public Transform() {
         this.orientation = new Quat4f();
-        this.position = new Vector3f();
+        this.position = new Vec3();
     }
 
     public Transform(Quat4f orientation) {
         this.orientation = orientation;
-        this.position = new Vector3f();
+        this.position = new Vec3();
     }
 
-    public Transform(Vector3f position) {
+    public Transform(Vec3 position) {
         this.orientation = new Quat4f();
         this.position = position;
     }
 
-    public Transform(Vector3f position, Quat4f orientation) {
+    public Transform(Vec3 position, Quat4f orientation) {
         this.orientation = orientation;
         this.position = position;
     }
 
-
     @Override
     public void readFromBuffer(ByteBuffer buffer) {
-        orientation.x = buffer.getFloat();
-        orientation.y = buffer.getFloat();
-        orientation.z = buffer.getFloat();
-        orientation.w = buffer.getFloat();
-
-        position.x = buffer.getFloat();
-        position.z = buffer.getFloat();
-        position.y = buffer.getFloat();
+        orientation = BufferUtil.getQuat4f(buffer);
+        position = BufferUtil.getVec3(buffer);
     }
 
     @Override
     public void writeToBuffer(ByteBuffer buffer) {
-        buffer.putFloat(orientation.x);
-        buffer.putFloat(orientation.y);
-        buffer.putFloat(orientation.z);
-        buffer.putFloat(orientation.w);
+        BufferUtil.putQuat4f(buffer, orientation);
+        BufferUtil.putVec3(buffer, position);
+    }
 
-        buffer.putFloat(position.x);
-        buffer.putFloat(position.z);
-        buffer.putFloat(position.y);
+    public void setOrientation(float x, float y, float z, float w) {
+        this.orientation.x = x;
+        this.orientation.y = y;
+        this.orientation.z = z;
+        this.orientation.w = w;
+    }
+
+    public void setPosition(float x, float z, float y) {
+        this.position.x = x;
+        this.position.z = z;
+        this.position.y = y;
     }
 }
