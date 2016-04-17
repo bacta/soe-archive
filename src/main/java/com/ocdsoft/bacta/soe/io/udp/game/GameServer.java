@@ -23,16 +23,11 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 /**
- * GameServer is the main class which starts the services running for the game
+ * GameServer is the main class which starts the services running
  */
 public final class GameServer implements Runnable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GameServer.class);
-
-    /**
-     * The server-wide configuration object
-     */
-    private final BactaConfiguration configuration;
 
     /**
      * Various metadata about the game server
@@ -49,22 +44,30 @@ public final class GameServer implements Runnable {
      */
     private final SoeTransceiver transceiver;
 
+    /**
+     * Ping server helps the client gauge its latency
+     */
+    private final PingServer pingServer;
+
     @Inject
-    public GameServer(final BactaConfiguration configuration,
-                      final GameServerState serverState,
+    public GameServer(final GameServerState serverState,
                       final SoeTransceiver transceiver,
+                      final PingServer pingServer,
                       final OutgoingConnectionService outgoingConnectionService,
                       final ConnectionServerAgent connectionServerAgent) throws UnknownHostException {
 
-        this.configuration = configuration;
         this.serverState = serverState;
         this.transceiver = transceiver;
+        this.pingServer = pingServer;
         this.connectionServerAgent = connectionServerAgent;
 
-        // One might consider this a hack
+        // One might consider this a hack, but it allows us to use scope in referencing the method desired without making it public
         ((GameOutgoingConnectionService)outgoingConnectionService).createConnection = transceiver::createOutgoingConnection;
     }
 
+    /**
+     * Main method that starts both the
+     */
     @Override
     public void run() {
         LOGGER.info("Starting");
@@ -74,9 +77,7 @@ public final class GameServer implements Runnable {
             agentThread.setName("Connection Server Agent");
             agentThread.start();
 
-            Thread pingThread = new Thread(new PingServer(
-                    InetAddress.getByName(configuration.getString("Bacta/GameServer", "BindIp")),
-                    configuration.getIntWithDefault("Bacta/GameServer", "Ping", 44462)));
+            Thread pingThread = new Thread(pingServer);
             pingThread.start();
 
             serverState.setServerStatus(ServerStatus.UP);
@@ -84,13 +85,14 @@ public final class GameServer implements Runnable {
 
             // Blocks until stopped
             transceiver.run();
-
             serverState.setServerStatus(ServerStatus.DOWN);
+
             connectionServerAgent.update();
             agentThread.interrupt();
 
         } catch (Exception e) {
             LOGGER.error("Error starting game transceiver", e);
+            serverState.setServerStatus(ServerStatus.DOWN);
         }
     }
 

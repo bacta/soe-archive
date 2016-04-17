@@ -12,7 +12,7 @@ import java.nio.ByteBuffer;
  {
  };
  */
-public class ChatOnConnectAvatar extends GameNetworkMessage{
+public class ChatOnConnectAvatar extends GameNetworkMessage {
 
     private static final short priority = 0x1;
     private static final int messageType = SOECRC32.hashCode(ChatOnConnectAvatar.class.getSimpleName());

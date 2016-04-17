@@ -1,5 +1,6 @@
 package com.ocdsoft.bacta.soe.object.chat;
 
+import com.ocdsoft.bacta.engine.buffer.ByteBufferSerializable;
 import com.ocdsoft.bacta.engine.buffer.ByteBufferWritable;
 import com.ocdsoft.bacta.engine.utils.BufferUtil;
 import lombok.Getter;
@@ -16,13 +17,23 @@ import java.nio.ByteBuffer;
  * This helps to distinguish the chat user from other users who may be connected to the same chat server, yet using
  * different games or the same game on a different game server.
  */
-public final class ChatAvatarId implements ByteBufferWritable {
+public final class ChatAvatarId implements ByteBufferSerializable {
+
     @Getter
     private String gameCode;
     @Getter
     private String cluster;
     @Getter
     private String name;
+
+    /**
+     *
+     */
+    public ChatAvatarId() {
+        this.gameCode = "";
+        this.cluster = "";
+        this.name = "";
+    }
 
     /**
      * Creates a new ChatAvatarId based on the three components game, server, and username.
@@ -35,20 +46,6 @@ public final class ChatAvatarId implements ByteBufferWritable {
         this.gameCode = gameCode;
         this.cluster = cluster;
         this.name = name;
-    }
-
-    /**
-     * Creates a new ChatAvatarId based on the buffer of an incoming {@link ByteBuffer}. Reads each component as
-     * an individual ASCII 8-bit sequence of characters. The ASCII string is encoded with its length as a short
-     * before the bytes of the string, and is not null terminated. This constructor will advance the position of
-     * BactaBuffer's underlying buffer.
-     *
-     * @param buffer The {@link ByteBuffer} containing the parts of the ChatAvatarId.
-     */
-    public ChatAvatarId(ByteBuffer buffer) {
-        this.gameCode = BufferUtil.getAscii(buffer);
-        this.cluster = BufferUtil.getAscii(buffer);
-        this.name = BufferUtil.getAscii(buffer);
     }
 
     /**
@@ -95,5 +92,12 @@ public final class ChatAvatarId implements ByteBufferWritable {
         BufferUtil.putAscii(buffer, gameCode);
         BufferUtil.putAscii(buffer, cluster);
         BufferUtil.putAscii(buffer, name);
+    }
+
+    @Override
+    public void readFromBuffer(ByteBuffer buffer) {
+        this.gameCode = BufferUtil.getAscii(buffer);
+        this.cluster = BufferUtil.getAscii(buffer);
+        this.name = BufferUtil.getAscii(buffer);
     }
 }

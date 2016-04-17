@@ -68,8 +68,11 @@ public class ChatRoomData implements ByteBufferWritable {
 
         address = BufferUtil.getAscii(buffer);
 
-        owner = new ChatAvatarId(buffer);
-        creator = new ChatAvatarId(buffer);
+        owner = new ChatAvatarId();
+        owner.readFromBuffer(buffer);
+
+        creator = new ChatAvatarId();
+        creator.readFromBuffer(buffer);
 
         title = BufferUtil.getUnicode(buffer);
 

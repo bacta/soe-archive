@@ -25,58 +25,39 @@ import java.util.function.Consumer;
  * Created by kburkhardt on 2/14/14.
  */
 
+@Singleton
 public class LoginServer implements Runnable {
 
-    private static final Logger logger = LoggerFactory.getLogger(LoginServer.class);
-
-    private final BactaConfiguration configuration;
+    private static final Logger LOGGER = LoggerFactory.getLogger(LoginServer.class);
 
     private final LoginServerState serverState;
 
     private final SoeTransceiver transceiver;
 
     @Inject
-    public LoginServer(final BactaConfiguration configuration,
-                       final LoginServerState serverState,
-                       final OutgoingConnectionService outgoingConnectionService,
-                       final Injector injector,
-                       final MetricRegistry metricRegistry) throws UnknownHostException {
+    public LoginServer(final LoginServerState serverState,
+                       final SoeTransceiver transceiver,
+                       final OutgoingConnectionService outgoingConnectionService) {
 
-        this.configuration = configuration;
         this.serverState = serverState;
-
-        SoeDevMessageDispatcher soeMessageRouter = new SoeDevMessageDispatcher(
-                injector,
-                configuration.getStringCollection("Bacta/LoginServer", "swgControllerClasspath")
-        );
-
-        serverState.setServerStatus(ServerStatus.LOADING);
-
-        transceiver = new SoeTransceiver(
-                metricRegistry,
-                injector.getInstance(NetworkConfiguration.class),
-                InetAddress.getByName(configuration.getString("Bacta/LoginServer", "BindIp")),
-                configuration.getInt("Bacta/LoginServer", "Port"),
-                ServerType.LOGIN,
-                soeMessageRouter,
-                configuration.getStringCollection("Bacta/LoginServer", "TrustedClient"));
+        this.transceiver = transceiver;
 
         ((LoginOutgoingConnectionService)outgoingConnectionService).createConnection = transceiver::createOutgoingConnection;
-
-        soeMessageRouter.load();
     }
 
     @Override
     public void run() {
-        logger.info("Starting");
+
 
         try {
-            
+
+            LOGGER.info("Starting");
             serverState.setServerStatus(ServerStatus.UP);
             transceiver.run();
+            LOGGER.info("Stopping");
 
         } catch (Exception e) {
-            logger.error("Error login game transceiver", e);
+            LOGGER.error("Error login transceiver", e);
         }
     }
 

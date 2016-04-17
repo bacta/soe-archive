@@ -1,10 +1,9 @@
 package com.ocdsoft.bacta.soe.dispatch;
 
+import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Singleton;
-import com.ocdsoft.bacta.engine.conf.BactaConfiguration;
 import com.ocdsoft.bacta.engine.utils.BufferUtil;
-import com.ocdsoft.bacta.soe.ServerState;
 import com.ocdsoft.bacta.soe.SoeController;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 import com.ocdsoft.bacta.soe.controller.SoeMessageController;
@@ -25,17 +24,17 @@ import java.util.*;
 @Singleton
 public final class SoeDevMessageDispatcher implements SoeMessageDispatcher {
 
-    private final static Logger logger = LoggerFactory.getLogger(SoeDevMessageDispatcher.class);
+    private final static Logger LOGGER = LoggerFactory.getLogger(SoeDevMessageDispatcher.class);
 
     private Map<UdpPacketType, SoeMessageController> controllers = new HashMap<>();
 
-    private final Injector injector;
-    private final Collection<String> swgControllerClasspaths;
+    private final GameNetworkMessageDispatcher gameNetworkMessageDispatcher;
 
-    public SoeDevMessageDispatcher(final Injector injector, final Collection<String> swgControllerClasspaths) {
-        
-        this.injector = injector;
-        this.swgControllerClasspaths = swgControllerClasspaths;
+    @Inject
+    public SoeDevMessageDispatcher(final Injector injector, final GameNetworkMessageDispatcher gameNetworkMessageDispatcher) {
+        this.gameNetworkMessageDispatcher = gameNetworkMessageDispatcher;
+
+        load(injector);
     }
 
     @Override
@@ -44,7 +43,7 @@ public final class SoeDevMessageDispatcher implements SoeMessageDispatcher {
         byte zeroByte = buffer.get();
         byte type = buffer.get();
         if(type < 0 || type > 0x1E) {
-            throw new RuntimeException("Type out of range:" + type + " " + buffer.toString() + " " + SoeMessageUtil.bytesToHex(buffer));
+            throw new RuntimeException("Type out of range: {} {}" + type + " " + buffer.toString() + " " + SoeMessageUtil.bytesToHex(buffer));
         }
 
         UdpPacketType packetType = UdpPacketType.values()[type];
@@ -52,23 +51,22 @@ public final class SoeDevMessageDispatcher implements SoeMessageDispatcher {
         SoeMessageController controller = controllers.get(packetType);
 
         if (controller == null) {
-            logger.error("Unhandled SOE Opcode 0x" + Integer.toHexString(packetType.getValue()).toUpperCase());
-            logger.error(SoeMessageUtil.bytesToHex(buffer));
+            LOGGER.error("Unhandled SOE Opcode 0x{}", Integer.toHexString(packetType.getValue()).toUpperCase());
+            LOGGER.error(SoeMessageUtil.bytesToHex(buffer));
             return;
         }
 
         try {
 
-            logger.trace("Routing to " + controller.getClass().getSimpleName() + ": " + BufferUtil.bytesToHex(buffer));
+            LOGGER.trace("Routing to {} : {}", controller.getClass().getSimpleName(), BufferUtil.bytesToHex(buffer));
             controller.handleIncoming(zeroByte, packetType, client, buffer);
 
         } catch (Exception e) {
-            logger.error("SOE Routing", e);
+            LOGGER.error("SOE Routing", e);
         }
     }
 
-    @Override
-    public void load() {
+    public void load(final Injector injector) {
         
         Reflections reflections = new Reflections();
 
@@ -77,15 +75,6 @@ public final class SoeDevMessageDispatcher implements SoeMessageDispatcher {
         Iterator<Class<? extends SoeMessageController>> iter = subTypes.iterator();
 
         controllers.clear();
-
-        ServerState serverState = injector.getInstance(ServerState.class);
-        BactaConfiguration configuration = injector.getInstance(BactaConfiguration.class);
-
-        GameNetworkMessageDispatcher gameNetworkMessageDispatcher = new GameNetworkDevMessageDispatcher(
-                injector,
-                serverState,
-                swgControllerClasspaths,
-                configuration.getBoolean("SharedNetwork", "generateControllers"));
 
         while (iter.hasNext()) {
 
@@ -100,12 +89,12 @@ public final class SoeDevMessageDispatcher implements SoeMessageDispatcher {
                 SoeController controllerAnnotation = controllerClass.getAnnotation(SoeController.class);
 
                 if (controllerAnnotation == null) {
-                    logger.info("Missing @SoeController annotation, discarding: " + controllerClass.getName());
+                    LOGGER.info("Missing @SoeController annotation, discarding: {}", controllerClass.getName());
                     continue;
                 }
 
                 UdpPacketType[] types = controllerAnnotation.handles();
-                logger.debug("Loading SoeMessageController: " + serverState.getServerType() + " " + controllerClass.getSimpleName());
+                LOGGER.debug("Loading SoeMessageController: {}", controllerClass.getSimpleName());
 
                 SoeMessageController controller = injector.getInstance(controllerClass);
                 controller.setSoeMessageDispatcher(this);
@@ -114,14 +103,14 @@ public final class SoeDevMessageDispatcher implements SoeMessageDispatcher {
                 for(UdpPacketType udpPacketType : types) {
 
                     if (!controllers.containsKey(udpPacketType)) {
-                        logger.trace("Adding SOE controller: " + controller.getClass().getSimpleName());
+                        LOGGER.trace("Adding SOE controller: " + controller.getClass().getSimpleName());
                         synchronized (controllers) {
                             controllers.put(udpPacketType, controller);
                         }
                     }
                 }
             } catch (Exception e) {
-                logger.error("Unable to add controller", e);
+                LOGGER.error("Unable to add controller", e);
             }
         }
     }

@@ -1,4 +1,4 @@
-package com.ocdsoft.bacta.soe.chat;
+package com.ocdsoft.bacta.soe.io.udp.chat;
 
 import com.ocdsoft.bacta.engine.network.client.ServerStatus;
 import com.ocdsoft.bacta.soe.ServerState;
@@ -12,6 +12,16 @@ public class ChatServerState implements ServerState {
 
     public ChatServerState() {
         this.serverStatus = ServerStatus.DOWN;
+    }
+
+    @Override
+    public void setId(int id) {
+
+    }
+
+    @Override
+    public int getId() {
+        return 0;
     }
 
     @Override

@@ -1,11 +1,13 @@
 package com.ocdsoft.bacta.soe.dispatch;
 
+import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Singleton;
 import com.ocdsoft.bacta.soe.*;
 import com.ocdsoft.bacta.soe.connection.ConnectionRole;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 import com.ocdsoft.bacta.soe.factory.GameNetworkMessageFactory;
+import com.ocdsoft.bacta.soe.io.udp.NetworkConfiguration;
 import com.ocdsoft.bacta.soe.message.GameNetworkMessage;
 import com.ocdsoft.bacta.soe.util.ClientString;
 import com.ocdsoft.bacta.soe.util.GameNetworkMessageTemplateWriter;
@@ -57,15 +59,16 @@ public final class GameNetworkDevMessageDispatcher implements GameNetworkMessage
      */
     private final GameNetworkMessageTemplateWriter gameNetworkMessageTemplateWriter;
 
+    @Inject
     public GameNetworkDevMessageDispatcher(final Injector injector,
+                                           final NetworkConfiguration configuration,
                                            final GameNetworkMessageFactory gameNetworkMessageFactory,
-                                           final GameNetworkMessageTemplateWriter gameNetworkMessageTemplateWriter,
-                                           final Collection<String> swgControllerClasspaths) {
+                                           final GameNetworkMessageTemplateWriter gameNetworkMessageTemplateWriter) {
 
         this.gameNetworkMessageFactory = gameNetworkMessageFactory;
         this.gameNetworkMessageTemplateWriter = gameNetworkMessageTemplateWriter;
 
-        loadControllers(injector, swgControllerClasspaths);
+        loadControllers(injector, configuration.getControllers());
     }
 
     @Override
@@ -183,7 +186,7 @@ public final class GameNetworkDevMessageDispatcher implements GameNetworkMessage
 
             if (!controllers.containsKey(hash)) {
                 String propertyName = Integer.toHexString(hash);
-                LOGGER.debug("Adding Controller for " + serverEnv + ": " + controllerClass.getName() + " " + ClientString.get(propertyName) + "' 0x" + propertyName);
+                LOGGER.debug("Adding Controller {} '{}' 0x{}", controllerClass.getName(), ClientString.get(propertyName) + "' 0x" + propertyName);
 
                 synchronized (controllers) {
                     controllers.put(hash, newControllerData);

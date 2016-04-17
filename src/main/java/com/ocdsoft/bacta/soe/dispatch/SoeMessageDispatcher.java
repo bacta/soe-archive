@@ -9,5 +9,4 @@ import java.nio.ByteBuffer;
  */
 public interface SoeMessageDispatcher {
     void dispatch(SoeUdpConnection client, ByteBuffer buffer);
-    void load();
 }

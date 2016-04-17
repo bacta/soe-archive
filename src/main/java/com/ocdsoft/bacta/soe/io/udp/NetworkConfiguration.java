@@ -13,85 +13,47 @@ import java.util.Collection;
 /**
  * Created by kburkhardt on 2/7/15.
  */
-@Singleton
-@Getter
-public final class NetworkConfiguration {
+public interface NetworkConfiguration {
 
-    private final InetAddress bindIp;
-    private final int port;
-    private final Collection<String> trustedClients;
+    int getMaxMultiPayload();
 
-    private final int protocolVersion;
-    private final int maxRawPacketSize;
-    private final byte crcBytes;
-    private final EncryptMethod encryptMethod;
+    int getMaxReliablePayload();
 
-    private final boolean compression;
-    private final int networkThreadSleepTimeMs;
+    InetAddress getBindIp();
 
-    private final boolean reportUdpDisconnects;
+    int getPort();
 
-    private final int resendDelayAdjust;
-    private final int resendDelayPercent;
+    Collection<String> getTrustedClients();
 
-    private final int noDataTimeout;
-    private final int maxInstandingPackets;
-    private final int maxOutstandingPackets;
+    int getProtocolVersion();
 
-    private final boolean multiSoeMessages;
-    private final boolean multiGameMessages;
+    int getMaxRawPacketSize();
 
-    private final boolean disableInstrumentation;
-    
-//    logAllNetworkTraffic = false
-//    incomingBufferSize = 4194304
-//    outgoingBufferSize = 4194304
-//    maxConnections = 1000
-//
-//    maxOutstandingBytes = 204800
-//    fragmentSize = 496
-//    pooledPacketMax = 1024
-//    packettHistoryMax = 100
-//    oldestUnacknowledgedTimeout = 90000
-//    reportStatisticsInterval = 60000
-//
-//    pooledPAcketInitial = 1024
-//
-//
-//    reliableOverflowBytes = 2097152
-//    logConnectionConstructionDestruction = false
-//    logConnectionOpenedClosed = false
-    
-    @Inject
-    public NetworkConfiguration(final BactaConfiguration configuration) throws UnknownHostException {
-        bindIp = InetAddress.getByName(configuration.getString("Bacta/GameServer", "BindIp"));
-        port = configuration.getInt("Bacta/GameServer", "Port");
-        trustedClients = configuration.getStringCollection("Bacta/GameServer", "TrustedClient");
-        protocolVersion = configuration.getIntWithDefault("SharedNetwork", "protocolVersion", 2);
-        maxRawPacketSize = configuration.getIntWithDefault("SharedNetwork", "maxRawPacketSize", 496);
-        crcBytes = configuration.getByteWithDefault("SharedNetwork", "crcBytes", (byte) 2);
-        compression = configuration.getBooleanWithDefault("SharedNetwork", "compression", true);
-        networkThreadSleepTimeMs = configuration.getIntWithDefault("SharedNetwork", "networkThreadSleepTimeMs", 20);
-        reportUdpDisconnects = configuration.getBooleanWithDefault("SharedNetwork", "reportUdpDisconnects", false);
-        String method = configuration.getStringWithDefault("SharedNetwork", "encryptMethod", "XOR");
-        encryptMethod = EncryptMethod.valueOf(method != null ? method : "NONE");
-        resendDelayAdjust = configuration.getIntWithDefault("SharedNetwork", "resendDelayAdjust", 500);
-        resendDelayPercent = configuration.getIntWithDefault("SharedNetwork", "resendDelayPercent", 125);
-        noDataTimeout = configuration.getIntWithDefault("SharedNetwork", "noDataTimeout", 46000);
-        maxInstandingPackets = configuration.getIntWithDefault("SharedNetwork", "maxInstandingPackets", 400);
-        maxOutstandingPackets = configuration.getIntWithDefault("SharedNetwork", "maxOutstandingPackets", 400);
-        multiSoeMessages = configuration.getBooleanWithDefault("SharedNetwork", "multiSoeMessages", true);
-        multiGameMessages = configuration.getBooleanWithDefault("SharedNetwork", "multiGameMessages", true);
-        disableInstrumentation = configuration.getBooleanWithDefault("SharedNetwork", "disableInstrumentation", false);
+    byte getCrcBytes();
 
-    }
+    EncryptMethod getEncryptMethod();
 
-    public int getMaxMultiPayload() {
-        return maxRawPacketSize - crcBytes - 5;
-    }
+    boolean isCompression();
 
-    public int getMaxReliablePayload() {
-        return maxRawPacketSize - crcBytes - 5;
-    }
+    int getNetworkThreadSleepTimeMs();
 
+    boolean isReportUdpDisconnects();
+
+    int getResendDelayAdjust();
+
+    int getResendDelayPercent();
+
+    int getNoDataTimeout();
+
+    int getMaxInstandingPackets();
+
+    int getMaxOutstandingPackets();
+
+    boolean isMultiSoeMessages();
+
+    boolean isMultiGameMessages();
+
+    boolean isDisableInstrumentation();
+
+    Collection<String> getControllers();
 }
