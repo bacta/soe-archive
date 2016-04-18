@@ -34,7 +34,9 @@ public final class SoeDevMessageDispatcher implements SoeMessageDispatcher {
     public SoeDevMessageDispatcher(final Injector injector, final GameNetworkMessageDispatcher gameNetworkMessageDispatcher) {
         this.gameNetworkMessageDispatcher = gameNetworkMessageDispatcher;
 
-        load(injector);
+        if(injector != null) {
+            load(injector);
+        }
     }
 
     @Override

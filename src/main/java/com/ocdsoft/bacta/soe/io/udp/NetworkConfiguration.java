@@ -55,5 +55,5 @@ public interface NetworkConfiguration {
 
     boolean isDisableInstrumentation();
 
-    Collection<String> getControllers();
+    String getBasePackage();
 }

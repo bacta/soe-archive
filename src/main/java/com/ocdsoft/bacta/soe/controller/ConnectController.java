@@ -20,7 +20,7 @@ import java.nio.ByteBuffer;
 
 @SoeController(handles = {UdpPacketType.cUdpPacketConnect})
 public class ConnectController extends BaseSoeController {
-    private static final Logger logger = LoggerFactory.getLogger(ConnectController.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConnectController.class);
 
     private final NetworkConfiguration networkConfiguration;
     private final SessionKeyService keyService;
@@ -40,7 +40,7 @@ public class ConnectController extends BaseSoeController {
         
         if(protocolVersion != networkConfiguration.getProtocolVersion()) {
             connection.terminate(TerminateReason.REFUSED);
-            logger.warn("Client from '{}' attempted to use a non-supported protocol version: {}" + connection.getRemoteAddress().getHostString(), protocolVersion);
+            LOGGER.warn("Client from '{}' attempted to use a non-supported protocol version: {}" + connection.getRemoteAddress().getHostString(), protocolVersion);
             return;
         }
         
@@ -74,7 +74,7 @@ public class ConnectController extends BaseSoeController {
                 }
 
             } catch (Exception e) {
-                logger.error("Unable to register bean", e);
+                LOGGER.error("Unable to register bean", e);
             }
         }
     }

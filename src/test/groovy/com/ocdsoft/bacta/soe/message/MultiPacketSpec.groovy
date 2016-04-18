@@ -7,6 +7,7 @@ import com.ocdsoft.bacta.soe.controller.*
 import com.ocdsoft.bacta.soe.io.udp.NetworkConfiguration
 import com.ocdsoft.bacta.soe.dispatch.SoeDevMessageDispatcher
 import com.ocdsoft.bacta.soe.dispatch.GameNetworkMessageDispatcher
+import com.ocdsoft.bacta.soe.io.udp.game.GameNetworkConfiguration
 import com.ocdsoft.bacta.soe.util.SoeMessageUtil
 import spock.lang.Shared
 import spock.lang.Specification
@@ -38,7 +39,7 @@ class MultiPacketSpec extends Specification {
         setup:
         def multiList = SoeMessageUtil.readTextPacketDump(new File(this.getClass().getResource("/multipackets.txt").getFile()))
         def bactaConfig = new IniBactaConfiguration()
-        def networkConfig = new NetworkConfiguration(bactaConfig)
+        def networkConfig = new GameNetworkConfiguration(bactaConfig)
         
         def soeUdpConnection = new SoeUdpConnection(networkConfig, null, ConnectionState.DISCONNECTED, null)
         
@@ -60,7 +61,7 @@ class MultiPacketSpec extends Specification {
     def loadControllers(controllers) {
 
         def swgMessageRouter = Mock(GameNetworkMessageDispatcher) {
-            dispatch(_,_,_,_) >> { byte zeroByte, int opcode, SoeUdpConnection connection, ByteBuffer buffer ->
+            dispatch(_,_,_,_) >> { short zeroByte, int opcode, SoeUdpConnection connection, ByteBuffer buffer ->
                 processedPackets.add(buffer)
             }
         }

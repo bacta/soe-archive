@@ -104,6 +104,7 @@ public final class SoeUdpConnection extends UdpConnection implements SoeUdpConne
         clientSequenceNumber = new AtomicInteger();
         fragmentContainer = new FragmentContainer();
         roles = new ArrayList<>();
+        roles.add(ConnectionRole.UNAUTHENTICATED);
         gameNetworkMessagesSent = new AtomicInteger();
         protocolMessagesSent = new AtomicInteger();
 

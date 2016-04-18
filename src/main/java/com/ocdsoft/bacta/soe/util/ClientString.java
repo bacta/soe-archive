@@ -16,7 +16,7 @@ public class ClientString {
 	private static Properties prop;
 	
 	static {
-		InputStream stream = ClientString.class.getResourceAsStream("/clientstrings.txt");
+		InputStream stream = ClientString.class.getResourceAsStream("/clientstrings.properties");
 		prop = new Properties();
 		try {
 			prop.load(stream);

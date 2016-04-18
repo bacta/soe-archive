@@ -1,6 +1,10 @@
 package com.ocdsoft.bacta.soe.util;
 
+import com.google.inject.Inject;
+import com.ocdsoft.bacta.engine.conf.BactaConfiguration;
+import com.ocdsoft.bacta.soe.ServerState;
 import com.ocdsoft.bacta.soe.ServerType;
+import com.ocdsoft.bacta.soe.io.udp.NetworkConfiguration;
 import org.apache.velocity.Template;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
@@ -13,6 +17,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 /**
  * Created by kburkhardt on 1/31/15.
@@ -29,31 +34,33 @@ public class GameNetworkMessageTemplateWriter {
 
     private final String messageFilePath;
     private final String messageClassPath;
-    
-    private final String controllerFile;
 
-    public GameNetworkMessageTemplateWriter(final ServerType serverEnv) {
+    @Inject
+    public GameNetworkMessageTemplateWriter(final NetworkConfiguration configuration, final ServerState serverState) {
 
-        this.serverEnv = serverEnv;
+        this.serverEnv = serverState.getServerType();
 
         ve = new VelocityEngine();
         ve.setProperty(RuntimeConstants.RUNTIME_LOG_LOGSYSTEM_CLASS, logger);
         ve.setProperty(RuntimeConstants.RESOURCE_LOADER, "classpath");
         ve.setProperty("classpath.resource.loader.class", ClasspathResourceLoader.class.getName());
 
-
         ve.setProperty(RuntimeConstants.FILE_RESOURCE_LOADER_CACHE, "true");
         ve.init();
 
-        controllerClassPath = System.getProperty("base.classpath") + ".controller";
-        controllerFilePath = System.getProperty("template.filepath") + "/src/main/java/" +
-                System.getProperty("base.classpath").replace(".", "/") + "/controller/";
-        
-        messageClassPath = System.getProperty("base.classpath") + ".message";
-        messageFilePath = System.getProperty("template.filepath") + "/src/main/java/" +
-                System.getProperty("base.classpath").replace(".", "/") + "/message/";
+        controllerClassPath = configuration.getBasePackage() + ".controller." + serverEnv.name().toLowerCase();
+        String fs = System.getProperty("file.separator");
 
-        controllerFile = System.getProperty("template.filepath") + "/src/main/resources/swgcontrollers.lst";
+        controllerFilePath = System.getProperty("user.dir") + fs + System.getProperty("bacta.serverPath") + fs + "src"
+                + fs + "main" + fs + "java" + fs +
+                configuration.getBasePackage().replace(".", fs) + fs + "controller" + fs +
+                serverEnv.name().toLowerCase() + fs;
+        
+        messageClassPath = configuration.getBasePackage() + ".message." + serverEnv.name().toLowerCase();
+        messageFilePath = System.getProperty("user.dir") + fs + System.getProperty("bacta.serverPath") + fs + "src"
+                + fs + "main" + fs + "java" + fs +
+                configuration.getBasePackage().replace(".", fs) + fs + "message" + fs +
+                serverEnv.name().toLowerCase() + fs;
     }
 
     public void createFiles(int opcode, ByteBuffer buffer) {
@@ -69,10 +76,6 @@ public class GameNetworkMessageTemplateWriter {
         writeController(messageName);
     }
 
-    public void deleteFiles(int opcode) {
-
-    }
-
     private void writeMessage(String messageName, ByteBuffer buffer)  {
 
         String outFileName = messageFilePath + messageName + ".java";
@@ -82,7 +85,7 @@ public class GameNetworkMessageTemplateWriter {
             return;
         }
         
-        Template t = ve.getTemplate("/templates/swgmessage.vm");
+        Template t = ve.getTemplate("/template/GameNetworkMessage.vm");
 
         VelocityContext context = new VelocityContext();
 
@@ -92,9 +95,8 @@ public class GameNetworkMessageTemplateWriter {
         String messageStruct = SoeMessageUtil.makeMessageStruct(buffer);
         context.put("messageStruct", messageStruct);
 
-        context.put("priority", "0x" + Integer.toHexString(buffer.getShort(0)));
-        context.put("opcode", "0x" + Integer.toHexString(buffer.getInt(2)));
-
+        context.put("priority", "0x" + Integer.toHexString(buffer.getShort(4)));
+        context.put("opcode", "0x" + Integer.toHexString(buffer.getInt(6)));
         /* lets render a template */
 
         try {
@@ -125,7 +127,7 @@ public class GameNetworkMessageTemplateWriter {
             return;
         }
 
-        Template t = ve.getTemplate("/templates/swgcontroller.vm");
+        Template t = ve.getTemplate("/template/GameNetworkController.vm");
 
         VelocityContext context = new VelocityContext();
 
@@ -150,13 +152,13 @@ public class GameNetworkMessageTemplateWriter {
             writer.flush();
             writer.close();
 
-            BufferedWriter controllerFileWriter = new BufferedWriter(new FileWriter(new File(controllerFile), true));
-            controllerFileWriter.append(controllerClassPath + "." + className);
-            controllerFileWriter.newLine();
-
-            controllerFileWriter.flush();
-            controllerFileWriter.close();
-            
+//            BufferedWriter controllerFileWriter = new BufferedWriter(new FileWriter(new File(controllerFile), true));
+//            controllerFileWriter.append(controllerClassPath + "." + className);
+//            controllerFileWriter.newLine();
+//
+//            controllerFileWriter.flush();
+//            controllerFileWriter.close();
+//
         } catch(Exception e) {
             logger.error("Unable to write controller", e);
         }

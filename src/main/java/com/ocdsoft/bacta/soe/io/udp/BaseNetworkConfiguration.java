@@ -17,7 +17,7 @@ public abstract class BaseNetworkConfiguration implements NetworkConfiguration {
     protected InetAddress bindIp;
     protected int port;
     protected Collection<String> trustedClients;
-    protected Collection<String> controllers;
+    protected String basePackage;
 
     private final int protocolVersion;
     private final int maxRawPacketSize;
@@ -78,7 +78,7 @@ public abstract class BaseNetworkConfiguration implements NetworkConfiguration {
         multiSoeMessages = configuration.getBooleanWithDefault("SharedNetwork", "multiSoeMessages", true);
         multiGameMessages = configuration.getBooleanWithDefault("SharedNetwork", "multiGameMessages", true);
         disableInstrumentation = configuration.getBooleanWithDefault("SharedNetwork", "disableInstrumentation", false);
-
+        basePackage = configuration.getStringWithDefault("Bacta/Packages", "basePackage", "");
     }
 
     @Override

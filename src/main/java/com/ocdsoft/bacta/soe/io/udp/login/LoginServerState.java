@@ -8,6 +8,7 @@ import com.ocdsoft.bacta.soe.ServerType;
  * Created by Kyle on 3/22/14.
  */
 public class LoginServerState implements ServerState {
+
     private ServerStatus serverStatus;
 
     public LoginServerState() {

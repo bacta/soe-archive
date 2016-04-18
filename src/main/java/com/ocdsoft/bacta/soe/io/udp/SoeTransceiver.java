@@ -33,7 +33,7 @@ import java.util.function.Consumer;
 //TODO: Document
 public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
 
-    private final static Logger logger = LoggerFactory.getLogger(SoeTransceiver.class);
+    private final static Logger LOGGER = LoggerFactory.getLogger(SoeTransceiver.class);
 
     private final SoeMessageDispatcher soeMessageDispatcher;
 
@@ -109,7 +109,7 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
                 //mBeanServer.registerMBean(baseModelMBean, new ObjectName("Bacta:type=SoeTransceiver,id=" + serverType.name()));
             
             } catch (Exception e) {
-                logger.error("Unable to register transceiver with mbean server", e);
+                LOGGER.error("Unable to register transceiver with mbean server", e);
             }
         }
     }
@@ -145,9 +145,8 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
 
             if(whitelistedAddresses != null && whitelistedAddresses.contains(address.getHostString())) {
                 connection.addRole(ConnectionRole.WHITELISTED);
-                logger.info("Whitelisted address connected: " + address.getHostString());
+                LOGGER.info("Whitelisted address connected: " + address.getHostString());
             }
-
 
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -163,12 +162,12 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
             
             if(whitelistedAddresses != null && whitelistedAddresses.contains(connection.getRemoteAddress().getHostString())) {
                 connection.addRole(ConnectionRole.WHITELISTED);
-                logger.debug("Whitelisted address connected: " + connection.getRemoteAddress().getHostString());
+                LOGGER.debug("Whitelisted address connected: " + connection.getRemoteAddress().getHostString());
             }
 
             connectionMap.put(connection.getRemoteAddress(), connection);
 
-            logger.debug("{} connection to {} now has {} total connected clients.",
+            LOGGER.debug("{} connection to {} now has {} total connected clients.",
                     connection.getClass().getSimpleName(),
                     connection.getRemoteAddress(),
                     connectionMap.size());
@@ -197,12 +196,14 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
 
                 packetType = UdpPacketType.values()[type];
 
+                LOGGER.trace("Recieved {}", packetType);
+
                 if (packetType == UdpPacketType.cUdpPacketConnect) {
 
                     connection = createConnection(sender);
                     connectionMap.put(sender, connection);
 
-                    logger.debug("{} connection from {} now has {} total connected clients.",
+                    LOGGER.debug("{} connection from {} now has {} total connected clients.",
                             connection.getClass().getSimpleName(),
                             sender,
                             connectionMap.size());
@@ -210,11 +211,9 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
                 } else {
 
                     if (connection == null) {
-                        logger.debug("Unsolicited Message from " + sender + ": " + BufferUtil.bytesToHex(buffer));
+                        LOGGER.debug("Unsolicited Message from " + sender + ": " + BufferUtil.bytesToHex(buffer));
                         return;
                     }
-
-
                 }
             } else {
                 packetType = UdpPacketType.cUdpPacketZeroEscape;
@@ -227,6 +226,8 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
             if(buffer != null) {
                 connection.increaseProtocolMessageReceived();
                 soeMessageDispatcher.dispatch(connection, buffer);
+            } else {
+                LOGGER.warn("Unhandled message {}}", packetType);
             }
 
         } catch (Exception e) {
@@ -314,17 +315,17 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
                                 mBeanServer.unregisterMBean(connection.getBeanName());
                             }
                             if(networkConfiguration.isReportUdpDisconnects()) {
-                                logger.info("Client disconnected: " + connection.getRemoteAddress() + " Connection: " + connection.getId() + " Reason: " + connection.getTerminateReason());
+                                LOGGER.info("Client disconnected: " + connection.getRemoteAddress() + " Connection: " + connection.getId() + " Reason: " + connection.getTerminateReason());
                             }
                         }
 
                     } catch (Exception e) {
-                        logger.error("Unknown", e);
+                        LOGGER.error("Unknown", e);
                     }
                     context.stop();
                 }
             } catch (InterruptedException e) {
-                logger.warn("Send thread interrupted", e);
+                LOGGER.warn("Send thread interrupted", e);
             }
         }
 

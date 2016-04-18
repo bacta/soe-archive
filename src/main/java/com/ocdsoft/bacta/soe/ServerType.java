@@ -1,5 +1,6 @@
 package com.ocdsoft.bacta.soe;
 
+import com.google.inject.Inject;
 import lombok.Getter;
 
 /**
@@ -8,12 +9,15 @@ import lombok.Getter;
 public enum ServerType {
 
     CHAT ("chat"),
-    LOGIN ("login"),
+    LOGIN ("cluster"),
     GAME ("game"),
     PING ("ping");
 
     @Getter
     private String group;
+
+    @Inject
+    ServerType() {}
 
     ServerType(String group) {
         this.group = group;

@@ -8,5 +8,5 @@ import java.nio.ByteBuffer;
  * Created by kyle on 4/11/2016.
  */
 public interface GameNetworkMessageFactory {
-    GameNetworkMessage create(int opcode, ByteBuffer buffer);
+    GameNetworkMessage create(int gameMessageType, ByteBuffer buffer);
 }

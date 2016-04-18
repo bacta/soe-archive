@@ -23,10 +23,7 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * GameNetworkDevMessageDispatcher receives and dispatches {@link GameNetworkMessage} instances.  It is able to process
@@ -39,7 +36,7 @@ import java.util.Set;
  */
 
 @Singleton
-public final class GameNetworkDevMessageDispatcher implements GameNetworkMessageDispatcher<ByteBuffer> {
+public final class GameNetworkDevMessageDispatcher implements GameNetworkMessageDispatcher {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GameNetworkDevMessageDispatcher.class);
 
@@ -61,6 +58,7 @@ public final class GameNetworkDevMessageDispatcher implements GameNetworkMessage
 
     @Inject
     public GameNetworkDevMessageDispatcher(final Injector injector,
+                                           final ServerState serverState,
                                            final NetworkConfiguration configuration,
                                            final GameNetworkMessageFactory gameNetworkMessageFactory,
                                            final GameNetworkMessageTemplateWriter gameNetworkMessageTemplateWriter) {
@@ -68,7 +66,7 @@ public final class GameNetworkDevMessageDispatcher implements GameNetworkMessage
         this.gameNetworkMessageFactory = gameNetworkMessageFactory;
         this.gameNetworkMessageTemplateWriter = gameNetworkMessageTemplateWriter;
 
-        loadControllers(injector, configuration.getControllers());
+        loadControllers(injector, serverState);
     }
 
     @Override
@@ -107,33 +105,19 @@ public final class GameNetworkDevMessageDispatcher implements GameNetworkMessage
         }
     }
 
-    private void loadControllers(final Injector injector, final Collection<String> swgControllerClasspaths) {
+    private void loadControllers(final Injector injector, final ServerState serverState) {
 
-        for(String classPath : swgControllerClasspaths) {
+        Reflections reflections = new Reflections();
+        Set<Class<? extends GameNetworkMessageController>> subTypes = reflections.getSubTypesOf(GameNetworkMessageController.class);
+        Iterator<Class<? extends GameNetworkMessageController>> iter = subTypes.iterator();
 
-            try {
-            
-                Class<? extends GameNetworkMessageController> controllerClass = (Class<? extends GameNetworkMessageController>) Class.forName(classPath);
+        while (iter.hasNext()) {
 
-                LOGGER.info("Loading GameNetworkMessageController '{}'", classPath);
+            Class<? extends GameNetworkMessageController> controllerClass = iter.next();
 
-                loadControllerClass(injector, controllerClass);
-                continue;
-                
-            } catch (ClassNotFoundException e) {  }
+            LOGGER.info("Loading GameNetworkMessageController '{}'", controllerClass);
 
-            LOGGER.info("Loading GameNetworkMessageControllers from classpath: '{}'", classPath);
-
-            Reflections reflections = new Reflections(classPath);
-
-            Set<Class<? extends GameNetworkMessageController>> subTypes = reflections.getSubTypesOf(GameNetworkMessageController.class);
-
-            Iterator<Class<? extends GameNetworkMessageController>> iter = subTypes.iterator();
-
-            while (iter.hasNext()) {
-                Class<? extends GameNetworkMessageController> controllerClass = iter.next();
-                loadControllerClass(injector, controllerClass);
-            }
+            loadControllerClass(injector, controllerClass, serverState);
         }
     }
 
@@ -151,7 +135,7 @@ public final class GameNetworkDevMessageDispatcher implements GameNetworkMessage
         LOGGER.error(SoeMessageUtil.bytesToHex(buffer));
     }
     
-    private void loadControllerClass(final Injector injector, Class<? extends GameNetworkMessageController> controllerClass) {
+    private void loadControllerClass(final Injector injector, Class<? extends GameNetworkMessageController> controllerClass, final ServerState serverState) {
 
         try {
             
@@ -166,15 +150,18 @@ public final class GameNetworkDevMessageDispatcher implements GameNetworkMessage
                 return;
             }
 
-
             RolesAllowed rolesAllowed = controllerClass.getAnnotation(RolesAllowed.class);
             if (rolesAllowed == null) {
                 LOGGER.warn("Missing @RolesAllowed annotation, discarding: " + controllerClass.getName());
                 return;
             }
 
-            Class<?> handledMessageClass = controllerAnnotation.value();
+            Class<?> handledMessageClass = controllerAnnotation.message();
+            ServerType serverType = controllerAnnotation.type();
 
+            if(serverType != serverState.getServerType()) {
+                return;
+            }
 
             ConnectionRole[] connectionRoles = rolesAllowed.value();
             GameNetworkMessageController controller = injector.getInstance(controllerClass);

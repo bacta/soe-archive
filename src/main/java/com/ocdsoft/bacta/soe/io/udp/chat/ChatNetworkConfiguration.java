@@ -23,6 +23,5 @@ public final class ChatNetworkConfiguration extends BaseNetworkConfiguration imp
         bindIp = InetAddress.getByName(configuration.getString("Bacta/ChatServer", "BindIp"));
         port = configuration.getInt("Bacta/ChatServer", "Port");
         trustedClients = configuration.getStringCollection("Bacta/ChatServer", "TrustedClient");
-        controllers = configuration.getStringCollection("Bacta/ChatServer", "swgControllerClasspath");
     }
 }

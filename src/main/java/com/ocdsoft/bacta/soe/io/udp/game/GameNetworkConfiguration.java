@@ -23,6 +23,5 @@ public final class GameNetworkConfiguration extends BaseNetworkConfiguration imp
         bindIp = InetAddress.getByName(configuration.getString("Bacta/GameServer", "BindIp"));
         port = configuration.getInt("Bacta/GameServer", "Port");
         trustedClients = configuration.getStringCollection("Bacta/GameServer", "TrustedClient");
-        controllers = configuration.getStringCollection("Bacta/GameServer", "swgControllerClasspath");
     }
 }

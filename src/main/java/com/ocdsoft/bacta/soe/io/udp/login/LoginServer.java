@@ -57,7 +57,7 @@ public class LoginServer implements Runnable {
             LOGGER.info("Stopping");
 
         } catch (Exception e) {
-            LOGGER.error("Error login transceiver", e);
+            LOGGER.error("Error cluster transceiver", e);
         }
     }
 

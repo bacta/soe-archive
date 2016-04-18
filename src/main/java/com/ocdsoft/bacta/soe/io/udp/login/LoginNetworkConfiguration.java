@@ -23,6 +23,5 @@ public final class LoginNetworkConfiguration extends BaseNetworkConfiguration im
         bindIp = InetAddress.getByName(configuration.getString("Bacta/LoginServer", "BindIp"));
         port = configuration.getInt("Bacta/LoginServer", "Port");
         trustedClients = configuration.getStringCollection("Bacta/LoginServer", "TrustedClient");
-        controllers = configuration.getStringCollection("Bacta/LoginServer", "swgControllerClasspath");
     }
 }
