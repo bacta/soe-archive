@@ -157,9 +157,11 @@ public final class GameNetworkDevMessageDispatcher implements GameNetworkMessage
             }
 
             Class<?> handledMessageClass = controllerAnnotation.message();
+            //gameNetworkMessageFactory.addHandledMessageClass();
             ServerType serverType = controllerAnnotation.type();
 
             if(serverType != serverState.getServerType()) {
+                LOGGER.debug("Not loading {} not indicated for this {} server", handledMessageClass, serverType);
                 return;
             }
 

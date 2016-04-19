@@ -6,6 +6,6 @@ import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 
 import java.nio.ByteBuffer;
 
-public interface CommandDispatcher<T> extends MessageDispatcher {
-    void dispatchCommand(int opcode, SoeUdpConnection connection, ByteBuffer message, T invoker);
+public interface CommandDispatcher<M, T> extends MessageDispatcher {
+    void dispatchCommand(int opcode, SoeUdpConnection connection, M message, T invoker);
 }
