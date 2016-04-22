@@ -20,7 +20,6 @@ import org.reflections.Reflections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
 import java.util.*;
@@ -83,23 +82,18 @@ public final class GameNetworkDevMessageDispatcher implements GameNetworkMessage
             connection.increaseGameNetworkMessageReceived();
 
             GameNetworkMessageController controller = controllerData.getGameNetworkMessageController();
-            GameNetworkMessage incomingMessage = gameNetworkMessageFactory.create(gameMessageType, buffer);
+            GameNetworkMessage incomingMessage = gameNetworkMessageFactory.createAndDeserialize(gameMessageType, buffer);
 
-            if(incomingMessage != null) {
-                incomingMessage.readFromBuffer(buffer);
+            try {
 
-                try {
+                LOGGER.debug("Routing to " + controller.getClass().getSimpleName());
 
-                    LOGGER.debug("Routing to " + controller.getClass().getSimpleName());
+                controller.handleIncoming(connection, incomingMessage);
 
-                    controller.handleIncoming(connection, incomingMessage);
-
-                } catch (Exception e) {
-                    LOGGER.error("SWG Message Handling", e);
-                }
-            } else {
-
+            } catch (Exception e) {
+                LOGGER.error("SWG Message Handling", e);
             }
+
         } else {
             handleMissingController(gameMessageType, buffer);
         }
@@ -127,7 +121,7 @@ public final class GameNetworkDevMessageDispatcher implements GameNetworkMessage
 
     private void handleMissingController(int opcode, ByteBuffer buffer) {
 
-        gameNetworkMessageTemplateWriter.createFiles(opcode, buffer);
+        gameNetworkMessageTemplateWriter.createGameNetworkMessageFiles(opcode, buffer);
 
         String propertyName = Integer.toHexString(opcode);
 
@@ -156,8 +150,10 @@ public final class GameNetworkDevMessageDispatcher implements GameNetworkMessage
                 return;
             }
 
-            Class<?> handledMessageClass = controllerAnnotation.message();
-            //gameNetworkMessageFactory.addHandledMessageClass();
+            Class<? extends GameNetworkMessage> handledMessageClass = controllerAnnotation.message();
+            int hash = SOECRC32.hashCode(handledMessageClass.getSimpleName());
+
+            gameNetworkMessageFactory.addHandledMessageClass(hash, handledMessageClass);
             ServerType serverType = controllerAnnotation.type();
 
             if(serverType != serverState.getServerType()) {
@@ -168,10 +164,7 @@ public final class GameNetworkDevMessageDispatcher implements GameNetworkMessage
             ConnectionRole[] connectionRoles = rolesAllowed.value();
             GameNetworkMessageController controller = injector.getInstance(controllerClass);
 
-            int hash = SOECRC32.hashCode(handledMessageClass.getSimpleName());
-            Constructor constructor = handledMessageClass.getConstructor();
-
-            ControllerData newControllerData = new ControllerData(controller, constructor, connectionRoles);
+            ControllerData newControllerData = new ControllerData(controller, connectionRoles);
 
             if (!controllers.containsKey(hash)) {
                 String propertyName = Integer.toHexString(hash);
@@ -191,18 +184,12 @@ public final class GameNetworkDevMessageDispatcher implements GameNetworkMessage
         private final GameNetworkMessageController gameNetworkMessageController;
 
         @Getter
-        private final Constructor constructor;
-
-        @Getter
         private final ConnectionRole[] roles;
 
         public ControllerData(final GameNetworkMessageController gameNetworkMessageController,
-                              final Constructor constructor,
                               final ConnectionRole[] roles) {
             this.gameNetworkMessageController = gameNetworkMessageController;
-            this.constructor = constructor;
             this.roles = roles;
-
         }
 
         public boolean containsRoles(List<ConnectionRole> userRoles) {

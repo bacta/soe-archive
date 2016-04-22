@@ -1,7 +1,7 @@
 package com.ocdsoft.bacta.soe.util;
 
 import com.google.inject.Inject;
-import com.ocdsoft.bacta.engine.conf.BactaConfiguration;
+import com.google.inject.Singleton;
 import com.ocdsoft.bacta.soe.ServerState;
 import com.ocdsoft.bacta.soe.ServerType;
 import com.ocdsoft.bacta.soe.io.udp.NetworkConfiguration;
@@ -17,14 +17,14 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 
 /**
  * Created by kburkhardt on 1/31/15.
  */
-public class GameNetworkMessageTemplateWriter {
+@Singleton
+public final class GameNetworkMessageTemplateWriter {
 
-    private static final Logger logger = LoggerFactory.getLogger(GameNetworkMessageTemplateWriter.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(GameNetworkMessageTemplateWriter.class);
 
     private final VelocityEngine ve;
     private final ServerType serverEnv;
@@ -35,13 +35,28 @@ public class GameNetworkMessageTemplateWriter {
     private final String messageFilePath;
     private final String messageClassPath;
 
+    private final String objControllerClassPath;
+    private final String objControllerFilePath;
+
+    private final String objMessageFilePath;
+    private final String objMessageClassPath;
+
+    private final String commandControllerClassPath;
+    private final String commandControllerFilePath;
+
+    private final String commandMessageFilePath;
+    private final String commandMessageClassPath;
+
+    private final String tangibleClassPath;
+
+
     @Inject
     public GameNetworkMessageTemplateWriter(final NetworkConfiguration configuration, final ServerState serverState) {
 
         this.serverEnv = serverState.getServerType();
 
         ve = new VelocityEngine();
-        ve.setProperty(RuntimeConstants.RUNTIME_LOG_LOGSYSTEM_CLASS, logger);
+        ve.setProperty(RuntimeConstants.RUNTIME_LOG_LOGSYSTEM_CLASS, LOGGER);
         ve.setProperty(RuntimeConstants.RESOURCE_LOADER, "classpath");
         ve.setProperty("classpath.resource.loader.class", ClasspathResourceLoader.class.getName());
 
@@ -61,31 +76,45 @@ public class GameNetworkMessageTemplateWriter {
                 + fs + "main" + fs + "java" + fs +
                 configuration.getBasePackage().replace(".", fs) + fs + "message" + fs +
                 serverEnv.name().toLowerCase() + fs;
+
+        tangibleClassPath = configuration.getBasePackage() + ".object.tangible.TangibleObject";
+
+        objControllerClassPath = controllerClassPath  + ".object";
+        objControllerFilePath = controllerFilePath + fs + "object" + fs;
+
+        objMessageClassPath = messageClassPath + ".object";
+        objMessageFilePath = messageFilePath + fs + "object" + fs;
+
+        commandControllerClassPath = objControllerClassPath + ".command";
+        commandControllerFilePath = objControllerFilePath + fs + "command" + fs;
+
+        commandMessageClassPath = objMessageClassPath + ".command";
+        commandMessageFilePath = objMessageFilePath + fs + "command" + fs;
     }
 
-    public void createFiles(int opcode, ByteBuffer buffer) {
+    public void createGameNetworkMessageFiles(int opcode, ByteBuffer buffer) {
 
         String messageName = ClientString.get(opcode);
         
         if (messageName.isEmpty() || messageName.equalsIgnoreCase("unknown")) {
-            logger.error("Unknown message opcode: 0x" + Integer.toHexString(opcode));
+            LOGGER.error("Unknown message opcode: 0x" + Integer.toHexString(opcode));
             return;
         }
 
-        writeMessage(messageName, buffer);
-        writeController(messageName);
+        writeGameNetworkMessage(messageName, buffer);
+        writeGameNetworkController(messageName);
     }
 
-    private void writeMessage(String messageName, ByteBuffer buffer)  {
+    private void writeGameNetworkMessage(String messageName, ByteBuffer buffer)  {
 
         String outFileName = messageFilePath + messageName + ".java";
         File file = new File(outFileName);
         if(file.exists()) {
-            logger.info("'" + messageName + "' already exists");
+            LOGGER.info("'" + messageName + "' already exists");
             return;
         }
         
-        Template t = ve.getTemplate("/template/GameNetworkMessage.vm");
+        Template template = ve.getTemplate("/template/GameNetworkMessage.vm");
 
         VelocityContext context = new VelocityContext();
 
@@ -97,37 +126,23 @@ public class GameNetworkMessageTemplateWriter {
 
         context.put("priority", "0x" + Integer.toHexString(buffer.getShort(4)));
         context.put("opcode", "0x" + Integer.toHexString(buffer.getInt(6)));
+
         /* lets render a template */
-
-        try {
-            BufferedWriter writer = new BufferedWriter(new FileWriter(new File(outFileName)));
-
-            if (!ve.evaluate(context, writer, t.getName(), "")) {
-                throw new Exception("Failed to convert the template into class.");
-            }
-
-            t.merge(context, writer);
-
-            writer.flush();
-            writer.close();
-        } catch(Exception e) {
-            logger.error("Unable to write message", e);
-        }
-
+        writeTemplate(outFileName, context, template);
     }
     
-    private void writeController(String messageName) {
+    private void writeGameNetworkController(String messageName) {
 
         String className = messageName + "Controller";
         
         String outFileName = controllerFilePath + className + ".java";
         File file = new File(outFileName);
         if(file.exists()) {
-            logger.info("'" + className + "' already exists");
+            LOGGER.info("'" + className + "' already exists");
             return;
         }
 
-        Template t = ve.getTemplate("/template/GameNetworkController.vm");
+        Template template = ve.getTemplate("/template/GameNetworkController.vm");
 
         VelocityContext context = new VelocityContext();
 
@@ -139,30 +154,151 @@ public class GameNetworkMessageTemplateWriter {
         context.put("className", className);
 
         /* lets render a template */
-        
+        writeTemplate(outFileName, context, template);
+    }
+
+    public void createObjFiles(int opcode, ByteBuffer buffer) {
+
+        String messageName = ObjectControllerNames.get(opcode);
+
+        if (messageName.isEmpty() || messageName.equalsIgnoreCase("unknown")) {
+            LOGGER.error("Unknown message opcode: 0x" + Integer.toHexString(opcode));
+            return;
+        }
+
+        writeObjMessage(opcode, messageName, buffer, messageName);
+        writeObjController(opcode, messageName);
+    }
+
+    private void writeObjMessage(int opcode, String messageName, ByteBuffer buffer, String objectControllerName)  {
+
+        String outFileName = objMessageFilePath + messageName + ".java";
+        File file = new File(outFileName);
+        if(file.exists()) {
+            LOGGER.info("'" + messageName + "' already exists");
+            return;
+        }
+
+        Template template = ve.getTemplate("/template/ObjMessage.vm");
+
+        VelocityContext context = new VelocityContext();
+
+        context.put("packageName", objMessageClassPath);
+        context.put("objectControllerName", objectControllerName);
+        context.put("messageName", messageName);
+        context.put("controllerid", Integer.toHexString(opcode));
+
+        String messageStruct = SoeMessageUtil.makeMessageStruct(buffer);
+        context.put("messageStruct", messageStruct);
+
+        /* lets render a template */
+        writeTemplate(outFileName, context, template);
+    }
+
+    private void writeObjController(int opcode, String messageName) {
+
+        String className = messageName + "ObjController";
+        String outFileName = objControllerFilePath + className + ".java";
+        File file = new File(outFileName);
+        if(file.exists()) {
+            LOGGER.info("'" + className + "' already exists");
+            return;
+        }
+
+        Template template = ve.getTemplate("/templates/ObjController.vm");
+
+        VelocityContext context = new VelocityContext();
+
+        context.put("packageName", objControllerClassPath);
+        context.put("tangibleClassPath", tangibleClassPath);
+        context.put("messageClasspath", objMessageClassPath);
+        context.put("messageName", messageName);
+        context.put("className", className);
+        context.put("controllerid", opcode);
+
+        /* lets render a template */
+        writeTemplate(outFileName, context, template);
+    }
+
+    public void createCommandFiles(int opcode, ByteBuffer buffer, String tangibleName, String objectControllerName) {
+
+        String messageName = ObjectControllerNames.get(opcode);
+
+        if (messageName.isEmpty() || messageName.equalsIgnoreCase("unknown")) {
+            LOGGER.error("Unknown message opcode: 0x" + Integer.toHexString(opcode));
+            return;
+        }
+
+        writeCommandMessage(opcode, messageName, buffer, objectControllerName);
+        writeCommandController(opcode, messageName, tangibleName);
+    }
+
+    private void writeCommandMessage(int opcode, String messageName, ByteBuffer buffer, String objectControllerName)  {
+
+        String outFileName = commandMessageFilePath + messageName + ".java";
+        File file = new File(outFileName);
+        if(file.exists()) {
+            LOGGER.info("'" + messageName + "' already exists");
+            return;
+        }
+
+        Template template = ve.getTemplate("/template/CommandMessage.vm");
+
+        VelocityContext context = new VelocityContext();
+
+        context.put("packageName", commandMessageClassPath);
+        context.put("objectControllerName", objectControllerName);
+        context.put("messageName", messageName);
+        context.put("controllerid", Integer.toHexString(opcode));
+
+        String messageStruct = SoeMessageUtil.makeMessageStruct(buffer);
+        context.put("messageStruct", messageStruct);
+
+        /* lets render a template */
+        writeTemplate(outFileName, context, template);
+    }
+
+    private void writeCommandController(int opcode, String messageName, String tangiblePath) {
+
+        String className = messageName + "Command";
+
+        String outFileName = commandControllerFilePath + className + ".java";
+        File file = new File(outFileName);
+        if(file.exists()) {
+            LOGGER.info("'" + className + "' already exists");
+            return;
+        }
+
+        Template template = ve.getTemplate("/template/CommandController.vm");
+
+        VelocityContext context = new VelocityContext();
+
+        context.put("packageName", commandControllerClassPath);
+        context.put("tangibleClassPath", tangiblePath);
+        context.put("messageClasspath", commandMessageClassPath);
+        context.put("messageName", messageName);
+        context.put("className", className);
+        context.put("controllerid", opcode);
+
+        /* lets render a template */
+        writeTemplate(outFileName, context, template);
+    }
+
+    private void writeTemplate(String outFileName, VelocityContext context, Template template) {
         try {
             BufferedWriter writer = new BufferedWriter(new FileWriter(new File(outFileName)));
 
-            if (!ve.evaluate(context, writer, t.getName(), "")) {
+            if (!ve.evaluate(context, writer, template.getName(), "")) {
                 throw new Exception("Failed to convert the template into class.");
             }
 
-            t.merge(context, writer);
+            template.merge(context, writer);
 
             writer.flush();
             writer.close();
-
-//            BufferedWriter controllerFileWriter = new BufferedWriter(new FileWriter(new File(controllerFile), true));
-//            controllerFileWriter.append(controllerClassPath + "." + className);
-//            controllerFileWriter.newLine();
-//
-//            controllerFileWriter.flush();
-//            controllerFileWriter.close();
-//
         } catch(Exception e) {
-            logger.error("Unable to write controller", e);
+            LOGGER.error("Unable to write message", e);
         }
     }
-
 
 }
