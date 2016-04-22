@@ -4,9 +4,9 @@ import com.ocdsoft.bacta.engine.conf.ini.IniBactaConfiguration
 import com.ocdsoft.bacta.engine.network.client.ConnectionState
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection
 import com.ocdsoft.bacta.soe.controller.*
-import com.ocdsoft.bacta.soe.io.udp.NetworkConfiguration
-import com.ocdsoft.bacta.soe.dispatch.SoeDevMessageDispatcher
 import com.ocdsoft.bacta.soe.dispatch.GameNetworkMessageDispatcher
+import com.ocdsoft.bacta.soe.dispatch.SoeDevMessageDispatcher
+import com.ocdsoft.bacta.soe.dispatch.ClasspathControllerLoader
 import com.ocdsoft.bacta.soe.io.udp.game.GameNetworkConfiguration
 import com.ocdsoft.bacta.soe.util.SoeMessageUtil
 import spock.lang.Shared

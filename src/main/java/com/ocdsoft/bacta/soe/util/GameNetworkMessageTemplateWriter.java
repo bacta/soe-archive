@@ -220,20 +220,20 @@ public final class GameNetworkMessageTemplateWriter {
         writeTemplate(outFileName, context, template);
     }
 
-    public void createCommandFiles(int opcode, ByteBuffer buffer, String tangibleName, String objectControllerName) {
+    public void createCommandFiles(int commandHash, ByteBuffer buffer) {
 
-        String messageName = ObjectControllerNames.get(opcode);
+        String messageName = CommandNames.get(commandHash);
 
         if (messageName.isEmpty() || messageName.equalsIgnoreCase("unknown")) {
-            LOGGER.error("Unknown message opcode: 0x" + Integer.toHexString(opcode));
+            LOGGER.error("Unknown message opcode: 0x" + Integer.toHexString(commandHash));
             return;
         }
 
-        writeCommandMessage(opcode, messageName, buffer, objectControllerName);
-        writeCommandController(opcode, messageName, tangibleName);
+        writeCommandMessage(commandHash, messageName, buffer);
+        writeCommandController(commandHash, messageName);
     }
 
-    private void writeCommandMessage(int opcode, String messageName, ByteBuffer buffer, String objectControllerName)  {
+    private void writeCommandMessage(int opcode, String messageName, ByteBuffer buffer)  {
 
         String outFileName = commandMessageFilePath + messageName + ".java";
         File file = new File(outFileName);
@@ -247,7 +247,7 @@ public final class GameNetworkMessageTemplateWriter {
         VelocityContext context = new VelocityContext();
 
         context.put("packageName", commandMessageClassPath);
-        context.put("objectControllerName", objectControllerName);
+        //context.put("objectControllerName", objectControllerName);
         context.put("messageName", messageName);
         context.put("controllerid", Integer.toHexString(opcode));
 
@@ -258,7 +258,7 @@ public final class GameNetworkMessageTemplateWriter {
         writeTemplate(outFileName, context, template);
     }
 
-    private void writeCommandController(int opcode, String messageName, String tangiblePath) {
+    private void writeCommandController(int opcode, String messageName) {
 
         String className = messageName + "Command";
 
@@ -274,7 +274,7 @@ public final class GameNetworkMessageTemplateWriter {
         VelocityContext context = new VelocityContext();
 
         context.put("packageName", commandControllerClassPath);
-        context.put("tangibleClassPath", tangiblePath);
+        context.put("tangibleClassPath", tangibleClassPath);
         context.put("messageClasspath", commandMessageClassPath);
         context.put("messageName", messageName);
         context.put("className", className);

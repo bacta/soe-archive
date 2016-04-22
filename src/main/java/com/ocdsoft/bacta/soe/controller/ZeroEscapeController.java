@@ -1,7 +1,6 @@
 package com.ocdsoft.bacta.soe.controller;
 
 import com.google.inject.Singleton;
-import com.ocdsoft.bacta.soe.SoeController;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 import com.ocdsoft.bacta.soe.message.UdpPacketType;
 

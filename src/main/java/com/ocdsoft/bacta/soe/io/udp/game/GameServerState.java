@@ -12,10 +12,11 @@ import lombok.Data;
  */
 @Singleton
 @Data
-public final class GameServerState implements ServerState {
+public final class GameServerState<T> implements ServerState {
     private int id;
     private ServerType serverType;
     private ServerStatus serverStatus;
+    private T clusterEntry;
 
     @Inject
     public GameServerState() {

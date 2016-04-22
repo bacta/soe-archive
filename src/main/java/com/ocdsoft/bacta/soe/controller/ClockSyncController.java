@@ -1,6 +1,5 @@
 package com.ocdsoft.bacta.soe.controller;
 
-import com.ocdsoft.bacta.soe.SoeController;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 import com.ocdsoft.bacta.soe.message.ClockReflectMessage;
 import com.ocdsoft.bacta.soe.message.UdpPacketType;
