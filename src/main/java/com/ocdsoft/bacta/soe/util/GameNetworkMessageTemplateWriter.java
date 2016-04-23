@@ -110,10 +110,12 @@ public final class GameNetworkMessageTemplateWriter {
         String outFileName = messageFilePath + messageName + ".java";
         File file = new File(outFileName);
         if(file.exists()) {
-            LOGGER.info("'" + messageName + "' already exists");
+            LOGGER.info("'{}' already exists", messageName);
             return;
         }
-        
+
+        int opcode = buffer.getInt(6);
+
         Template template = ve.getTemplate("/template/GameNetworkMessage.vm");
 
         VelocityContext context = new VelocityContext();
@@ -121,11 +123,17 @@ public final class GameNetworkMessageTemplateWriter {
         context.put("packageName", messageClassPath);
         context.put("messageName", messageName);
 
+        if(SOECRC32.hashCode(messageName) == opcode) {
+            context.put("messageSimpleName", "SOECRC32.hashCode(" + messageName + ".class.getSimpleName())");
+        } else {
+            context.put("messageSimpleName", "0x" + Integer.toHexString(opcode));
+        }
+
         String messageStruct = SoeMessageUtil.makeMessageStruct(buffer);
         context.put("messageStruct", messageStruct);
 
         context.put("priority", "0x" + Integer.toHexString(buffer.getShort(4)));
-        context.put("opcode", "0x" + Integer.toHexString(buffer.getInt(6)));
+        context.put("opcode", "0x" + Integer.toHexString(opcode));
 
         /* lets render a template */
         writeTemplate(outFileName, context, template);
