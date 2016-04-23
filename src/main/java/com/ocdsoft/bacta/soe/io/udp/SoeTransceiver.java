@@ -56,6 +56,8 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
     // Connection Id generator
     private final Random random;
 
+    private final ServerState serverState;
+
     @Inject
     public SoeTransceiver(final MetricRegistry metrics,
                           final NetworkConfiguration networkConfiguration,
@@ -69,6 +71,7 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
         this.protocol = new SoeProtocol();
         this.whitelistedAddresses = networkConfiguration.getTrustedClients();
         this.random = new Random();
+        this.serverState = serverState;
 
         this.mBeanServer = ManagementFactory.getPlatformMBeanServer();
 
@@ -77,7 +80,7 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
         connectionMap = new ConcurrentHashMap<>();
 
         sendThread = new Thread(new SendLoop());
-        sendThread.setName(serverState.getServerType().name() + " Send Thread");
+        sendThread.setName(serverState.getServerType().name() + " Send");
 
         outgoingMessages = metrics.counter(MetricRegistry.name(SoeTransceiver.class, "message", "outgoing"));
         incomingMessages = metrics.counter(MetricRegistry.name(SoeTransceiver.class, "message", "incoming"));
@@ -252,11 +255,13 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
 
     @Override
     public final void run() {
+        LOGGER.info("{} Transceiver started on  {}:{}", serverState.getServerType() ,networkConfiguration.getBindIp(), networkConfiguration.getPort());
         sendThread.start();
         super.run();
     }
 
     public void stop() {
+        LOGGER.info("{} Transceiver started on  {}:{}", serverState.getServerType() ,networkConfiguration.getBindIp(), networkConfiguration.getPort());
         sendThread.interrupt();
         super.stop();
     }
@@ -312,10 +317,15 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
                         for (Object key : deadClients) {
                             SoeUdpConnection connection = connectionMap.remove(key);
                             if(!networkConfiguration.isDisableInstrumentation()) {
-                                mBeanServer.unregisterMBean(connection.getBeanName());
+                                try {
+                                    mBeanServer.unregisterMBean(connection.getBeanName());
+                                } catch (Exception e) {
+                                    LOGGER.warn("Unable to unregister MBEAN {}", connection.getBeanName(), e);
+                                }
                             }
                             if(networkConfiguration.isReportUdpDisconnects()) {
-                                LOGGER.info("Client disconnected: " + connection.getRemoteAddress() + " Connection: " + connection.getId() + " Reason: " + connection.getTerminateReason());
+                                LOGGER.info("Client disconnected: {}  Connection: {}  Reason: ", connection.getRemoteAddress(), connection.getId(), connection.getTerminateReason());
+                                LOGGER.info("Clients still connected: {}", connectionMap.size());
                             }
                         }
 

@@ -83,6 +83,7 @@ public final class GameServer implements Runnable {
             serverState.setServerStatus(ServerStatus.UP);
             connectionServerAgent.update();
 
+            LOGGER.info("Game Server is running");
             // Blocks until stopped
             transceiver.run();
             serverState.setServerStatus(ServerStatus.DOWN);

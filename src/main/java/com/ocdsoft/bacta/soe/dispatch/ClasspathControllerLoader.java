@@ -115,12 +115,12 @@ public final class ClasspathControllerLoader<T> {
                 ControllerData<T> newControllerData = new ControllerData(controller, connectionRoles);
 
                 if (!controllers.containsKey(controllerId)) {
-                    LOGGER.debug("Adding Controller {} '{}' 0x{}", controllerClass.getName(), ClientString.get(propertyName) + "' 0x" + propertyName);
+                    LOGGER.debug("Adding Controller {} '{}' 0x{}", controllerClass.getName(), ClientString.get(propertyName), propertyName);
                     controllers.put(controllerId, newControllerData);
                 }
 
             } else {
-                LOGGER.debug("Ignoring Controller {} '{}' 0x{}", controllerClass.getName(), ClientString.get(propertyName) + "' 0x" + propertyName);
+                LOGGER.debug("Ignoring Controller {} '{}' 0x{}", controllerClass.getName(), ClientString.get(propertyName), propertyName);
             }
 
 

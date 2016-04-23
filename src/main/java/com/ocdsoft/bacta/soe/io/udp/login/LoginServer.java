@@ -51,7 +51,7 @@ public class LoginServer implements Runnable {
 
         try {
 
-            LOGGER.info("Starting");
+            LOGGER.info("Login Server is starting");
             serverState.setServerStatus(ServerStatus.UP);
             transceiver.run();
             LOGGER.info("Stopping");

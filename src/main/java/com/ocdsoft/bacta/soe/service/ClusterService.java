@@ -21,7 +21,7 @@ import java.util.TreeSet;
 @Singleton
 public class ClusterService<T extends ClusterEntryItem> {
 
-    private static Logger logger = LoggerFactory.getLogger(ClusterService.class);
+    private static final Logger logger = LoggerFactory.getLogger(ClusterService.class);
 
     private transient final ConnectionDatabaseConnector dbConnector;
     private transient final Set<T> clusterEntrySet;

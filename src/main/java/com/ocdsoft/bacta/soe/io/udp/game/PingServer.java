@@ -26,7 +26,7 @@ public final class PingServer implements Runnable {
 
     @Override
     public void run() {
-        LOGGER.info("Starting ping server");
+        LOGGER.info("Ping Server is starting");
         pingTransceiver.run();
         LOGGER.info("Stopping ping server");
     }

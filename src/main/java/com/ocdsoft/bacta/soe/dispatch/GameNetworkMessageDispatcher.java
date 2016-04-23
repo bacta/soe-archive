@@ -48,12 +48,16 @@ public class GameNetworkMessageDispatcher {
      */
     private final GameNetworkMessageTemplateWriter gameNetworkMessageTemplateWriter;
 
+    private final ServerState serverState;
+
     @Inject
     public GameNetworkMessageDispatcher(final ClasspathControllerLoader<GameNetworkMessageController> controllerLoader,
+                                        final ServerState serverState,
                                         final GameNetworkMessageFactory gameNetworkMessageFactory,
                                         final GameNetworkMessageTemplateWriter gameNetworkMessageTemplateWriter) {
 
         this.gameNetworkMessageFactory = gameNetworkMessageFactory;
+        this.serverState = serverState;
         this.gameNetworkMessageTemplateWriter = gameNetworkMessageTemplateWriter;
 
         controllers = controllerLoader.getControllers(GameNetworkMessageController.class);
@@ -64,7 +68,7 @@ public class GameNetworkMessageDispatcher {
         ControllerData<GameNetworkMessageController> controllerData = controllers.get(gameMessageType);
         if(controllerData != null) {
             if(!controllerData.containsRoles(connection.getRoles())) {
-                LOGGER.error("Controller security blocked access:" + controllerData.getController().getClass().getName());
+                LOGGER.error("{} Controller security blocked access: {}", serverState.getServerType(), controllerData.getController().getClass().getName());
                 LOGGER.error("Connection: " + connection.toString());
                 return;
             }
@@ -95,7 +99,7 @@ public class GameNetworkMessageDispatcher {
 
         String propertyName = Integer.toHexString(opcode);
 
-        LOGGER.error("Unhandled SWG Message: '" + ClientString.get(propertyName) + "' 0x" + propertyName);
+        LOGGER.error("{} Unhandled SWG Message: '{}' 0x{}", serverState.getServerType(), ClientString.get(propertyName), propertyName);
         LOGGER.error(SoeMessageUtil.bytesToHex(buffer));
     }
 }

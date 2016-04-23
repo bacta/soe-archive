@@ -2,6 +2,7 @@ package com.ocdsoft.bacta.soe.factory;
 
 import com.google.inject.Inject;
 import com.google.inject.Injector;
+import com.google.inject.Singleton;
 import com.ocdsoft.bacta.soe.message.GameNetworkMessage;
 import io.netty.util.collection.IntObjectHashMap;
 import org.slf4j.Logger;
@@ -12,6 +13,7 @@ import java.nio.ByteBuffer;
 /**
  * Created by kyle on 4/17/2016.
  */
+@Singleton
 public class GameNetworkMessageFactoryImpl implements GameNetworkMessageFactory {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GameNetworkMessageFactoryImpl.class);
@@ -64,6 +66,7 @@ public class GameNetworkMessageFactoryImpl implements GameNetworkMessageFactory 
             LOGGER.error("Message already exists in class map {}", handledMessageClass.getSimpleName());
         }
 
+        LOGGER.debug("Putting {} {} in message factory", hash, handledMessageClass.getName());
         messageClassMap.put(hash, handledMessageClass);
     }
 }
