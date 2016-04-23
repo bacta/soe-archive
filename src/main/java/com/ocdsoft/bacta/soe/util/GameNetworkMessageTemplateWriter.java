@@ -114,7 +114,7 @@ public final class GameNetworkMessageTemplateWriter {
             return;
         }
 
-        int opcode = buffer.getInt(6);
+        int opcode = buffer.getInt(2);
 
         Template template = ve.getTemplate("/template/GameNetworkMessage.vm");
 
@@ -132,7 +132,7 @@ public final class GameNetworkMessageTemplateWriter {
         String messageStruct = SoeMessageUtil.makeMessageStruct(buffer);
         context.put("messageStruct", messageStruct);
 
-        context.put("priority", "0x" + Integer.toHexString(buffer.getShort(4)));
+        context.put("priority", "0x" + Integer.toHexString(buffer.getShort(0)));
         context.put("opcode", "0x" + Integer.toHexString(opcode));
 
         /* lets render a template */

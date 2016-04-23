@@ -17,4 +17,5 @@ public interface GameServerState<T extends ClusterEntryItem> extends ServerState
     void setId(int id);
     int getId();
     T getClusterEntry();
+    void setOnlineUsers(int onlineUsers);
 }

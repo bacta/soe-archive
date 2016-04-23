@@ -2,9 +2,9 @@ package com.ocdsoft.bacta.swg.precu.message.chat;
 
 
 import com.ocdsoft.bacta.soe.message.GameNetworkMessage;
-import com.ocdsoft.bacta.swg.precu.message.outofband.OutOfBand;
-import com.ocdsoft.bacta.swg.precu.message.outofband.OutOfBandPackager;
-import com.ocdsoft.bacta.swg.precu.message.outofband.ProsePackage;
+import com.ocdsoft.bacta.swg.precu.message.game.outofband.OutOfBand;
+import com.ocdsoft.bacta.swg.precu.message.game.outofband.OutOfBandPackager;
+import com.ocdsoft.bacta.swg.precu.message.game.outofband.ProsePackage;
 
 public class ChatSystemMessage extends GameNetworkMessage {
 	//0x04
