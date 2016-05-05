@@ -9,5 +9,7 @@ import java.nio.ByteBuffer;
  */
 public interface GameNetworkMessageSerializer {
     <T extends GameNetworkMessage> ByteBuffer writeToBuffer(T object);
-    <T extends GameNetworkMessage> T readFromBuffer(ByteBuffer buffer);
+    <T extends GameNetworkMessage> T readFromBuffer(final int messageType, final ByteBuffer buffer);
+
+    void addHandledMessageClass(int hash, Class<? extends GameNetworkMessage> handledMessageClass);
 }

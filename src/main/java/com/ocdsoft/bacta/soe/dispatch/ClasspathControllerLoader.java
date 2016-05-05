@@ -1,6 +1,5 @@
 package com.ocdsoft.bacta.soe.dispatch;
 
-import com.google.common.base.Preconditions;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Singleton;
@@ -9,8 +8,8 @@ import com.ocdsoft.bacta.soe.ServerType;
 import com.ocdsoft.bacta.soe.connection.ConnectionRole;
 import com.ocdsoft.bacta.soe.controller.ConnectionRolesAllowed;
 import com.ocdsoft.bacta.soe.controller.MessageHandled;
-import com.ocdsoft.bacta.soe.factory.GameNetworkMessageFactory;
 import com.ocdsoft.bacta.soe.message.GameNetworkMessage;
+import com.ocdsoft.bacta.soe.serialize.GameNetworkMessageSerializer;
 import com.ocdsoft.bacta.soe.util.ClientString;
 import com.ocdsoft.bacta.soe.util.SOECRC32;
 import gnu.trove.map.TIntObjectMap;
@@ -33,17 +32,17 @@ public final class ClasspathControllerLoader<T> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ClasspathControllerLoader.class);
 
-    private final GameNetworkMessageFactory gameNetworkMessageFactory;
+    private final GameNetworkMessageSerializer gameNetworkMessageSerializer;
     private final Injector injector;
     private final ServerState serverState;
 
     @Inject
     public ClasspathControllerLoader(final Injector injector,
-                                     final GameNetworkMessageFactory gameNetworkMessageFactory,
+                                     final GameNetworkMessageSerializer gameNetworkMessageSerializer,
                                      final ServerState serverState) {
 
         this.injector = injector;
-        this.gameNetworkMessageFactory = gameNetworkMessageFactory;
+        this.gameNetworkMessageSerializer = gameNetworkMessageSerializer;
         this.serverState = serverState;
     }
 
@@ -101,7 +100,7 @@ public final class ClasspathControllerLoader<T> {
                 controllerId = SOECRC32.hashCode(handledMessageClass.getSimpleName());
             }
 
-            gameNetworkMessageFactory.addHandledMessageClass(controllerId, handledMessageClass);
+            gameNetworkMessageSerializer.addHandledMessageClass(controllerId, handledMessageClass);
             List<ServerType> serverTypes = new ArrayList<>();
             for(ServerType serverType : controllerAnnotation.type()) {
                 serverTypes.add(serverType);
@@ -116,12 +115,15 @@ public final class ClasspathControllerLoader<T> {
                 ControllerData<T> newControllerData = new ControllerData(controller, connectionRoles);
 
                 if (!controllers.containsKey(controllerId)) {
-                    LOGGER.debug("Adding Controller {} '{}' 0x{}", controllerClass.getName(), ClientString.get(propertyName), propertyName);
+                    LOGGER.debug("{} Adding Controller {} '{}' 0x{}", serverState.getServerType().name(), controllerClass.getName(), ClientString.get(propertyName), propertyName);
                     controllers.put(controllerId, newControllerData);
+                } else {
+                    LOGGER.error("{} Duplicate Controller {} '{}' 0x{}", serverState.getServerType().name(), controllerClass.getName(), ClientString.get(propertyName), propertyName);
+
                 }
 
             } else {
-                LOGGER.debug("Ignoring Controller {} '{}' 0x{}", controllerClass.getName(), ClientString.get(propertyName), propertyName);
+                LOGGER.debug("{} Ignoring Controller {} '{}' 0x{}", serverState.getServerType().name(), controllerClass.getName(), ClientString.get(propertyName), propertyName);
             }
 
         } catch (Throwable e) {

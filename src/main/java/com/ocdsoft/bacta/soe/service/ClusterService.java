@@ -62,8 +62,11 @@ public class ClusterService<T extends ClusterEntryItem> {
                     logger.debug("Server Attempting to use an existing ID with the wrong secret please change GameServers ID in configuration: {}", clusterEntry.getId());
                     return null;
                 }
+
+                clusterEntrySet.remove(clusterEntry);
             }
         }
+
 
         clusterEntrySet.add(incomingClusterEntry);
         update();

@@ -9,13 +9,4 @@ import java.nio.ByteBuffer;
  */
 public abstract class GameNetworkMessage implements ByteBufferWritable {
 
-    protected static short priority;
-    protected static int messageType;
-
-    public short getPriority() {
-        return priority;
-    }
-    public int getMessageType() {
-        return messageType;
-    }
 }

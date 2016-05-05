@@ -210,12 +210,13 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
 
                     packetType = UdpPacketType.values()[type];
 
-                    LOGGER.trace("Received {}", packetType);
+                    LOGGER.trace("[{}] Received {}", serverState.getServerType().name(), packetType);
 
                     if (packetType == UdpPacketType.cUdpPacketConnect) {
 
                         connection = createConnection(sender);
                         connectionMap.put(sender, connection);
+
 
                         LOGGER.debug("{} connection from {} now has {} total connected clients.",
                                 connection.getClass().getSimpleName(),
@@ -257,6 +258,7 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
     public void sendMessage(SoeUdpConnection connection, ByteBuffer buffer) {
 
         UdpPacketType packetType = UdpPacketType.values()[buffer.get(1)];
+        LOGGER.trace("Sending message to {} : {}", connection.getRemoteAddress(), SoeMessageUtil.bytesToHex(buffer));
 
         if (packetType != UdpPacketType.cUdpPacketConnect && packetType != UdpPacketType.cUdpPacketConfirm) {
             buffer = protocol.encode(connection.getConfiguration().getEncryptCode(), buffer, true);
@@ -265,7 +267,6 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
         }
 
         outgoingMessages.inc();
-        LOGGER.trace("Sending message to {} : {}", connection.getRemoteAddress(), SoeMessageUtil.bytesToHex(buffer));
         handleOutgoing(buffer, connection.getRemoteAddress());
     }
 

@@ -1,4 +1,4 @@
-package com.ocdsoft.bacta.soe.factory;
+package com.ocdsoft.bacta.soe.serialize;
 
 /**
  * Created by kyle on 4/21/2016.

@@ -6,8 +6,8 @@ import com.google.inject.Singleton;
 import com.ocdsoft.bacta.soe.*;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 import com.ocdsoft.bacta.soe.controller.GameNetworkMessageController;
-import com.ocdsoft.bacta.soe.factory.GameNetworkMessageFactory;
 import com.ocdsoft.bacta.soe.message.GameNetworkMessage;
+import com.ocdsoft.bacta.soe.serialize.GameNetworkMessageSerializer;
 import com.ocdsoft.bacta.soe.util.ClientString;
 import com.ocdsoft.bacta.soe.util.GameNetworkMessageTemplateWriter;
 import com.ocdsoft.bacta.soe.util.SoeMessageUtil;
@@ -40,7 +40,7 @@ public class GameNetworkMessageDispatcher {
     /**
      * Creates the {@link GameNetworkMessage} to be passed to the appropriate controller
      */
-    private final GameNetworkMessageFactory gameNetworkMessageFactory;
+    private final GameNetworkMessageSerializer gameNetworkMessageSerializer;
 
     /**
      * Generates missing {@link GameNetworkMessage} and {@link GameNetworkMessageController} classes for implementation
@@ -53,10 +53,10 @@ public class GameNetworkMessageDispatcher {
     @Inject
     public GameNetworkMessageDispatcher(final ClasspathControllerLoader<GameNetworkMessageController> controllerLoader,
                                         final ServerState serverState,
-                                        final GameNetworkMessageFactory gameNetworkMessageFactory,
+                                        final GameNetworkMessageSerializer gameNetworkMessageSerializer,
                                         final GameNetworkMessageTemplateWriter gameNetworkMessageTemplateWriter) {
 
-        this.gameNetworkMessageFactory = gameNetworkMessageFactory;
+        this.gameNetworkMessageSerializer = gameNetworkMessageSerializer;
         this.serverState = serverState;
         this.gameNetworkMessageTemplateWriter = gameNetworkMessageTemplateWriter;
 
@@ -76,7 +76,9 @@ public class GameNetworkMessageDispatcher {
             connection.increaseGameNetworkMessageReceived();
 
             GameNetworkMessageController controller = controllerData.getController();
-            GameNetworkMessage incomingMessage = gameNetworkMessageFactory.create(gameMessageType, buffer);
+            GameNetworkMessage incomingMessage = gameNetworkMessageSerializer.readFromBuffer(gameMessageType, buffer);
+
+            LOGGER.trace("[{}] received {}", serverState.getServerType().name(), incomingMessage.getClass().getSimpleName());
 
             try {
 
@@ -95,7 +97,7 @@ public class GameNetworkMessageDispatcher {
 
     private void handleMissingController(short priority, int opcode, ByteBuffer buffer) {
 
-        gameNetworkMessageTemplateWriter.createGameNetworkMessageFiles(priority, opcode, buffer);
+        //gameNetworkMessageTemplateWriter.createGameNetworkMessageFiles(priority, opcode, buffer);
 
         String propertyName = Integer.toHexString(opcode);
 

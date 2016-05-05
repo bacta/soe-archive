@@ -105,7 +105,7 @@ public final class SoeDevMessageDispatcher implements SoeMessageDispatcher {
                 for(UdpPacketType udpPacketType : types) {
 
                     if (!controllers.containsKey(udpPacketType)) {
-                        LOGGER.trace("Adding SOE controller: " + controller.getClass().getSimpleName());
+                        LOGGER.trace("Adding SOE controller: {} {}", udpPacketType.name(), controller.getClass().getSimpleName());
                         synchronized (controllers) {
                             controllers.put(udpPacketType, controller);
                         }

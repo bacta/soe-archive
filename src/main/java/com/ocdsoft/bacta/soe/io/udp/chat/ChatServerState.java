@@ -15,11 +15,6 @@ public class ChatServerState implements ServerState {
     }
 
     @Override
-    public void setId(int id) {
-
-    }
-
-    @Override
     public int getId() {
         return 0;
     }
