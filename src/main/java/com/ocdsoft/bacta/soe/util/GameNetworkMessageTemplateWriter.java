@@ -92,7 +92,7 @@ public final class GameNetworkMessageTemplateWriter {
         commandMessageFilePath = objMessageFilePath + fs + "command" + fs;
     }
 
-    public void createGameNetworkMessageFiles(int opcode, ByteBuffer buffer) {
+    public void createGameNetworkMessageFiles(short priority, int opcode, ByteBuffer buffer) {
 
         String messageName = ClientString.get(opcode);
         
@@ -101,11 +101,11 @@ public final class GameNetworkMessageTemplateWriter {
             return;
         }
 
-        writeGameNetworkMessage(messageName, buffer);
+        writeGameNetworkMessage(opcode, priority, messageName, buffer);
         writeGameNetworkController(messageName);
     }
 
-    private void writeGameNetworkMessage(String messageName, ByteBuffer buffer)  {
+    private void writeGameNetworkMessage(int opcode, short priority, String messageName, ByteBuffer buffer)  {
 
         String outFileName = messageFilePath + messageName + ".java";
         File file = new File(outFileName);
@@ -113,8 +113,6 @@ public final class GameNetworkMessageTemplateWriter {
             LOGGER.info("'{}' already exists", messageName);
             return;
         }
-
-        int opcode = buffer.getInt(2);
 
         Template template = ve.getTemplate("/template/GameNetworkMessage.vm");
 
@@ -132,7 +130,7 @@ public final class GameNetworkMessageTemplateWriter {
         String messageStruct = SoeMessageUtil.makeMessageStruct(buffer);
         context.put("messageStruct", messageStruct);
 
-        context.put("priority", "0x" + Integer.toHexString(buffer.getShort(0)));
+        context.put("priority", "0x" + Integer.toHexString(priority));
         context.put("opcode", "0x" + Integer.toHexString(opcode));
 
         /* lets render a template */

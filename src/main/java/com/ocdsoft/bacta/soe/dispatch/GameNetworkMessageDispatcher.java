@@ -76,7 +76,7 @@ public class GameNetworkMessageDispatcher {
             connection.increaseGameNetworkMessageReceived();
 
             GameNetworkMessageController controller = controllerData.getController();
-            GameNetworkMessage incomingMessage = gameNetworkMessageFactory.createAndDeserialize(gameMessageType, buffer);
+            GameNetworkMessage incomingMessage = gameNetworkMessageFactory.create(gameMessageType, buffer);
 
             try {
 
@@ -89,13 +89,13 @@ public class GameNetworkMessageDispatcher {
             }
 
         } else {
-            handleMissingController(gameMessageType, buffer);
+            handleMissingController(priority, gameMessageType, buffer);
         }
     }
 
-    private void handleMissingController(int opcode, ByteBuffer buffer) {
+    private void handleMissingController(short priority, int opcode, ByteBuffer buffer) {
 
-        gameNetworkMessageTemplateWriter.createGameNetworkMessageFiles(opcode, buffer);
+        gameNetworkMessageTemplateWriter.createGameNetworkMessageFiles(priority, opcode, buffer);
 
         String propertyName = Integer.toHexString(opcode);
 

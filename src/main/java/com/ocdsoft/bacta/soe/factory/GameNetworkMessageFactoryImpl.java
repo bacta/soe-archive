@@ -8,6 +8,8 @@ import io.netty.util.collection.IntObjectHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
 
 /**
@@ -21,23 +23,26 @@ public class GameNetworkMessageFactoryImpl implements GameNetworkMessageFactory 
     private final static int OBJECT_CONTROLLER_MESSAGE = 0x80CE5E46;
     private final static int COMMAND_CONTROLLER_MESSAGE = 0x116;
 
-    private final Injector injector;
-
-    private final IntObjectHashMap<Class<? extends GameNetworkMessage>> messageClassMap;
+    private final IntObjectHashMap<Constructor<? extends GameNetworkMessage>> messageConstructorMap;
 
     @Inject
-    public GameNetworkMessageFactoryImpl(final Injector injector) {
-        this.injector = injector;
-        this.messageClassMap = new IntObjectHashMap<>();
+    public GameNetworkMessageFactoryImpl() {
+        this.messageConstructorMap = new IntObjectHashMap<>();
+    }
+
+    private GameNetworkMessage create(final Constructor<? extends GameNetworkMessage> messageConstructor, final ByteBuffer buffer) {
+        try {
+
+            return messageConstructor.newInstance(buffer);
+
+        } catch (Exception e) {
+            LOGGER.error("Unable to construct message {}", messageConstructor.getName());
+            return null;
+        }
     }
 
     @Override
-    public GameNetworkMessage create(Class<? extends GameNetworkMessage> messageClass) {
-        return injector.getInstance(messageClass);
-    }
-
-    @Override
-    public GameNetworkMessage createAndDeserialize(int gameMessageType, ByteBuffer buffer) throws NullPointerException {
+    public GameNetworkMessage create(int gameMessageType, final ByteBuffer buffer) throws NullPointerException {
 
         if ( gameMessageType == OBJECT_CONTROLLER_MESSAGE ) {
 
@@ -48,13 +53,12 @@ public class GameNetworkMessageFactoryImpl implements GameNetworkMessageFactory 
             }
         }
 
-        Class<? extends GameNetworkMessage> messageClass = messageClassMap.get(gameMessageType);
+        final Constructor<? extends GameNetworkMessage> messageClass = messageConstructorMap.get(gameMessageType);
 
-        GameNetworkMessage messageInstance = create(messageClass);
+        GameNetworkMessage messageInstance = create(messageClass, buffer);
         if(messageInstance == null) {
             throw new GameNetworkMessageTypeNotFoundException(gameMessageType);
         }
-        messageInstance.readFromBuffer(buffer);
 
         return messageInstance;
     }
@@ -62,11 +66,20 @@ public class GameNetworkMessageFactoryImpl implements GameNetworkMessageFactory 
     @Override
     public void addHandledMessageClass(int hash, Class<? extends GameNetworkMessage> handledMessageClass) {
 
-        if(messageClassMap.containsKey(hash)) {
+        if(messageConstructorMap.containsKey(hash)) {
             LOGGER.error("Message already exists in class map {}", handledMessageClass.getSimpleName());
         }
 
-        LOGGER.debug("Putting {} {} in message factory", hash, handledMessageClass.getName());
-        messageClassMap.put(hash, handledMessageClass);
+        try {
+            Constructor<GameNetworkMessage> constructor = (Constructor<GameNetworkMessage>) handledMessageClass.getConstructor(ByteBuffer.class);
+
+            LOGGER.debug("Putting {} {} in message factory", hash, handledMessageClass.getName());
+            messageConstructorMap.put(hash, constructor);
+
+        } catch (NoSuchMethodException e) {
+            LOGGER.error("{} does not have a constructor taking ByteBuffer", handledMessageClass.getName(), e);
+        }
+
+
     }
 }

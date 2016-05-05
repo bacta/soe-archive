@@ -1,5 +1,6 @@
 package com.ocdsoft.bacta.soe.dispatch;
 
+import com.google.common.base.Preconditions;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Singleton;
@@ -123,8 +124,7 @@ public final class ClasspathControllerLoader<T> {
                 LOGGER.debug("Ignoring Controller {} '{}' 0x{}", controllerClass.getName(), ClientString.get(propertyName), propertyName);
             }
 
-
-        } catch (Exception e) {
+        } catch (Throwable e) {
             LOGGER.error("Unable to add controller: " + controllerClass.getName(), e);
         }
     }

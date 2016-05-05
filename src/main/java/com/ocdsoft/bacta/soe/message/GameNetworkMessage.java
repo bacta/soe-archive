@@ -1,26 +1,20 @@
 package com.ocdsoft.bacta.soe.message;
 
-import com.ocdsoft.bacta.engine.buffer.ByteBufferSerializable;
+import com.ocdsoft.bacta.engine.buffer.ByteBufferWritable;
 
 import java.nio.ByteBuffer;
 
 /**
  * Created by Kyle on 3/26/14.
  */
-public abstract class GameNetworkMessage implements ByteBufferSerializable {
+public abstract class GameNetworkMessage implements ByteBufferWritable {
 
-    private final short priority;
-    private final int messageType;
-
-    protected GameNetworkMessage(final int priority, final int messageType) {
-        this.priority = (short) priority;
-        this.messageType = messageType;
-    }
+    protected static short priority;
+    protected static int messageType;
 
     public short getPriority() {
         return priority;
     }
-
     public int getMessageType() {
         return messageType;
     }

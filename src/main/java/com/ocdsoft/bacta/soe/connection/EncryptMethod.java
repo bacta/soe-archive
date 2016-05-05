@@ -32,7 +32,7 @@ public enum EncryptMethod implements ByteBufferWritable {
     EncryptMethod(int i) {
          this.value = (byte) i;
     }
-    
+
     @Override
     public void writeToBuffer(final ByteBuffer buffer) {
         buffer.put(value);

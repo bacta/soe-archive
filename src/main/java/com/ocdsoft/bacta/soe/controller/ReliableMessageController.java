@@ -9,7 +9,15 @@ import org.slf4j.LoggerFactory;
 import java.nio.ByteBuffer;
 
 @Singleton
-@SoeController(handles = {UdpPacketType.cUdpPacketReliable1, UdpPacketType.cUdpPacketFragment1})
+@SoeController(handles = {
+        UdpPacketType.cUdpPacketReliable1,
+        UdpPacketType.cUdpPacketReliable2,
+        UdpPacketType.cUdpPacketReliable3,
+        UdpPacketType.cUdpPacketReliable4,
+        UdpPacketType.cUdpPacketFragment1,
+        UdpPacketType.cUdpPacketFragment2,
+        UdpPacketType.cUdpPacketFragment3,
+        UdpPacketType.cUdpPacketFragment4})
 public class ReliableMessageController extends BaseSoeController {
 
     private static final Logger logger = LoggerFactory.getLogger(ReliableMessageController.class);

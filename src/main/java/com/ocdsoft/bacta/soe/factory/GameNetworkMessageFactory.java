@@ -10,13 +10,6 @@ import java.nio.ByteBuffer;
 public interface GameNetworkMessageFactory {
 
     /**
-     * Creates an empty message instance from the provides class
-     * @param messageClass Class that extends {@link GameNetworkMessage}
-     * @return new empty instance of provided class
-     */
-    GameNetworkMessage create(Class<? extends GameNetworkMessage> messageClass);
-
-    /**
      * Creates a message of the specified type and deserializes provided buffer
      * into new instance.  The message type can be the {@link GameNetworkMessage} type,
      * the ObjControllerMessage header or the Command name hash
@@ -26,7 +19,7 @@ public interface GameNetworkMessageFactory {
      *      data provided.
      * @throws NullPointerException if message type is invalid
      */
-    GameNetworkMessage createAndDeserialize(int gameMessageType, ByteBuffer buffer) throws NullPointerException;
+    GameNetworkMessage create(int gameMessageType, final ByteBuffer buffer) throws NullPointerException;
 
     /**
      * Builds the map of messages handled

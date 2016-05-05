@@ -12,6 +12,6 @@ public class AckAllController extends BaseSoeController {
     public void handleIncoming(byte zeroByte, UdpPacketType type, SoeUdpConnection connection, ByteBuffer buffer) {
 
         short sequenceNum = buffer.getShort();
-        connection.processAckAll(sequenceNum);
+        connection.sendAckAll(sequenceNum);
     }
 }

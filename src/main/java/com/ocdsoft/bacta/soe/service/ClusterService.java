@@ -57,36 +57,18 @@ public class ClusterService<T extends ClusterEntryItem> {
     public T updateClusterInfo(T incomingClusterEntry) {
 
         for(T clusterEntry : clusterEntrySet) {
-            if(clusterEntry.equals(incomingClusterEntry)) {
-                clusterEntrySet.remove(clusterEntry);
-                incomingClusterEntry.setId(clusterEntry.getId());
-                logger.debug("Updating cluster entry: " + incomingClusterEntry);
-                clusterEntrySet.add(incomingClusterEntry);
-                update();
-                return incomingClusterEntry;
+            if(clusterEntry.getId() == incomingClusterEntry.getId()) {
+                if(!clusterEntry.equals(incomingClusterEntry)) {
+                    logger.debug("Server Attempting to use an existing ID with the wrong secret please change GameServers ID in configuration: {}", clusterEntry.getId());
+                    return null;
+                }
             }
         }
 
-        int incomingClusterId = incomingClusterEntry.getId();
-        for (T clusterEntry : clusterEntrySet) {
-            if (clusterEntry.getId() == incomingClusterId) {
-                logger.error("Server ID already in use: Existing=" + clusterEntry + " Incoming=" + incomingClusterEntry);
-                return null;
-            }
-        }
-
-
-        createNewClusterEntry(incomingClusterEntry);
-        
-        return incomingClusterEntry;
-    }
-
-    private void createNewClusterEntry(T incomingClusterEntry) {
-        int clusterId = dbConnector.nextClusterId();
-        incomingClusterEntry.setId(clusterId);
         clusterEntrySet.add(incomingClusterEntry);
-        logger.debug("Created new cluster entry: " + incomingClusterEntry);
         update();
+
+        return incomingClusterEntry;
     }
 
     public Set<T> getClusterEntries() {

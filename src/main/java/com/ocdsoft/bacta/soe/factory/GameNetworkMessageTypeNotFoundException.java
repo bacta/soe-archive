@@ -1,8 +1,5 @@
 package com.ocdsoft.bacta.soe.factory;
 
-import com.ocdsoft.bacta.engine.utils.BufferUtil;
-import com.ocdsoft.bacta.soe.util.SoeMessageUtil;
-
 /**
  * Created by kyle on 4/21/2016.
  */

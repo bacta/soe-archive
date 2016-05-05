@@ -45,8 +45,8 @@
             <artifactId>engine</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.ocdsoft.bacta.engine.serialization</groupId>
-            <artifactId>kryo</artifactId>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-all</artifactId>
         </dependency>
         <dependency>
             <groupId>com.jcraft</groupId>

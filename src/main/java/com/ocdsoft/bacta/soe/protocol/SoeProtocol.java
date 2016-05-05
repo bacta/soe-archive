@@ -134,7 +134,7 @@ public final class SoeProtocol {
         zstream.avail_out = 1024;
 
 
-        //logger.info("Pre-decompress: " + StringUtil.bytesToHex(data.array()));
+        //logger.trace("Pre-decompress: {}", SoeMessageUtil.bytesToHex(data));
         
         if (zstream.inflate(JZlib.Z_FINISH) == JZlib.Z_DATA_ERROR)
         {

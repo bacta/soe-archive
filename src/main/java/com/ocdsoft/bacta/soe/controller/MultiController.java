@@ -47,7 +47,6 @@ public class MultiController extends BaseSoeController {
     @Override
     public void handleIncoming(byte zeroByte, UdpPacketType type, SoeUdpConnection connection, ByteBuffer buffer) {
 
-        // TODO: Get the footer sliced off
         while (buffer.remaining() > 3) {
             
             logger.trace("Buffer: {} {}", buffer, BufferUtil.bytesToHex(buffer));

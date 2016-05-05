@@ -53,7 +53,7 @@ public final class SoeDevMessageDispatcher implements SoeMessageDispatcher {
         SoeMessageController controller = controllers.get(packetType);
 
         if (controller == null) {
-            LOGGER.error("Unhandled SOE Opcode 0x{}", Integer.toHexString(packetType.getValue()).toUpperCase());
+            LOGGER.error("Unhandled SOE Opcode 0x{}", Integer.toHexString(packetType.ordinal()).toUpperCase());
             LOGGER.error(SoeMessageUtil.bytesToHex(buffer));
             return;
         }

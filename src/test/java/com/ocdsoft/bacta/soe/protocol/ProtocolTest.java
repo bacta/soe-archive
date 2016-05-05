@@ -39,7 +39,7 @@ public class ProtocolTest extends MessageDumpLoader {
 
             test1.rewind();
 
-			for(int j = 0 ; j < decomp.get(i).length; ++j) {
+			for(int j = 0 ; j < decomp.get(i).length - 3; ++j) {
 				
 				short decCheck = (short) (decomp.get(i)[j] & 0xFF);
 				

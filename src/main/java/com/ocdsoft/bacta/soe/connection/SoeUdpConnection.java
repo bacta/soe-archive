@@ -6,6 +6,7 @@ import com.ocdsoft.bacta.engine.network.client.UdpConnection;
 import com.ocdsoft.bacta.engine.network.client.UdpMessageProcessor;
 import com.ocdsoft.bacta.soe.io.udp.NetworkConfiguration;
 import com.ocdsoft.bacta.soe.message.*;
+import com.ocdsoft.bacta.soe.serialize.GameNetworkMessageSerializer;
 import com.ocdsoft.bacta.soe.util.SoeMessageUtil;
 import lombok.Getter;
 import lombok.Setter;
@@ -84,14 +85,22 @@ public final class SoeUdpConnection extends UdpConnection implements SoeUdpConne
     @Setter
     private String currentCharName;
 
+    @Getter
+    @Setter
+    private int orderedStampLast;
+
+    private final GameNetworkMessageSerializer messageSerializer;
+
     public SoeUdpConnection(final NetworkConfiguration networkConfiguration,
                             final InetSocketAddress remoteAddress,
                             final ConnectionState connectionState,
+                            final GameNetworkMessageSerializer messageSerializer,
                             final Consumer<SoeUdpConnection> connectCallback) {
         
         this.remoteAddress = remoteAddress;
         this.connectCallback = connectCallback;
         this.state = connectionState;
+        this.messageSerializer = messageSerializer;
 
         this.configuration = new Configuration(
                 networkConfiguration.getCrcBytes(),
@@ -110,6 +119,7 @@ public final class SoeUdpConnection extends UdpConnection implements SoeUdpConne
 
         protocolMessagesReceived = new AtomicInteger();
         gameNetworkMessagesReceived = new AtomicInteger();
+        this.orderedStampLast = 0;
         
         updateLastActivity();
     }
@@ -145,16 +155,7 @@ public final class SoeUdpConnection extends UdpConnection implements SoeUdpConne
     public void sendMessage(GameNetworkMessage message) {
 
         gameNetworkMessagesSent.incrementAndGet();
-        
-        // TODO: Better buffer creation
-        ByteBuffer buffer = ByteBuffer.allocate(1500).order(ByteOrder.LITTLE_ENDIAN);
-
-        buffer.putShort(message.getPriority());
-        buffer.putInt(message.getMessageType());
-
-        message.writeToBuffer(buffer);
-        buffer.limit(buffer.position());
-        buffer.rewind();
+        ByteBuffer buffer = messageSerializer.writeToBuffer(message);
 
         if (!udpMessageProcessor.addReliable(buffer)) {
             if(getState() == ConnectionState.ONLINE) {
@@ -191,7 +192,7 @@ public final class SoeUdpConnection extends UdpConnection implements SoeUdpConne
         sendMessage(new AckAllMessage(sequenceNum));
     }
 
-    public void processAckAll(short sequenceNum) {
+    public void sendAckAll(short sequenceNum) {
         clientSequenceNumber.set(sequenceNum);
         udpMessageProcessor.acknowledge(sequenceNum);
     }
@@ -233,10 +234,16 @@ public final class SoeUdpConnection extends UdpConnection implements SoeUdpConne
             connectCallback.accept(this);
         }
     }
-    
+
     public void terminate(TerminateReason reason) {
-        Terminate terminate = new Terminate(this.getId(), reason);
-        sendMessage(terminate);
+        terminate(reason, false);
+    }
+
+    public void terminate(TerminateReason reason, boolean silent) {
+        if(!silent) {
+            Terminate terminate = new Terminate(this.getId(), reason);
+            sendMessage(terminate);
+        }
         
         setState(ConnectionState.DISCONNECTED);
         terminateReason = reason;
