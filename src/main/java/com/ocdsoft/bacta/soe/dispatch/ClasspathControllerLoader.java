@@ -63,7 +63,7 @@ public final class ClasspathControllerLoader<T> {
         return controllers;
     }
 
-    private void loadControllerClass(final  TIntObjectMap<ControllerData> controllers,
+    private void loadControllerClass(final TIntObjectMap<ControllerData> controllers,
                                      final Injector injector,
                                      Class<? extends T> controllerClass,
                                      final ServerState serverState) {
@@ -92,9 +92,9 @@ public final class ClasspathControllerLoader<T> {
             Class<? extends GameNetworkMessage> handledMessageClass = (Class<? extends GameNetworkMessage>) controllerAnnotation.handles();
 
             int controllerId;
-            if(controllerAnnotation.id() != -1) {
+            if (controllerAnnotation.id() != -1) {
                 controllerId = controllerAnnotation.id();
-            } else if(handledMessageClass.equals(Object.class)){
+            } else if (handledMessageClass.equals(Object.class)) {
                 controllerId = SOECRC32.hashCode(controllerAnnotation.command());
             } else {
                 controllerId = SOECRC32.hashCode(handledMessageClass.getSimpleName());
@@ -102,13 +102,13 @@ public final class ClasspathControllerLoader<T> {
 
             gameNetworkMessageSerializer.addHandledMessageClass(controllerId, handledMessageClass);
             List<ServerType> serverTypes = new ArrayList<>();
-            for(ServerType serverType : controllerAnnotation.type()) {
+            for (ServerType serverType : controllerAnnotation.type()) {
                 serverTypes.add(serverType);
             }
 
             String propertyName = Integer.toHexString(controllerId);
 
-            if(serverTypes.contains(serverState.getServerType())) {
+            if (serverTypes.contains(serverState.getServerType())) {
 
                 T controller = injector.getInstance(controllerClass);
 

@@ -6,5 +6,6 @@ package com.ocdsoft.bacta.soe.connection;
 public enum ConnectionRole {
     WHITELISTED,
     AUTHENTICATED,
-    UNAUTHENTICATED;
+    UNAUTHENTICATED,
+    GOD;
 }

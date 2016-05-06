@@ -17,7 +17,6 @@ import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
@@ -255,6 +254,19 @@ public final class SoeUdpConnection extends UdpConnection implements SoeUdpConne
 
     public void addRole(ConnectionRole role) {
         roles.add(role);
+    }
+
+    public boolean hasRole(ConnectionRole role) {
+        for (int i = 0, size = roles.size(); i < size; ++i) {
+            if (roles.get(i) == role)
+                return true;
+        }
+
+        return false;
+    }
+
+    public boolean isGod() {
+        return hasRole(ConnectionRole.GOD);
     }
 
     @SuppressWarnings("serial")
