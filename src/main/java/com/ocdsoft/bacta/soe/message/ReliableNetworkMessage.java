@@ -85,8 +85,8 @@ public final class ReliableNetworkMessage extends SoeMessage implements Comparab
             buffer.put(list.get(0));
         } else {
             buffer.putShort((short) 0x19);
-            for (ByteBuffer buffer : list) {
-                int byteCount = buffer.limit();
+            for (ByteBuffer listBuffer : list) {
+                int byteCount = listBuffer.limit();
                 if(byteCount > 0xFF) {
                     int sizeCount = (byteCount / 0xFF) - (byteCount % 0xFF == 0 ? 1 : 0);
 
@@ -103,7 +103,7 @@ public final class ReliableNetworkMessage extends SoeMessage implements Comparab
                     buffer.put((byte)byteCount);
                 }
 
-                buffer.put(buffer);
+                buffer.put(listBuffer);
             }
         }
 

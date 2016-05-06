@@ -191,7 +191,7 @@ public final class SoeUdpConnection extends UdpConnection implements SoeUdpConne
         sendMessage(new AckAllMessage(sequenceNum));
     }
 
-    public void sendAckAll(short sequenceNum) {
+    public void ackAllFromClient(short sequenceNum) {
         clientSequenceNumber.set(sequenceNum);
         udpMessageProcessor.acknowledge(sequenceNum);
     }
