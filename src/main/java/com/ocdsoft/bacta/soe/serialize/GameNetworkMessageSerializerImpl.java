@@ -39,7 +39,7 @@ public class GameNetworkMessageSerializerImpl implements GameNetworkMessageSeria
     @Override
     public <T extends GameNetworkMessage> ByteBuffer writeToBuffer(T message) {
 
-        // TODO: Better buffer creation
+        // TODO: Better buffer player
         ByteBuffer buffer = ByteBuffer.allocate(1500).order(ByteOrder.LITTLE_ENDIAN);
 
         MessageData data = messageDataMap.get(message.getClass());
