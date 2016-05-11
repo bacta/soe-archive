@@ -2,7 +2,7 @@ package com.ocdsoft.bacta.swg.precu.message.chat;
 
 import com.ocdsoft.bacta.soe.object.chat.ChatAvatarId;
 import com.ocdsoft.bacta.soe.message.GameNetworkMessage;
-import com.ocdsoft.bacta.swg.shared.util.SOECRC32;
+import com.ocdsoft.bacta.swg.precu.shared.util.SOECRC32;
 
 public class ChatPersistentMessageToClient extends GameNetworkMessage {
 
