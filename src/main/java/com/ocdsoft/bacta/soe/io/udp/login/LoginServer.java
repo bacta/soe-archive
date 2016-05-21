@@ -1,23 +1,15 @@
 package com.ocdsoft.bacta.soe.io.udp.login;
 
-import com.codahale.metrics.MetricRegistry;
 import com.google.inject.Inject;
-import com.google.inject.Injector;
 import com.google.inject.Singleton;
-import com.ocdsoft.bacta.engine.conf.BactaConfiguration;
 import com.ocdsoft.bacta.engine.network.client.ServerStatus;
-import com.ocdsoft.bacta.soe.ServerType;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
-import com.ocdsoft.bacta.soe.io.udp.NetworkConfiguration;
 import com.ocdsoft.bacta.soe.io.udp.SoeTransceiver;
-import com.ocdsoft.bacta.soe.dispatch.SoeDevMessageDispatcher;
 import com.ocdsoft.bacta.soe.service.OutgoingConnectionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
@@ -42,7 +34,7 @@ public class LoginServer implements Runnable {
         this.serverState = serverState;
         this.transceiver = transceiver;
 
-        ((LoginOutgoingConnectionService)outgoingConnectionService).createConnection = transceiver::createOutgoingConnection;
+        ((LoginOutgoingConnectionService) outgoingConnectionService).createConnection = transceiver::createOutgoingConnection;
     }
 
     @Override
@@ -62,7 +54,7 @@ public class LoginServer implements Runnable {
     }
 
     public void stop() {
-        if(transceiver != null) {
+        if (transceiver != null) {
             transceiver.stop();
         }
     }
@@ -74,7 +66,7 @@ public class LoginServer implements Runnable {
 
         @Override
         public SoeUdpConnection createOutgoingConnection(final InetSocketAddress address, final Consumer<SoeUdpConnection> connectCallback) {
-            if(createConnection == null) return null;
+            if (createConnection == null) return null;
 
             return createConnection.apply(address, connectCallback);
         }
