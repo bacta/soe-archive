@@ -4,7 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Singleton;
 import com.ocdsoft.bacta.engine.utils.BufferUtil;
-import com.ocdsoft.bacta.soe.SoeController;
+import com.ocdsoft.bacta.soe.controller.SoeController;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 import com.ocdsoft.bacta.soe.controller.SoeMessageController;
 import com.ocdsoft.bacta.soe.message.UdpPacketType;
@@ -53,7 +53,7 @@ public final class SoeDevMessageDispatcher implements SoeMessageDispatcher {
         SoeMessageController controller = controllers.get(packetType);
 
         if (controller == null) {
-            LOGGER.error("Unhandled SOE Opcode 0x{}", Integer.toHexString(packetType.getValue()).toUpperCase());
+            LOGGER.error("Unhandled SOE Opcode 0x{}", Integer.toHexString(packetType.ordinal()).toUpperCase());
             LOGGER.error(SoeMessageUtil.bytesToHex(buffer));
             return;
         }
@@ -105,7 +105,7 @@ public final class SoeDevMessageDispatcher implements SoeMessageDispatcher {
                 for(UdpPacketType udpPacketType : types) {
 
                     if (!controllers.containsKey(udpPacketType)) {
-                        LOGGER.trace("Adding SOE controller: " + controller.getClass().getSimpleName());
+                        LOGGER.trace("Adding SOE controller: {} {}", udpPacketType.name(), controller.getClass().getSimpleName());
                         synchronized (controllers) {
                             controllers.put(udpPacketType, controller);
                         }

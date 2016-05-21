@@ -1,7 +1,6 @@
 package com.ocdsoft.bacta.soe.controller;
 
 import com.ocdsoft.bacta.engine.utils.UnsignedUtil;
-import com.ocdsoft.bacta.soe.SoeController;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 import com.ocdsoft.bacta.soe.message.TerminateReason;
 import com.ocdsoft.bacta.soe.message.UdpPacketType;
@@ -19,7 +18,9 @@ public class TerminateController extends BaseSoeController {
     public void handleIncoming(byte zeroByte, UdpPacketType type, SoeUdpConnection connection, ByteBuffer buffer) {
 
         long connectionID = UnsignedUtil.getUnsignedInt(buffer);
-        connection.terminate(TerminateReason.OTHERSIDETERMINATED);
-    }
 
+        if(connectionID == connection.getId()) {
+            connection.terminate(TerminateReason.OTHERSIDETERMINATED, true);
+        }
+    }
 }

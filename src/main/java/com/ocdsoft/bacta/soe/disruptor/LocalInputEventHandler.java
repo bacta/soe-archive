@@ -5,7 +5,7 @@ import com.lmax.disruptor.EventHandler;
 import com.ocdsoft.bacta.soe.ServerState;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 import com.ocdsoft.bacta.soe.dispatch.SoeDevMessageDispatcher;
-import com.ocdsoft.bacta.soe.dispatch.GameNetworkMessageDispatcher;
+import com.ocdsoft.bacta.soe.dispatch.ClasspathControllerLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,7 +16,7 @@ public class LocalInputEventHandler<T extends SoeUdpConnection> implements Event
     private final Logger logger = LoggerFactory.getLogger(this.getClass().getSimpleName());
 
     private final SoeDevMessageDispatcher soeRouter;
-    private final GameNetworkMessageDispatcher swgRouter;
+    private final ClasspathControllerLoader swgRouter;
     private final ServerState serverState;
 
     @Inject

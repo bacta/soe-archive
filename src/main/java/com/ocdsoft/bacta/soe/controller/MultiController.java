@@ -2,7 +2,6 @@ package com.ocdsoft.bacta.soe.controller;
 
 import com.ocdsoft.bacta.engine.utils.BufferUtil;
 import com.ocdsoft.bacta.engine.utils.UnsignedUtil;
-import com.ocdsoft.bacta.soe.SoeController;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 import com.ocdsoft.bacta.soe.message.UdpPacketType;
 import org.slf4j.Logger;
@@ -48,7 +47,6 @@ public class MultiController extends BaseSoeController {
     @Override
     public void handleIncoming(byte zeroByte, UdpPacketType type, SoeUdpConnection connection, ByteBuffer buffer) {
 
-        // TODO: Get the footer sliced off
         while (buffer.remaining() > 3) {
             
             logger.trace("Buffer: {} {}", buffer, BufferUtil.bytesToHex(buffer));

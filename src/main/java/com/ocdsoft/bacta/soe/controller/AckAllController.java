@@ -1,6 +1,5 @@
 package com.ocdsoft.bacta.soe.controller;
 
-import com.ocdsoft.bacta.soe.SoeController;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 import com.ocdsoft.bacta.soe.message.UdpPacketType;
 
@@ -13,6 +12,6 @@ public class AckAllController extends BaseSoeController {
     public void handleIncoming(byte zeroByte, UdpPacketType type, SoeUdpConnection connection, ByteBuffer buffer) {
 
         short sequenceNum = buffer.getShort();
-        connection.processAckAll(sequenceNum);
+        connection.ackAllFromClient(sequenceNum);
     }
 }

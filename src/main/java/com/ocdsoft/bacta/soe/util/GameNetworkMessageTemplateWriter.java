@@ -17,6 +17,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.nio.ByteBuffer;
+import java.nio.file.Paths;
 
 /**
  * Created by kburkhardt on 1/31/15.
@@ -92,7 +93,7 @@ public final class GameNetworkMessageTemplateWriter {
         commandMessageFilePath = objMessageFilePath + fs + "command" + fs;
     }
 
-    public void createGameNetworkMessageFiles(int opcode, ByteBuffer buffer) {
+    public void createGameNetworkMessageFiles(short priority, int opcode, ByteBuffer buffer) {
 
         String messageName = ClientString.get(opcode);
         
@@ -101,19 +102,19 @@ public final class GameNetworkMessageTemplateWriter {
             return;
         }
 
-        writeGameNetworkMessage(messageName, buffer);
+        writeGameNetworkMessage(opcode, priority, messageName, buffer);
         writeGameNetworkController(messageName);
     }
 
-    private void writeGameNetworkMessage(String messageName, ByteBuffer buffer)  {
+    private void writeGameNetworkMessage(int opcode, short priority, String messageName, ByteBuffer buffer)  {
 
         String outFileName = messageFilePath + messageName + ".java";
         File file = new File(outFileName);
         if(file.exists()) {
-            LOGGER.info("'" + messageName + "' already exists");
+            LOGGER.info("'{}' already exists", messageName);
             return;
         }
-        
+
         Template template = ve.getTemplate("/template/GameNetworkMessage.vm");
 
         VelocityContext context = new VelocityContext();
@@ -121,11 +122,17 @@ public final class GameNetworkMessageTemplateWriter {
         context.put("packageName", messageClassPath);
         context.put("messageName", messageName);
 
+        if(SOECRC32.hashCode(messageName) == opcode) {
+            context.put("messageSimpleName", "SOECRC32.hashCode(" + messageName + ".class.getSimpleName())");
+        } else {
+            context.put("messageSimpleName", "0x" + Integer.toHexString(opcode));
+        }
+
         String messageStruct = SoeMessageUtil.makeMessageStruct(buffer);
         context.put("messageStruct", messageStruct);
 
-        context.put("priority", "0x" + Integer.toHexString(buffer.getShort(4)));
-        context.put("opcode", "0x" + Integer.toHexString(buffer.getInt(6)));
+        context.put("priority", "0x" + Integer.toHexString(priority));
+        context.put("opcode", "0x" + Integer.toHexString(opcode));
 
         /* lets render a template */
         writeTemplate(outFileName, context, template);
@@ -205,7 +212,7 @@ public final class GameNetworkMessageTemplateWriter {
             return;
         }
 
-        Template template = ve.getTemplate("/templates/ObjController.vm");
+        Template template = ve.getTemplate("/template/ObjController.vm");
 
         VelocityContext context = new VelocityContext();
 
@@ -220,20 +227,22 @@ public final class GameNetworkMessageTemplateWriter {
         writeTemplate(outFileName, context, template);
     }
 
-    public void createCommandFiles(int opcode, ByteBuffer buffer, String tangibleName, String objectControllerName) {
+    public void createCommandFiles(int commandHash, ByteBuffer buffer) {
 
-        String messageName = ObjectControllerNames.get(opcode);
+        String messageName = CommandNames.get(commandHash);
 
         if (messageName.isEmpty() || messageName.equalsIgnoreCase("unknown")) {
-            LOGGER.error("Unknown message opcode: 0x" + Integer.toHexString(opcode));
+            LOGGER.error("Unknown message opcode: 0x" + Integer.toHexString(commandHash));
             return;
         }
 
-        writeCommandMessage(opcode, messageName, buffer, objectControllerName);
-        writeCommandController(opcode, messageName, tangibleName);
+        messageName = messageName.substring(0, 1).toUpperCase() + messageName.substring(1);
+
+        writeCommandMessage(commandHash, messageName, buffer);
+        writeCommandController(commandHash, messageName);
     }
 
-    private void writeCommandMessage(int opcode, String messageName, ByteBuffer buffer, String objectControllerName)  {
+    private void writeCommandMessage(int opcode, String messageName, ByteBuffer buffer)  {
 
         String outFileName = commandMessageFilePath + messageName + ".java";
         File file = new File(outFileName);
@@ -247,7 +256,7 @@ public final class GameNetworkMessageTemplateWriter {
         VelocityContext context = new VelocityContext();
 
         context.put("packageName", commandMessageClassPath);
-        context.put("objectControllerName", objectControllerName);
+        //context.put("objectControllerName", objectControllerName);
         context.put("messageName", messageName);
         context.put("controllerid", Integer.toHexString(opcode));
 
@@ -258,9 +267,9 @@ public final class GameNetworkMessageTemplateWriter {
         writeTemplate(outFileName, context, template);
     }
 
-    private void writeCommandController(int opcode, String messageName, String tangiblePath) {
+    private void writeCommandController(int opcode, String messageName) {
 
-        String className = messageName + "Command";
+        String className = messageName + "CommandController";
 
         String outFileName = commandControllerFilePath + className + ".java";
         File file = new File(outFileName);
@@ -274,8 +283,8 @@ public final class GameNetworkMessageTemplateWriter {
         VelocityContext context = new VelocityContext();
 
         context.put("packageName", commandControllerClassPath);
-        context.put("tangibleClassPath", tangiblePath);
-        context.put("messageClasspath", commandMessageClassPath);
+        context.put("tangibleClassPath", tangibleClassPath);
+        context.put("messageClasspath", commandMessageClassPath + "." + messageName);
         context.put("messageName", messageName);
         context.put("className", className);
         context.put("controllerid", opcode);

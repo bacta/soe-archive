@@ -1,5 +1,7 @@
 package com.ocdsoft.bacta.soe.io.udp;
 
+import co.paralleluniverse.fibers.Fiber;
+import co.paralleluniverse.strands.SuspendableRunnable;
 import com.codahale.metrics.*;
 import com.codahale.metrics.Timer;
 import com.google.inject.Inject;
@@ -12,6 +14,8 @@ import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 import com.ocdsoft.bacta.soe.dispatch.SoeMessageDispatcher;
 import com.ocdsoft.bacta.soe.message.UdpPacketType;
 import com.ocdsoft.bacta.soe.protocol.SoeProtocol;
+import com.ocdsoft.bacta.soe.serialize.GameNetworkMessageSerializer;
+import com.ocdsoft.bacta.soe.util.SoeMessageUtil;
 import org.apache.commons.modeler.Registry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,11 +60,16 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
     // Connection Id generator
     private final Random random;
 
+    private final ServerState serverState;
+
+    private final GameNetworkMessageSerializer messageSerializer;
+
     @Inject
     public SoeTransceiver(final MetricRegistry metrics,
                           final NetworkConfiguration networkConfiguration,
                           final ServerState serverState,
-                          final SoeMessageDispatcher soeMessageDispatcher) {
+                          final SoeMessageDispatcher soeMessageDispatcher,
+                          final GameNetworkMessageSerializer messageSerializer) {
 
         super(networkConfiguration.getBindIp(), networkConfiguration.getPort());
 
@@ -69,6 +78,8 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
         this.protocol = new SoeProtocol();
         this.whitelistedAddresses = networkConfiguration.getTrustedClients();
         this.random = new Random();
+        this.serverState = serverState;
+        this.messageSerializer = messageSerializer;
 
         this.mBeanServer = ManagementFactory.getPlatformMBeanServer();
 
@@ -77,12 +88,13 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
         connectionMap = new ConcurrentHashMap<>();
 
         sendThread = new Thread(new SendLoop());
-        sendThread.setName(serverState.getServerType().name() + " Send Thread");
+        sendThread.setName(serverState.getServerType().name() + " Send");
 
         outgoingMessages = metrics.counter(MetricRegistry.name(SoeTransceiver.class, "message", "outgoing"));
         incomingMessages = metrics.counter(MetricRegistry.name(SoeTransceiver.class, "message", "incoming"));
         sendQueueSizes = metrics.histogram(MetricRegistry.name(SoeTransceiver.class, "message", "outgoing-queue"));
         sendTimer = metrics.timer(MetricRegistry.name(SoeTransceiver.class, "message", "send-timer"));
+
         
         metrics.register(MetricRegistry.name(SoeTransceiver.class, "connections", "active"),
                 new Gauge<Integer>() {
@@ -139,13 +151,13 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
      * @since 1.0
      */
     private final SoeUdpConnection createConnection(final InetSocketAddress address) throws RuntimeException {
-        SoeUdpConnection connection = new SoeUdpConnection(networkConfiguration, address, ConnectionState.ONLINE, null);
+        SoeUdpConnection connection = new SoeUdpConnection(networkConfiguration, address, ConnectionState.ONLINE, messageSerializer, null);
         
         try {
 
             if(whitelistedAddresses != null && whitelistedAddresses.contains(address.getHostString())) {
                 connection.addRole(ConnectionRole.WHITELISTED);
-                LOGGER.info("Whitelisted address connected: " + address.getHostString());
+                LOGGER.debug("Whitelisted address connected: " + address.getHostString());
             }
 
         } catch (Exception e) {
@@ -157,7 +169,7 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
     public final SoeUdpConnection createOutgoingConnection(final InetSocketAddress address, final Consumer<SoeUdpConnection> connectCallback) throws RuntimeException {
 
         try {
-            SoeUdpConnection connection = new SoeUdpConnection(networkConfiguration, address, ConnectionState.LINKDEAD, connectCallback);
+            SoeUdpConnection connection = new SoeUdpConnection(networkConfiguration, address, ConnectionState.LINKDEAD, messageSerializer, connectCallback);
             connection.setId(random.nextInt());
             
             if(whitelistedAddresses != null && whitelistedAddresses.contains(connection.getRemoteAddress().getHostString())) {
@@ -184,61 +196,69 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
     }
 
     @Override
-    public final void receiveMessage(InetSocketAddress sender, ByteBuffer buffer) {
+    public final void receiveMessage(final InetSocketAddress sender, final ByteBuffer buffer) {
 
-        try {
-            incomingMessages.inc();
-            SoeUdpConnection connection = connectionMap.get(sender);
-            UdpPacketType packetType;
-            
-            byte type = buffer.get(1);
-            if(type >= 0 && type <= 0x1E) {
+        new Fiber<Void>((SuspendableRunnable) () -> {
 
-                packetType = UdpPacketType.values()[type];
+            try {
+                incomingMessages.inc();
+                SoeUdpConnection connection = connectionMap.get(sender);
+                UdpPacketType packetType;
 
-                LOGGER.trace("Recieved {}", packetType);
+                byte type = buffer.get(1);
+                if(type >= 0 && type <= 0x1E) {
 
-                if (packetType == UdpPacketType.cUdpPacketConnect) {
+                    packetType = UdpPacketType.values()[type];
 
-                    connection = createConnection(sender);
-                    connectionMap.put(sender, connection);
+                    LOGGER.trace("[{}] Received {}", serverState.getServerType().name(), packetType);
 
-                    LOGGER.debug("{} connection from {} now has {} total connected clients.",
-                            connection.getClass().getSimpleName(),
-                            sender,
-                            connectionMap.size());
+                    if (packetType == UdpPacketType.cUdpPacketConnect) {
 
-                } else {
+                        connection = createConnection(sender);
+                        connectionMap.put(sender, connection);
 
-                    if (connection == null) {
-                        LOGGER.debug("Unsolicited Message from " + sender + ": " + BufferUtil.bytesToHex(buffer));
-                        return;
+
+                        LOGGER.debug("{} connection from {} now has {} total connected clients.",
+                                connection.getClass().getSimpleName(),
+                                sender,
+                                connectionMap.size());
+
+                    } else {
+
+                        if (connection == null) {
+                            LOGGER.debug("Unsolicited Message from " + sender + ": " + BufferUtil.bytesToHex(buffer));
+                            return;
+                        }
                     }
+                } else {
+                    packetType = UdpPacketType.cUdpPacketZeroEscape;
                 }
-            } else {
-                packetType = UdpPacketType.cUdpPacketZeroEscape;
-            }
 
-            if (packetType != UdpPacketType.cUdpPacketConnect && packetType != UdpPacketType.cUdpPacketConfirm) {
-                buffer = protocol.decode(connection.getConfiguration().getEncryptCode(), buffer.order(ByteOrder.LITTLE_ENDIAN));
-            }
+                ByteBuffer decodedBuffer = null;
+                if (packetType != UdpPacketType.cUdpPacketConnect && packetType != UdpPacketType.cUdpPacketConfirm) {
+                    decodedBuffer = protocol.decode(connection.getConfiguration().getEncryptCode(), buffer.order(ByteOrder.LITTLE_ENDIAN));
+                } else {
+                    decodedBuffer = buffer;
+                }
 
-            if(buffer != null) {
-                connection.increaseProtocolMessageReceived();
-                soeMessageDispatcher.dispatch(connection, buffer);
-            } else {
-                LOGGER.warn("Unhandled message {}}", packetType);
-            }
+                if(decodedBuffer != null) {
+                    connection.increaseProtocolMessageReceived();
+                    soeMessageDispatcher.dispatch(connection, decodedBuffer);
+                } else {
+                    LOGGER.warn("Unhandled message {}}", packetType);
+                }
 
-        } catch (Exception e) {
-            throw new RuntimeException(buffer.toString(), e);
-        }
+            } catch (Exception e) {
+                throw new RuntimeException(buffer.toString(), e);
+            }
+        }).start();
     }
 
     @Override
     public void sendMessage(SoeUdpConnection connection, ByteBuffer buffer) {
 
         UdpPacketType packetType = UdpPacketType.values()[buffer.get(1)];
+        LOGGER.trace("Sending message to {} : {}", connection.getRemoteAddress(), SoeMessageUtil.bytesToHex(buffer));
 
         if (packetType != UdpPacketType.cUdpPacketConnect && packetType != UdpPacketType.cUdpPacketConfirm) {
             buffer = protocol.encode(connection.getConfiguration().getEncryptCode(), buffer, true);
@@ -252,11 +272,13 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
 
     @Override
     public final void run() {
+        LOGGER.info("{} Transceiver started on  {}:{}", serverState.getServerType() ,networkConfiguration.getBindIp(), networkConfiguration.getPort());
         sendThread.start();
         super.run();
     }
 
     public void stop() {
+        LOGGER.info("{} Transceiver started on  {}:{}", serverState.getServerType() ,networkConfiguration.getBindIp(), networkConfiguration.getPort());
         sendThread.interrupt();
         super.stop();
     }
@@ -312,10 +334,15 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
                         for (Object key : deadClients) {
                             SoeUdpConnection connection = connectionMap.remove(key);
                             if(!networkConfiguration.isDisableInstrumentation()) {
-                                mBeanServer.unregisterMBean(connection.getBeanName());
+                                try {
+                                    mBeanServer.unregisterMBean(connection.getBeanName());
+                                } catch (Exception e) {
+                                    LOGGER.warn("Unable to unregister MBEAN {}", connection.getBeanName(), e);
+                                }
                             }
                             if(networkConfiguration.isReportUdpDisconnects()) {
-                                LOGGER.info("Client disconnected: " + connection.getRemoteAddress() + " Connection: " + connection.getId() + " Reason: " + connection.getTerminateReason());
+                                LOGGER.info("Client disconnected: {}  Connection: {}  Reason: ", connection.getRemoteAddress(), connection.getId(), connection.getTerminateReason());
+                                LOGGER.info("Clients still connected: {}", connectionMap.size());
                             }
                         }
 

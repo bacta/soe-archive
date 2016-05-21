@@ -1,7 +1,8 @@
 package com.ocdsoft.bacta.soe.controller;
 
-import com.ocdsoft.bacta.soe.dispatch.SoeMessageDispatcher;
 import com.ocdsoft.bacta.soe.dispatch.GameNetworkMessageDispatcher;
+import com.ocdsoft.bacta.soe.dispatch.SoeMessageDispatcher;
+import com.ocdsoft.bacta.soe.dispatch.ClasspathControllerLoader;
 
 /**
  * Created by kburkhardt on 1/26/15.

@@ -3,7 +3,6 @@ package com.ocdsoft.bacta.soe.object.account;
 import com.ocdsoft.bacta.engine.buffer.ByteBufferWritable;
 import com.ocdsoft.bacta.engine.utils.BufferUtil;
 import lombok.Data;
-import lombok.Getter;
 
 import java.nio.ByteBuffer;
 
@@ -33,15 +32,20 @@ E7DA1366   -   ithorian female */
 @Data
 public final class CharacterInfo implements ByteBufferWritable, Comparable<CharacterInfo> {
 
+	private final String name; //UnicodeString
+    private final int objectTemplateId;
+    private final long networkId; //NetworkId
+    private final int clusterId;
+    private final Type characterType;
+    private final boolean disabled;
 
-	private String name; //UnicodeString
-    private int objectTemplateId;
-    private long networkId; //NetworkId
-    private int clusterId;
-    private Type characterType;
-    private boolean disabled;
-
-    public CharacterInfo() {
+    public CharacterInfo(final String name, final int objectTemplateId, final long networkId, final int clusterId, final Type characterType, final boolean disabled) {
+        this.name = name;
+        this.objectTemplateId = objectTemplateId;
+        this.networkId = networkId;
+        this.clusterId = clusterId;
+        this.characterType = characterType;
+        this.disabled = disabled;
     }
 
     public CharacterInfo(ByteBuffer buffer) {
@@ -50,6 +54,7 @@ public final class CharacterInfo implements ByteBufferWritable, Comparable<Chara
         networkId = buffer.getLong();
         clusterId = buffer.getInt();
         characterType = Type.values()[buffer.getInt()];
+        disabled = BufferUtil.getBoolean(buffer);
     }
 
     @Override
@@ -58,7 +63,7 @@ public final class CharacterInfo implements ByteBufferWritable, Comparable<Chara
         buffer.putInt(objectTemplateId);
         buffer.putLong(networkId);
         buffer.putInt(clusterId);
-        characterType.writeToBuffer(buffer);
+        buffer.putInt(characterType.ordinal());
     }
 
     @Override
@@ -66,22 +71,10 @@ public final class CharacterInfo implements ByteBufferWritable, Comparable<Chara
         return name.compareTo(o.name);
     }
 
-    public enum Type implements ByteBufferWritable {
-        NONE(0x0),
-        NORMAL(0x1),
-        JEDI(0x2),
-        SPECTRAL(0x3);
-
-        @Getter
-        private int value;
-
-        private Type(int value) {
-            this.value = value;
-        }
-
-        @Override
-        public void writeToBuffer(ByteBuffer buffer) {
-            buffer.putInt(value);
-        }
+    public enum Type {
+        NONE,
+        NORMAL,
+        JEDI,
+        SPECTRAL;
     }
 }

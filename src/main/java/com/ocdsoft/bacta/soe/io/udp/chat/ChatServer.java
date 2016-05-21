@@ -1,22 +1,19 @@
 package com.ocdsoft.bacta.soe.io.udp.chat;
 
-import com.codahale.metrics.MetricRegistry;
 import com.google.inject.Inject;
-import com.google.inject.Injector;
+import com.google.inject.Singleton;
 import com.ocdsoft.bacta.engine.conf.BactaConfiguration;
 import com.ocdsoft.bacta.engine.network.client.ServerStatus;
-import com.ocdsoft.bacta.soe.ServerType;
-import com.ocdsoft.bacta.soe.chat.ChatModule;
-import com.ocdsoft.bacta.soe.chat.MailModule;
-import com.ocdsoft.bacta.soe.io.udp.NetworkConfiguration;
+import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 import com.ocdsoft.bacta.soe.io.udp.SoeTransceiver;
-import com.ocdsoft.bacta.soe.dispatch.SoeDevMessageDispatcher;
+import com.ocdsoft.bacta.soe.io.udp.login.LoginServer;
+import com.ocdsoft.bacta.soe.service.OutgoingConnectionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.util.Collection;
+import java.net.InetSocketAddress;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
 
 /**
  * Created by crush on 1/12/2015.
@@ -27,41 +24,17 @@ public final class ChatServer implements Runnable {
 
     private final ChatServerState serverState;
     private final SoeTransceiver soeTransceiver;
-    private final ChatModule chatModule;
-    private final MailModule mailModule;
 
     @Inject
     public ChatServer(final BactaConfiguration configuration,
                       final ChatServerState serverState,
-                      final SoeTransceiver soeTransceiver) throws ClassNotFoundException, IllegalAccessException, InstantiationException {
+                      final SoeTransceiver soeTransceiver,
+                      final OutgoingConnectionService outgoingConnectionService) throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 
         this.serverState = serverState;
         this.soeTransceiver = soeTransceiver;
 
-
-        final String chatModuleType = configuration.getString("Bacta/ChatServer", "chatModule");
-        final String mailModuleType = configuration.getString("Bacta/ChatServer", "mailModule");
-
-        LOGGER.debug("Chat module type is [{}].", chatModuleType);
-        LOGGER.debug("Mail module type is [{}].", mailModuleType);
-
-        final Class chatModuleClass = Class.forName(chatModuleType);
-        final Class mailModuleClass = Class.forName(mailModuleType);
-
-        if (!ChatModule.class.isAssignableFrom(chatModuleClass)) {
-            throw new RuntimeException(String.format("Given chat module [%s] does not inherit [%s].",
-                    chatModuleClass.getName(),
-                    ChatModule.class.getName()));
-        }
-
-        if (!MailModule.class.isAssignableFrom(mailModuleClass)) {
-            throw new RuntimeException(String.format("Given mail module [%s] does not inherit [%s].",
-                    mailModuleClass.getName(),
-                    MailModule.class.getName()));
-        }
-
-        this.chatModule = (ChatModule) chatModuleClass.newInstance();
-        this.mailModule = (MailModule) mailModuleClass.newInstance();
+        ((ChatOutgoingConnectionService)outgoingConnectionService).createConnection = soeTransceiver::createOutgoingConnection;
     }
 
     @Override
@@ -84,6 +57,19 @@ public final class ChatServer implements Runnable {
     public void stop() {
         if (soeTransceiver != null) {
             soeTransceiver.stop();
+        }
+    }
+
+    @Singleton
+    final static public class ChatOutgoingConnectionService implements OutgoingConnectionService {
+
+        private BiFunction<InetSocketAddress, Consumer<SoeUdpConnection>, SoeUdpConnection> createConnection;
+
+        @Override
+        public SoeUdpConnection createOutgoingConnection(final InetSocketAddress address, final Consumer<SoeUdpConnection> connectCallback) {
+            if(createConnection == null) return null;
+
+            return createConnection.apply(address, connectCallback);
         }
     }
 }

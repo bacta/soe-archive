@@ -1,7 +1,6 @@
 package com.ocdsoft.bacta.soe.controller;
 
 import com.google.inject.Singleton;
-import com.ocdsoft.bacta.soe.SoeController;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 import com.ocdsoft.bacta.soe.message.UdpPacketType;
 
@@ -21,7 +20,8 @@ public class ZeroEscapeController extends BaseSoeController {
 
         buffer.order(ByteOrder.LITTLE_ENDIAN);
         int opcode = buffer.getInt();
-        gameNetworkMessageDispatcher.dispatch(zeroByte, opcode, connection, buffer);
+
+        gameNetworkMessageDispatcher.dispatch(zeroByte, opcode, connection, buffer.slice().order(ByteOrder.LITTLE_ENDIAN));
     }
 
 }

@@ -2,6 +2,8 @@ package com.ocdsoft.bacta.soe.dispatch;
 
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 
+import java.nio.ByteBuffer;
+
 /**
  * Created by kyle on 4/10/2016.
  */

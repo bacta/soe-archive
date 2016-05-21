@@ -4,10 +4,11 @@ import com.ocdsoft.bacta.engine.conf.ini.IniBactaConfiguration
 import com.ocdsoft.bacta.engine.network.client.ConnectionState
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection
 import com.ocdsoft.bacta.soe.controller.*
-import com.ocdsoft.bacta.soe.io.udp.NetworkConfiguration
-import com.ocdsoft.bacta.soe.dispatch.SoeDevMessageDispatcher
 import com.ocdsoft.bacta.soe.dispatch.GameNetworkMessageDispatcher
+import com.ocdsoft.bacta.soe.dispatch.SoeDevMessageDispatcher
+import com.ocdsoft.bacta.soe.dispatch.ClasspathControllerLoader
 import com.ocdsoft.bacta.soe.io.udp.game.GameNetworkConfiguration
+import com.ocdsoft.bacta.soe.serialize.GameNetworkMessageSerializer
 import com.ocdsoft.bacta.soe.util.SoeMessageUtil
 import spock.lang.Shared
 import spock.lang.Specification
@@ -40,8 +41,9 @@ class MultiPacketSpec extends Specification {
         def multiList = SoeMessageUtil.readTextPacketDump(new File(this.getClass().getResource("/multipackets.txt").getFile()))
         def bactaConfig = new IniBactaConfiguration()
         def networkConfig = new GameNetworkConfiguration(bactaConfig)
-        
-        def soeUdpConnection = new SoeUdpConnection(networkConfig, null, ConnectionState.DISCONNECTED, null)
+        def messageSerializer = Mock(GameNetworkMessageSerializer)
+
+        def soeUdpConnection = new SoeUdpConnection(networkConfig, null, ConnectionState.DISCONNECTED, messageSerializer, null)
         
         when:
         for(List<Byte> array : multiList) {

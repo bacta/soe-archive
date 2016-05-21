@@ -14,7 +14,7 @@ public class CommandNames {
 	private static Properties prop;
 	
 	static {
-		InputStream stream = CommandNames.class.getResourceAsStream("/commandnames.txt");
+		InputStream stream = CommandNames.class.getResourceAsStream("/commandnames.properties");
 		prop = new Properties();
 		try {
 			prop.load(stream);
@@ -24,10 +24,10 @@ public class CommandNames {
 	}
 
 	public static String get(String propertyName) {
-		if(!prop.containsKey(propertyName.toUpperCase()))
+		if(!prop.containsKey(propertyName.toLowerCase()))
 			return "Unknown";
 		
-		return prop.getProperty(propertyName.toUpperCase());
+		return prop.getProperty(propertyName.toLowerCase());
 	}
 	
 	public static String get(int propertyName) {

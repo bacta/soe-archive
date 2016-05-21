@@ -1,22 +1,15 @@
 package com.ocdsoft.bacta.soe.io.udp.game;
 
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.health.HealthCheckRegistry;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.ocdsoft.bacta.engine.conf.BactaConfiguration;
 import com.ocdsoft.bacta.engine.network.client.ServerStatus;
-import com.ocdsoft.bacta.soe.ServerType;
 import com.ocdsoft.bacta.soe.connection.ConnectionServerAgent;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
-import com.ocdsoft.bacta.soe.dispatch.SoeMessageDispatcher;
-import com.ocdsoft.bacta.soe.io.udp.NetworkConfiguration;
 import com.ocdsoft.bacta.soe.io.udp.SoeTransceiver;
 import com.ocdsoft.bacta.soe.service.OutgoingConnectionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.function.BiFunction;
@@ -83,6 +76,7 @@ public final class GameServer implements Runnable {
             serverState.setServerStatus(ServerStatus.UP);
             connectionServerAgent.update();
 
+            LOGGER.info("Game Server is running");
             // Blocks until stopped
             transceiver.run();
             serverState.setServerStatus(ServerStatus.DOWN);

@@ -14,7 +14,7 @@ public class ObjectControllerNames {
 	private static Properties prop;
 	
 	static {
-		InputStream stream = ObjectControllerNames.class.getResourceAsStream("/objectcontrollers.txt");
+		InputStream stream = ObjectControllerNames.class.getResourceAsStream("/objectcontrollers.properties");
 		prop = new Properties();
 		try {
 			prop.load(stream);
