@@ -1,6 +1,7 @@
 package com.ocdsoft.bacta.soe.serialize;
 
 import com.google.inject.Singleton;
+import com.ocdsoft.bacta.soe.dispatch.MessageCRC;
 import com.ocdsoft.bacta.soe.message.GameNetworkMessage;
 import com.ocdsoft.bacta.soe.message.Priority;
 import com.ocdsoft.bacta.soe.util.SOECRC32;
@@ -24,11 +25,7 @@ public class GameNetworkMessageSerializerImpl implements GameNetworkMessageSeria
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GameNetworkMessageSerializerImpl.class);
 
-    private final static int OBJECT_CONTROLLER_MESSAGE = 0x80CE5E46;
-    private final static int COMMAND_CONTROLLER_MESSAGE = 0x116;
-
     private final IntObjectHashMap<Constructor<? extends GameNetworkMessage>> messageConstructorMap;
-
     private final Map<Class<? extends GameNetworkMessage>, MessageData> messageDataMap;
 
     public GameNetworkMessageSerializerImpl() {
@@ -45,8 +42,14 @@ public class GameNetworkMessageSerializerImpl implements GameNetworkMessageSeria
         MessageData data = messageDataMap.get(message.getClass());
         if (data == null) {
             Priority priority = message.getClass().getAnnotation(Priority.class);
+            short value;
+            if(priority == null) {
+                value = 0x2;
+            } else {
+                value = priority.value();
+            }
             data = new MessageData(
-                    priority.value(),
+                    value,
                     SOECRC32.hashCode(message.getClass().getSimpleName())
             );
             messageDataMap.put(message.getClass(), data);
@@ -68,7 +71,7 @@ public class GameNetworkMessageSerializerImpl implements GameNetworkMessageSeria
             return messageConstructor.newInstance(buffer);
 
         } catch (Exception e) {
-            LOGGER.error("Unable to construct message {}", messageConstructor.getName());
+            LOGGER.error("Unable to construct message {}", messageConstructor.getName(), e);
             return null;
         }
     }
@@ -76,22 +79,12 @@ public class GameNetworkMessageSerializerImpl implements GameNetworkMessageSeria
     @Override
     public GameNetworkMessage readFromBuffer(int gameMessageType, final ByteBuffer buffer) {
 
-        if ( gameMessageType == OBJECT_CONTROLLER_MESSAGE ) {
+        final Constructor<? extends GameNetworkMessage> messageConstructor = messageConstructorMap.get(gameMessageType);
 
-            gameMessageType = buffer.getInt(10);
-
-            if ( gameMessageType == COMMAND_CONTROLLER_MESSAGE ) {
-                gameMessageType = buffer.getInt(30);
-            }
-        }
-
-        final Constructor<? extends GameNetworkMessage> messageClass = messageConstructorMap.get(gameMessageType);
-
-        GameNetworkMessage messageInstance = create(messageClass, buffer);
-        if(messageInstance == null) {
+        if(messageConstructor == null) {
             throw new GameNetworkMessageTypeNotFoundException(gameMessageType);
         }
-
+        GameNetworkMessage messageInstance = create(messageConstructor, buffer);
         return messageInstance;
     }
 

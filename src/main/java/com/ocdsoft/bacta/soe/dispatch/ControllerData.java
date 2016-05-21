@@ -1,7 +1,9 @@
 package com.ocdsoft.bacta.soe.dispatch;
 
 import com.ocdsoft.bacta.soe.connection.ConnectionRole;
+import com.ocdsoft.bacta.soe.controller.CommandController;
 import com.ocdsoft.bacta.soe.controller.GameNetworkMessageController;
+import com.ocdsoft.bacta.soe.controller.ObjController;
 import lombok.Getter;
 
 import java.util.List;

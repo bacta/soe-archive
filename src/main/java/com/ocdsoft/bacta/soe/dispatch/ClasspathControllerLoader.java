@@ -27,8 +27,7 @@ import java.util.Set;
 /**
  * Created by kyle on 4/22/2016.
  */
-@Singleton
-public final class ClasspathControllerLoader<T> {
+public final class ClasspathControllerLoader {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ClasspathControllerLoader.class);
 
@@ -46,7 +45,7 @@ public final class ClasspathControllerLoader<T> {
         this.serverState = serverState;
     }
 
-    public TIntObjectMap<ControllerData> getControllers(Class<T> clazz) {
+    public <T> TIntObjectMap<ControllerData> getControllers(Class<T> clazz) {
 
         TIntObjectMap<ControllerData> controllers = new TIntObjectHashMap<>();
 
@@ -63,7 +62,7 @@ public final class ClasspathControllerLoader<T> {
         return controllers;
     }
 
-    private void loadControllerClass(final TIntObjectMap<ControllerData> controllers,
+    private <T> void loadControllerClass(final TIntObjectMap<ControllerData> controllers,
                                      final Injector injector,
                                      Class<? extends T> controllerClass,
                                      final ServerState serverState) {
@@ -92,12 +91,18 @@ public final class ClasspathControllerLoader<T> {
             Class<? extends GameNetworkMessage> handledMessageClass = (Class<? extends GameNetworkMessage>) controllerAnnotation.handles();
 
             int controllerId;
-            if (controllerAnnotation.id() != -1) {
-                controllerId = controllerAnnotation.id();
-            } else if (handledMessageClass.equals(Object.class)) {
-                controllerId = SOECRC32.hashCode(controllerAnnotation.command());
+
+            MessageCRC messageCRC = handledMessageClass.getAnnotation(MessageCRC.class);
+            if(messageCRC != null) {
+                controllerId = messageCRC.value();
+            } else if(!controllerAnnotation.command().isEmpty()) {
+                controllerId = SOECRC32.hashCode(controllerAnnotation.command().toLowerCase());
             } else {
                 controllerId = SOECRC32.hashCode(handledMessageClass.getSimpleName());
+            }
+
+            if (controllerAnnotation.id() != -1) {
+                controllerId = controllerAnnotation.id();
             }
 
             gameNetworkMessageSerializer.addHandledMessageClass(controllerId, handledMessageClass);

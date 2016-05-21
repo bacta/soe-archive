@@ -53,10 +53,6 @@
             <artifactId>jzlib</artifactId>
         </dependency>
         <dependency>
-            <groupId>joda-time</groupId>
-            <artifactId>joda-time</artifactId>
-        </dependency>
-        <dependency>
             <groupId>com.lmax</groupId>
             <artifactId>disruptor</artifactId>
         </dependency>
@@ -84,7 +80,11 @@
             <groupId>co.paralleluniverse</groupId>
             <artifactId>quasar-core</artifactId>
             <version>${quasarVersion}</version>
-            <classifier>jdk8</classifier>
+        </dependency>
+        <dependency>
+            <groupId>co.paralleluniverse</groupId>
+            <artifactId>quasar-actors</artifactId>
+            <version>${quasarVersion}</version>
         </dependency>
     </dependencies>
 </project>

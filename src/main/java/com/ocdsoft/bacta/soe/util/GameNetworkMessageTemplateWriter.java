@@ -212,7 +212,7 @@ public final class GameNetworkMessageTemplateWriter {
             return;
         }
 
-        Template template = ve.getTemplate("/templates/ObjController.vm");
+        Template template = ve.getTemplate("/template/ObjController.vm");
 
         VelocityContext context = new VelocityContext();
 
@@ -235,6 +235,8 @@ public final class GameNetworkMessageTemplateWriter {
             LOGGER.error("Unknown message opcode: 0x" + Integer.toHexString(commandHash));
             return;
         }
+
+        messageName = messageName.substring(0, 1).toUpperCase() + messageName.substring(1);
 
         writeCommandMessage(commandHash, messageName, buffer);
         writeCommandController(commandHash, messageName);
@@ -267,7 +269,7 @@ public final class GameNetworkMessageTemplateWriter {
 
     private void writeCommandController(int opcode, String messageName) {
 
-        String className = messageName + "Command";
+        String className = messageName + "CommandController";
 
         String outFileName = commandControllerFilePath + className + ".java";
         File file = new File(outFileName);
@@ -282,7 +284,7 @@ public final class GameNetworkMessageTemplateWriter {
 
         context.put("packageName", commandControllerClassPath);
         context.put("tangibleClassPath", tangibleClassPath);
-        context.put("messageClasspath", commandMessageClassPath);
+        context.put("messageClasspath", commandMessageClassPath + "." + messageName);
         context.put("messageName", messageName);
         context.put("className", className);
         context.put("controllerid", opcode);
