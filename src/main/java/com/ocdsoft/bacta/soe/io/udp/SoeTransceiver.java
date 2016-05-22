@@ -1,7 +1,5 @@
 package com.ocdsoft.bacta.soe.io.udp;
 
-import co.paralleluniverse.fibers.Fiber;
-import co.paralleluniverse.strands.SuspendableRunnable;
 import com.codahale.metrics.*;
 import com.codahale.metrics.Timer;
 import com.google.inject.Inject;
@@ -198,7 +196,7 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
     @Override
     public final void receiveMessage(final InetSocketAddress sender, final ByteBuffer buffer) {
 
-        new Fiber<Void>((SuspendableRunnable) () -> {
+        //new Fiber<Void>((SuspendableRunnable) () -> {
 
             try {
                 incomingMessages.inc();
@@ -251,7 +249,7 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
             } catch (Exception e) {
                 throw new RuntimeException(buffer.toString(), e);
             }
-        }).start();
+        //}).start();
     }
 
     @Override
