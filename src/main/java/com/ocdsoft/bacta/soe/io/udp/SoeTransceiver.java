@@ -1,5 +1,7 @@
 package com.ocdsoft.bacta.soe.io.udp;
 
+import co.paralleluniverse.fibers.Fiber;
+import co.paralleluniverse.strands.SuspendableRunnable;
 import com.codahale.metrics.*;
 import com.codahale.metrics.Timer;
 import com.google.inject.Inject;
@@ -61,13 +63,16 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
     private final ServerState serverState;
 
     private final GameNetworkMessageSerializer messageSerializer;
+    private final MessageSubscriptionService messageSubscriptionService;
+
 
     @Inject
     public SoeTransceiver(final MetricRegistry metrics,
                           final NetworkConfiguration networkConfiguration,
                           final ServerState serverState,
                           final SoeMessageDispatcher soeMessageDispatcher,
-                          final GameNetworkMessageSerializer messageSerializer) {
+                          final GameNetworkMessageSerializer messageSerializer,
+                          final MessageSubscriptionService messageSubscriptionService) {
 
         super(networkConfiguration.getBindIp(), networkConfiguration.getPort());
 
@@ -78,6 +83,7 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
         this.random = new Random();
         this.serverState = serverState;
         this.messageSerializer = messageSerializer;
+        this.messageSubscriptionService = messageSubscriptionService;
 
         this.mBeanServer = ManagementFactory.getPlatformMBeanServer();
 
@@ -196,7 +202,7 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
     @Override
     public final void receiveMessage(final InetSocketAddress sender, final ByteBuffer buffer) {
 
-        //new Fiber<Void>((SuspendableRunnable) () -> {
+        new Fiber<Void>((SuspendableRunnable) () -> {
 
             try {
                 incomingMessages.inc();
@@ -249,7 +255,7 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
             } catch (Exception e) {
                 throw new RuntimeException(buffer.toString(), e);
             }
-        //}).start();
+        }).start();
     }
 
     @Override
@@ -308,29 +314,30 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
                         
                         nextIteration = currentTime + networkConfiguration.getNetworkThreadSleepTimeMs();
 
-                        Set<Object> connectionList = connectionMap.keySet();
-                        List<Object> deadClients = new ArrayList<>();
+                        final Set<Object> connectionList = connectionMap.keySet();
+                        final List<Object> deadClients = new ArrayList<>();
 
                         for (Object obj : connectionList) {
-                            SoeUdpConnection connection = connectionMap.get(obj);
+                            final SoeUdpConnection connection = connectionMap.get(obj);
 
                             if (connection == null || connection.getState() == ConnectionState.DISCONNECTED) {
                                 deadClients.add(obj);
                                 continue;
                             }
 
-                            List<ByteBuffer> messages = connection.getPendingMessages();
+                            final List<ByteBuffer> messages = connection.getPendingMessages();
                             if(messages.size() > 0) {
                                 sendQueueSizes.update(messages.size());
                             }
                             
-                            for (ByteBuffer message : messages) {
+                            for (final ByteBuffer message : messages) {
                                 sendMessage(connection, message);
                             }
                         }
 
                         for (Object key : deadClients) {
-                            SoeUdpConnection connection = connectionMap.remove(key);
+                            final SoeUdpConnection connection = connectionMap.remove(key);
+                            messageSubscriptionService.onDisconnect(connection);
                             if(!networkConfiguration.isDisableInstrumentation()) {
                                 try {
                                     mBeanServer.unregisterMBean(connection.getBeanName());

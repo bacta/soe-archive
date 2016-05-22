@@ -4,11 +4,11 @@ import com.google.inject.Inject;
 import com.ocdsoft.bacta.engine.network.client.ConnectionState;
 import com.ocdsoft.bacta.soe.connection.Configuration;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
+import com.ocdsoft.bacta.soe.io.udp.MessageSubscriptionService;
 import com.ocdsoft.bacta.soe.io.udp.NetworkConfiguration;
 import com.ocdsoft.bacta.soe.message.ConfirmMessage;
 import com.ocdsoft.bacta.soe.message.TerminateReason;
 import com.ocdsoft.bacta.soe.message.UdpPacketType;
-import com.ocdsoft.bacta.soe.protocol.SoeProtocol;
 import com.ocdsoft.bacta.soe.service.SessionKeyService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,7 +26,8 @@ public class ConnectController extends BaseSoeController {
     private final MBeanServer mBeanServer;
 
     @Inject
-    public ConnectController(final SessionKeyService keyService, final SoeProtocol protocol, final NetworkConfiguration networkConfiguration) {
+    public ConnectController(final SessionKeyService keyService,
+                             final NetworkConfiguration networkConfiguration) {
         this.networkConfiguration = networkConfiguration;
         this.keyService = keyService;
         this.mBeanServer = ManagementFactory.getPlatformMBeanServer();

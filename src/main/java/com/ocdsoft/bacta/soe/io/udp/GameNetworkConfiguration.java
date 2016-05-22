@@ -1,4 +1,4 @@
-package com.ocdsoft.bacta.soe.io.udp.game;
+package com.ocdsoft.bacta.soe.io.udp;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;

@@ -55,6 +55,9 @@ public final class SoeUdpConnection extends UdpConnection implements SoeUdpConne
     @Getter
     private long lastActivity;
 
+    @Getter
+    private long lastClientActivity;
+
     private final Consumer<SoeUdpConnection> connectCallback;
     
     @Getter
@@ -121,6 +124,7 @@ public final class SoeUdpConnection extends UdpConnection implements SoeUdpConne
         this.orderedStampLast = 0;
         
         updateLastActivity();
+        updateLastClientActivity();
     }
     
     public void setId(int id) {
@@ -186,6 +190,10 @@ public final class SoeUdpConnection extends UdpConnection implements SoeUdpConne
         lastActivity = System.currentTimeMillis();
     }
 
+    public void updateLastClientActivity() {
+        lastClientActivity = System.currentTimeMillis();
+    }
+
     public void sendAck(short sequenceNum) {
         updateLastActivity();
         sendMessage(new AckAllMessage(sequenceNum));
@@ -194,6 +202,7 @@ public final class SoeUdpConnection extends UdpConnection implements SoeUdpConne
     public void ackAllFromClient(short sequenceNum) {
         clientSequenceNumber.set(sequenceNum);
         udpMessageProcessor.acknowledge(sequenceNum);
+        updateLastClientActivity();
     }
     
     @Override
