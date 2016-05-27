@@ -105,6 +105,7 @@ public final class SoeUdpConnection extends UdpConnection implements SoeUdpConne
         this.messageSerializer = messageSerializer;
 
         this.configuration = new Configuration(
+                networkConfiguration.getProtocolVersion(),
                 networkConfiguration.getCrcBytes(),
                 networkConfiguration.getEncryptMethod(),
                 networkConfiguration.getMaxRawPacketSize(),
@@ -226,13 +227,13 @@ public final class SoeUdpConnection extends UdpConnection implements SoeUdpConne
         return null;
     }
 
-    public void connect(final int protocolVersion, final int connectionId, final int udpSize) {
+    public void connect() {
         if(getState() == ConnectionState.ONLINE) {
             confirm();
             return;
         }
 
-        ConnectMessage connectMessage = new ConnectMessage(protocolVersion, connectionId, udpSize);
+        ConnectMessage connectMessage = new ConnectMessage(configuration.getProtocolVersion(), id, configuration.getMaxRawPacketSize());
         sendMessage(connectMessage);
     }
 

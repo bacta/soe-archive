@@ -1,6 +1,7 @@
 package com.ocdsoft.bacta.soe.controller;
 
 import com.ocdsoft.bacta.engine.utils.BufferUtil;
+import com.ocdsoft.bacta.engine.utils.UnsignedUtil;
 import com.ocdsoft.bacta.soe.connection.EncryptMethod;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 import com.ocdsoft.bacta.soe.message.UdpPacketType;
@@ -27,7 +28,7 @@ public class ConfirmController extends BaseSoeController {
         connection.getConfiguration().setCrcBytes(crcBytes);
         connection.getConfiguration().setEncryptMethod(EncryptMethod.values()[cryptMethod]);
         connection.getConfiguration().setCompression(compression);
-        
+
         connection.confirm();
     }
 }

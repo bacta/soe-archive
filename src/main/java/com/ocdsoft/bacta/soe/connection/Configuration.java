@@ -1,5 +1,6 @@
 package com.ocdsoft.bacta.soe.connection;
 
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -14,34 +15,23 @@ import lombok.Setter;
  }; 
  */
 
-
+@Data
 public class Configuration {
 
-    @Getter
-    @Setter
+    private int protocolVersion;
     private int encryptCode;
-    
-    @Getter
-    @Setter
     private int crcBytes;
-    
-    @Getter
-    @Setter
     private EncryptMethod encryptMethod;
-    
-    @Getter
-    @Setter
     private int maxRawPacketSize;
-
-    @Getter
-    @Setter
     private boolean compression;
     
-    public Configuration(final int crcBytes,
+    public Configuration(final int protocolVersion,
+                         final int crcBytes,
                          final EncryptMethod encryptMethod,
                          final int maxRawPacketSize,
                          final boolean compression) {
-        
+
+        this.protocolVersion = protocolVersion;
         this.crcBytes = crcBytes;
         this.encryptMethod = encryptMethod;
         this.maxRawPacketSize = maxRawPacketSize;
