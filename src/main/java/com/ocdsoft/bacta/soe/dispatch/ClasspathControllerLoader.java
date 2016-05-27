@@ -105,7 +105,6 @@ public final class ClasspathControllerLoader {
                 controllerId = controllerAnnotation.id();
             }
 
-            gameNetworkMessageSerializer.addHandledMessageClass(controllerId, handledMessageClass);
             List<ServerType> serverTypes = new ArrayList<>();
             for (ServerType serverType : controllerAnnotation.type()) {
                 serverTypes.add(serverType);
@@ -114,6 +113,8 @@ public final class ClasspathControllerLoader {
             String propertyName = Integer.toHexString(controllerId);
 
             if (serverTypes.contains(serverState.getServerType())) {
+
+                gameNetworkMessageSerializer.addHandledMessageClass(controllerId, handledMessageClass);
 
                 T controller = injector.getInstance(controllerClass);
 

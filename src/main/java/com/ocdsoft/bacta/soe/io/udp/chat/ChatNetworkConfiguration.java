@@ -18,10 +18,6 @@ public final class ChatNetworkConfiguration extends BaseNetworkConfiguration imp
 
     @Inject
     public ChatNetworkConfiguration(final BactaConfiguration configuration) throws UnknownHostException {
-        super(configuration);
-
-        bindIp = InetAddress.getByName(configuration.getString("Bacta/ChatServer", "BindIp"));
-        port = configuration.getInt("Bacta/ChatServer", "Port");
-        trustedClients = configuration.getStringCollection("Bacta/ChatServer", "TrustedClient");
+        super(configuration, "Bacta/ChatServer");
     }
 }

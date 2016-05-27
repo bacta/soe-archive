@@ -176,9 +176,9 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
             SoeUdpConnection connection = new SoeUdpConnection(networkConfiguration, address, ConnectionState.LINKDEAD, messageSerializer, connectCallback);
             connection.setId(random.nextInt());
             
-            if(whitelistedAddresses != null && whitelistedAddresses.contains(connection.getRemoteAddress().getHostString())) {
+            if(whitelistedAddresses != null && whitelistedAddresses.contains(connection.getRemoteAddress().getAddress().getHostAddress())) {
                 connection.addRole(ConnectionRole.WHITELISTED);
-                LOGGER.debug("Whitelisted address connected: " + connection.getRemoteAddress().getHostString());
+                LOGGER.debug("Whitelisted address connected: " + connection.getRemoteAddress().getAddress().getHostAddress());
             }
 
             connectionMap.put(connection.getRemoteAddress(), connection);

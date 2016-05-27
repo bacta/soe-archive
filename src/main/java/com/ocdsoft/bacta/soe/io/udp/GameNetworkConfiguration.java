@@ -18,10 +18,6 @@ public final class GameNetworkConfiguration extends BaseNetworkConfiguration imp
 
     @Inject
     public GameNetworkConfiguration(final BactaConfiguration configuration) throws UnknownHostException {
-        super(configuration);
-
-        bindIp = InetAddress.getByName(configuration.getString("Bacta/GameServer", "BindIp"));
-        port = configuration.getInt("Bacta/GameServer", "Port");
-        trustedClients = configuration.getStringCollection("Bacta/GameServer", "TrustedClient");
+        super(configuration, "Bacta/GameServer");
     }
 }

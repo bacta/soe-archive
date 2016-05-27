@@ -6,7 +6,10 @@ import lombok.Getter;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedList;
 
 /**
  * Created by kyle on 4/12/2016.
@@ -61,7 +64,23 @@ public abstract class BaseNetworkConfiguration implements NetworkConfiguration {
     //    logConnectionConstructionDestruction = false
     //    logConnectionOpenedClosed = false
 
-    protected BaseNetworkConfiguration(final BactaConfiguration configuration) throws UnknownHostException {
+    protected BaseNetworkConfiguration(final BactaConfiguration configuration, final String serverSection) throws UnknownHostException {
+
+        String bindIpString = configuration.getString(serverSection, "BindIp");
+        if(bindIpString.equalsIgnoreCase("localhost")) {
+            bindIp = InetAddress.getLocalHost();
+        } else {
+            bindIp = InetAddress.getByName(bindIpString);
+        }
+        port = configuration.getInt(serverSection, "Port");
+
+        trustedClients = configuration.getStringCollection("Bacta/LoginServer", "TrustedClient");
+        LinkedList<String> clients = new LinkedList<>();
+        clients.add(bindIp.getHostAddress());
+        if(trustedClients != null) {
+            clients.addAll(trustedClients);
+        }
+        trustedClients = Collections.unmodifiableList(clients);
 
         protocolVersion = configuration.getIntWithDefault("SharedNetwork", "protocolVersion", 2);
         maxRawPacketSize = configuration.getIntWithDefault("SharedNetwork", "maxRawPacketSize", 496);
