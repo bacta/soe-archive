@@ -6,7 +6,6 @@ import com.ocdsoft.bacta.engine.conf.BactaConfiguration;
 import com.ocdsoft.bacta.engine.network.client.ServerStatus;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 import com.ocdsoft.bacta.soe.io.udp.SoeTransceiver;
-import com.ocdsoft.bacta.soe.io.udp.login.LoginServer;
 import com.ocdsoft.bacta.soe.service.OutgoingConnectionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,9 +15,9 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 /**
- * Created by crush on 1/12/2015.
+ * Created by crush on 5/23/2016.
  */
-public final class ChatServer implements Runnable {
+public class ChatServer implements Runnable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ChatServer.class);
 

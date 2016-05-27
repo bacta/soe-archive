@@ -1,13 +1,10 @@
 package com.ocdsoft.bacta.soe.dispatch;
 
 import com.google.inject.Inject;
-import com.google.inject.Injector;
 import com.google.inject.Singleton;
-import com.ocdsoft.bacta.soe.*;
+import com.ocdsoft.bacta.soe.ServerState;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
-import com.ocdsoft.bacta.soe.controller.CommandController;
 import com.ocdsoft.bacta.soe.controller.GameNetworkMessageController;
-import com.ocdsoft.bacta.soe.controller.ObjController;
 import com.ocdsoft.bacta.soe.message.GameNetworkMessage;
 import com.ocdsoft.bacta.soe.serialize.GameNetworkMessageSerializer;
 import com.ocdsoft.bacta.soe.serialize.GameNetworkMessageTypeNotFoundException;
@@ -36,7 +33,7 @@ public class GameNetworkMessageDispatcher {
     private final static int COMMAND_CONTROLLER_MESSAGE = 0x116;
 
     /**
-     *  Map of controller data to dispatch messages
+     * Map of controller data to dispatch messages
      */
     private final TIntObjectMap<ControllerData> controllers;
 
@@ -72,7 +69,7 @@ public class GameNetworkMessageDispatcher {
         connection.increaseGameNetworkMessageReceived();
 
         int internalMessageType = gameMessageType;
-        if(gameMessageType == OBJECT_CONTROLLER_MESSAGE) {
+        if (gameMessageType == OBJECT_CONTROLLER_MESSAGE) {
             internalMessageType = buffer.getInt(4);
 
             if (internalMessageType == COMMAND_CONTROLLER_MESSAGE) {
@@ -111,10 +108,10 @@ public class GameNetworkMessageDispatcher {
 
     private void handleMissingController(short priority, int gameMessageType, ByteBuffer buffer) {
 
-        if(gameMessageType == OBJECT_CONTROLLER_MESSAGE) {
+        if (gameMessageType == OBJECT_CONTROLLER_MESSAGE) {
             int objcType = buffer.getInt(4);
 
-            if(objcType == COMMAND_CONTROLLER_MESSAGE) {
+            if (objcType == COMMAND_CONTROLLER_MESSAGE) {
                 int commandHash = buffer.getInt(24);
 
                 String propertyName = Integer.toHexString(commandHash);
