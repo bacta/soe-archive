@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 @Singleton
 @SoeController(handles = {
@@ -20,12 +21,13 @@ import java.nio.ByteBuffer;
         UdpPacketType.cUdpPacketFragment4})
 public class ReliableMessageController extends BaseSoeController {
 
-    private static final Logger logger = LoggerFactory.getLogger(ReliableMessageController.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ReliableMessageController.class);
 
     @Override
     public void handleIncoming(byte zeroByte, UdpPacketType type, SoeUdpConnection connection, ByteBuffer buffer) {
 
         short sequenceNum = buffer.getShort();
+        LOGGER.trace("{} Receiving Reliable Message Sequence {} {}", connection.getId(), sequenceNum, buffer.order());
         connection.sendAck(sequenceNum);
 
         if(type == UdpPacketType.cUdpPacketFragment1) {
@@ -39,7 +41,7 @@ public class ReliableMessageController extends BaseSoeController {
                 soeMessageDispatcher.dispatch(connection, buffer);
 
             } catch (Exception e) {
-                logger.error("Unable to handle ZeroEscape", e);
+                LOGGER.error("Unable to handle ZeroEscape", e);
             }
 
         }

@@ -18,7 +18,6 @@ import java.net.UnknownHostException;
 @Getter
 public final class GameNetworkConfiguration extends BaseNetworkConfiguration implements NetworkConfiguration {
 
-    private final int pingPort;
     private final int tcpPort;
     private final InetAddress loginAddress;
     private final int loginPort;
@@ -29,7 +28,6 @@ public final class GameNetworkConfiguration extends BaseNetworkConfiguration imp
     public GameNetworkConfiguration(final BactaConfiguration configuration) throws UnknownHostException {
         super(configuration, "Bacta/GameServer");
 
-        pingPort = configuration.getInt("Bacta/GameServer", "PingPort");
         tcpPort = configuration.getInt("Bacta/GameServer", "TcpPort");
 
         String loginAddressString = configuration.getString("Bacta/LoginServer", "BindAddress");

@@ -53,6 +53,7 @@ public final class SoeProtocol {
 				data = decompress(data, offset);
 			}
 
+            data.order(ByteOrder.BIG_ENDIAN);
             data.rewind();
             return data;
 		}
@@ -77,7 +78,7 @@ public final class SoeProtocol {
 		return data;
 	}
 
-	public void decrypt(int encKey, ByteBuffer data, int offset) {
+    private void decrypt(int encKey, ByteBuffer data, int offset) {
 
         int intblocks = (data.limit() - 2 - offset) / 4;
 
@@ -97,7 +98,7 @@ public final class SoeProtocol {
         //logger.debug("Post-decryption: " + StringUtil.bytesToHex(msg.data().array()));
 	}
 
-	public void encrypt(int dencKey, ByteBuffer data, int offset) {
+    private void encrypt(int dencKey, ByteBuffer data, int offset) {
 
         int intblocks = (data.limit() - offset) / 4;
         int remainderblocks = (data.limit() - offset) % 4;
@@ -118,7 +119,7 @@ public final class SoeProtocol {
         //logger.debug("Post-decryption: " + StringUtil.bytesToHex(msg.data().array()));
 	}
 
-	public ByteBuffer decompress(ByteBuffer data, int offset) {
+    private ByteBuffer decompress(ByteBuffer data, int offset) {
 
         ByteBuffer out = ByteBuffer.allocate(1024).order(ByteOrder.LITTLE_ENDIAN);
 		out.put(data.array(), 0, offset);
@@ -153,7 +154,7 @@ public final class SoeProtocol {
 
 	}
 
-	public ByteBuffer compress(ByteBuffer data, int offset) {
+	private ByteBuffer compress(ByteBuffer data, int offset) {
 
         ByteBuffer out = ByteBuffer.allocate(496).order(ByteOrder.LITTLE_ENDIAN);
         out.put(data.array(), 0, offset);
@@ -188,7 +189,7 @@ public final class SoeProtocol {
         return out;
 	}
 
-    public int generateCRC(int nCrcSeed, ByteBuffer data, int crcLength)
+    private int generateCRC(int nCrcSeed, ByteBuffer data, int crcLength)
     {
     	int[] g_nCrcTable = CRC32.getCRC32Table();
     
@@ -213,7 +214,7 @@ public final class SoeProtocol {
         return ~nCrc;
     }
 
-    public boolean verifyMessage(int crcSeed, ByteBuffer data, int crcLength) {
+    private boolean verifyMessage(int crcSeed, ByteBuffer data, int crcLength) {
 
         boolean doHacks = false;
         boolean crctest = true;

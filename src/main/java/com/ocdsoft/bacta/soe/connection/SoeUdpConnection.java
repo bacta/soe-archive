@@ -26,7 +26,7 @@ import java.util.function.Consumer;
 
 public final class SoeUdpConnection extends UdpConnection implements SoeUdpConnectionMBean {
 
-    private static final Logger logger = LoggerFactory.getLogger(SoeUdpConnection.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SoeUdpConnection.class);
 
     @Getter
     private int id;
@@ -133,7 +133,7 @@ public final class SoeUdpConnection extends UdpConnection implements SoeUdpConne
         try {
             this.beanName = new ObjectName("Bacta:type=SoeUdpConnection,id=" + id);
         } catch (MalformedObjectNameException e) {
-            logger.error("Unable to create bean name", e);
+            LOGGER.error("Unable to create bean name", e);
             this.beanName = null;
         }
     }
@@ -177,7 +177,7 @@ public final class SoeUdpConnection extends UdpConnection implements SoeUdpConne
         ByteBuffer buffer;
         while ((buffer = udpMessageProcessor.processNext()) != null) {
             pendingMessageList.add(buffer);
-            logger.trace("Sending: {}", SoeMessageUtil.bytesToHex(buffer));
+            LOGGER.trace("Sending: {}", SoeMessageUtil.bytesToHex(buffer));
         }
 
         if(!pendingMessageList.isEmpty()) {
@@ -198,12 +198,14 @@ public final class SoeUdpConnection extends UdpConnection implements SoeUdpConne
     public void sendAck(short sequenceNum) {
         updateLastActivity();
         sendMessage(new AckAllMessage(sequenceNum));
+        LOGGER.debug("{} Sending AckAll Sequence {}", id, sequenceNum);
     }
 
     public void ackAllFromClient(short sequenceNum) {
         clientSequenceNumber.set(sequenceNum);
         udpMessageProcessor.acknowledge(sequenceNum);
         updateLastClientActivity();
+        LOGGER.debug("{} Client Ack for Sequence {}", id, sequenceNum);
     }
     
     @Override

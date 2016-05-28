@@ -16,11 +16,12 @@ import java.util.LinkedList;
 @Getter
 public abstract class BaseNetworkConfiguration implements NetworkConfiguration {
 
-    protected InetAddress bindAddress;
-    protected int udpPort;
-    protected InetAddress publicAddress;
+    protected final InetAddress bindAddress;
+    protected final int udpPort;
+    private final int pingPort;
+    protected final InetAddress publicAddress;
     protected Collection<String> trustedClients;
-    protected String basePackage;
+    protected final String basePackage;
 
     private final int protocolVersion;
     private final int maxRawPacketSize;
@@ -73,7 +74,7 @@ public abstract class BaseNetworkConfiguration implements NetworkConfiguration {
             bindAddress = InetAddress.getByName(bindAddressString);
         }
         udpPort = configuration.getInt(serverSection, "UdpPort");
-
+        pingPort = configuration.getInt("Bacta/GameServer", "PingPort");
 
         String publicAddressString= configuration.getString(serverSection, "PublicAddress");
         if(publicAddressString.equalsIgnoreCase("localhost")) {
