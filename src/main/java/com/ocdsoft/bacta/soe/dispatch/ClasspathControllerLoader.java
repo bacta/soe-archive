@@ -89,33 +89,35 @@ public final class ClasspathControllerLoader {
                 connectionRoles = connectionRolesAllowed.value();
             }
 
-            Class<? extends GameNetworkMessage> handledMessageClass = (Class<? extends GameNetworkMessage>) controllerAnnotation.handles();
+            Class<? extends GameNetworkMessage>[] handledMessageClasses = (Class<? extends GameNetworkMessage>[]) controllerAnnotation.handles();
 
-            final int hash = MessageHashUtil.getHash(handledMessageClass);
+            for( Class<? extends GameNetworkMessage> handledMessageClass : handledMessageClasses) {
 
-            List<ServerType> serverTypes = new ArrayList<>();
-            for (ServerType serverType : controllerAnnotation.type()) {
-                serverTypes.add(serverType);
-            }
-
-            String propertyName = Integer.toHexString(hash);
-
-            if (serverTypes.contains(serverState.getServerType())) {
-
-                T controller = injector.getInstance(controllerClass);
-
-                ControllerData<T> newControllerData = new ControllerData(controller, connectionRoles);
-
-                if (!controllers.containsKey(hash)) {
-                    LOGGER.debug("{} Adding Controller {} '{}' 0x{}", serverState.getServerType().name(), controllerClass.getName(), ClientString.get(propertyName), propertyName);
-                    controllers.put(hash, newControllerData);
-                } else {
-                    LOGGER.error("{} Duplicate Controller {} '{}' 0x{}", serverState.getServerType().name(), controllerClass.getName(), ClientString.get(propertyName), propertyName);
-
+                final int hash = MessageHashUtil.getHash(handledMessageClass);
+                List<ServerType> serverTypes = new ArrayList<>();
+                for (ServerType serverType : controllerAnnotation.type()) {
+                    serverTypes.add(serverType);
                 }
 
-            } else {
-                LOGGER.debug("{} Ignoring Controller {} '{}' 0x{}", serverState.getServerType().name(), controllerClass.getName(), ClientString.get(propertyName), propertyName);
+                String propertyName = Integer.toHexString(hash);
+
+                if (serverTypes.contains(serverState.getServerType())) {
+
+                    T controller = injector.getInstance(controllerClass);
+
+                    ControllerData<T> newControllerData = new ControllerData(controller, connectionRoles);
+
+                    if (!controllers.containsKey(hash)) {
+                        LOGGER.debug("{} Adding Controller {} '{}' 0x{}", serverState.getServerType().name(), controllerClass.getName(), ClientString.get(propertyName), propertyName);
+                        controllers.put(hash, newControllerData);
+                    } else {
+                        LOGGER.error("{} Duplicate Controller {} '{}' 0x{}", serverState.getServerType().name(), controllerClass.getName(), ClientString.get(propertyName), propertyName);
+
+                    }
+
+                } else {
+                    LOGGER.debug("{} Ignoring Controller {} '{}' 0x{}", serverState.getServerType().name(), controllerClass.getName(), ClientString.get(propertyName), propertyName);
+                }
             }
 
         } catch (Throwable e) {

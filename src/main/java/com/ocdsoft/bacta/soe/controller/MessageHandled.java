@@ -9,6 +9,6 @@ import java.lang.annotation.RetentionPolicy;
 
 @Retention(RetentionPolicy.RUNTIME)
 public @interface MessageHandled {
-    Class<?> handles();
+    Class<?>[] handles();
     ServerType[] type() default ServerType.GAME;
 }
