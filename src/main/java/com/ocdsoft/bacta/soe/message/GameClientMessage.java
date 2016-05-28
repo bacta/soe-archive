@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 /**
  * Created by crush on 5/23/2016.
@@ -28,7 +29,7 @@ public final class GameClientMessage extends GameNetworkMessage {
             distributionList[i] = buffer.getLong();
 
         reliable = BufferUtil.getBoolean(buffer);
-        internalMessage = buffer.asReadOnlyBuffer();
+        internalMessage = buffer.slice().order(ByteOrder.LITTLE_ENDIAN);
     }
 
     @Override

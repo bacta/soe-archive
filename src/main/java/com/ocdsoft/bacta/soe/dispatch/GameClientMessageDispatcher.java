@@ -5,12 +5,9 @@ import com.ocdsoft.bacta.soe.ServerState;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 import com.ocdsoft.bacta.soe.controller.GameClientMessageController;
 import com.ocdsoft.bacta.soe.message.GameNetworkMessage;
-import com.ocdsoft.bacta.soe.serialize.GameNetworkMessageSerializer;
 import gnu.trove.map.TIntObjectMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.nio.ByteBuffer;
 
 /**
  * Created by crush on 5/26/2016.
@@ -19,15 +16,12 @@ public final class GameClientMessageDispatcher {
     private static final Logger LOGGER = LoggerFactory.getLogger(GameClientMessageDispatcher.class);
 
     private final TIntObjectMap<ControllerData> controllers;
-    private final GameNetworkMessageSerializer gameNetworkMessageSerializer;
     private final ServerState serverState;
 
     @Inject
     public GameClientMessageDispatcher(final ClasspathControllerLoader controllerLoader,
-                                       final ServerState serverState,
-                                       final GameNetworkMessageSerializer gameNetworkMessageSerializer) {
+                                       final ServerState serverState) {
 
-        this.gameNetworkMessageSerializer = gameNetworkMessageSerializer;
         this.controllers = controllerLoader.getControllers(GameClientMessageController.class);
         this.serverState = serverState;
 
@@ -37,9 +31,7 @@ public final class GameClientMessageDispatcher {
         });
     }
 
-    public void dispatch(final long[] distributionList, final boolean reliable, final ByteBuffer internalMessage, final SoeUdpConnection connection) {
-        final int messageType = internalMessage.getInt();
-
+    public void dispatch(final long[] distributionList, final boolean reliable, final int messageType, final GameNetworkMessage message, final SoeUdpConnection connection) {
         final ControllerData<GameClientMessageController> controllerData = controllers.get(messageType);
 
         if (controllerData != null) {
@@ -51,19 +43,18 @@ public final class GameClientMessageDispatcher {
 
             try {
                 final GameClientMessageController controller = controllerData.getController();
-                final GameNetworkMessage message = gameNetworkMessageSerializer.readFromBuffer(messageType, internalMessage);
 
                 LOGGER.debug("Dispatching GameClientMessage with client message {} to {} clients.",
                         message.getClass().getSimpleName(),
                         distributionList.length);
 
-                controller.handleIncoming(distributionList, reliable, connection, message);
+                controller.handleIncoming(distributionList, reliable, message, connection);
 
             } catch (Exception e) {
                 LOGGER.error("SWG Message Handling {}", controllerData.getClass(), e);
             }
         } else {
-            LOGGER.error("Missing controller for GameClientMessage with messageType {}", messageType);
+            LOGGER.trace("No loaded controller for GameClientMessage with messageType {}. Silently failing.", messageType);
         }
     }
 }
