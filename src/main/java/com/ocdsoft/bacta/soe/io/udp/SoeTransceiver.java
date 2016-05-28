@@ -74,7 +74,7 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
                           final GameNetworkMessageSerializer messageSerializer,
                           final MessageSubscriptionService messageSubscriptionService) {
 
-        super(networkConfiguration.getBindIp(), networkConfiguration.getPort());
+        super(networkConfiguration.getBindAddress(), networkConfiguration.getUdpPort());
 
         this.networkConfiguration = networkConfiguration;
         this.soeMessageDispatcher = soeMessageDispatcher;
@@ -276,13 +276,13 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
 
     @Override
     public final void run() {
-        LOGGER.info("{} Transceiver started on  {}:{}", serverState.getServerType() ,networkConfiguration.getBindIp(), networkConfiguration.getPort());
+        LOGGER.info("{} Transceiver started on  {}:{}", serverState.getServerType() ,networkConfiguration.getBindAddress().getHostAddress(), networkConfiguration.getUdpPort());
         sendThread.start();
         super.run();
     }
 
     public void stop() {
-        LOGGER.info("{} Transceiver started on  {}:{}", serverState.getServerType() ,networkConfiguration.getBindIp(), networkConfiguration.getPort());
+        LOGGER.info("{} Transceiver stopping on  {}:{}", serverState.getServerType() ,networkConfiguration.getBindAddress().getHostAddress(), networkConfiguration.getUdpPort());
         sendThread.interrupt();
         super.stop();
     }

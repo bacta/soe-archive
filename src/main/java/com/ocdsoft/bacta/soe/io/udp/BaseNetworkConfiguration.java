@@ -6,7 +6,6 @@ import lombok.Getter;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -17,8 +16,9 @@ import java.util.LinkedList;
 @Getter
 public abstract class BaseNetworkConfiguration implements NetworkConfiguration {
 
-    protected InetAddress bindIp;
-    protected int port;
+    protected InetAddress bindAddress;
+    protected int udpPort;
+    protected InetAddress publicAddress;
     protected Collection<String> trustedClients;
     protected String basePackage;
 
@@ -66,17 +66,26 @@ public abstract class BaseNetworkConfiguration implements NetworkConfiguration {
 
     protected BaseNetworkConfiguration(final BactaConfiguration configuration, final String serverSection) throws UnknownHostException {
 
-        String bindIpString = configuration.getString(serverSection, "BindIp");
-        if(bindIpString.equalsIgnoreCase("localhost")) {
-            bindIp = InetAddress.getLocalHost();
+        String bindAddressString= configuration.getString(serverSection, "BindAddress");
+        if(bindAddressString.equalsIgnoreCase("localhost")) {
+            bindAddress = InetAddress.getLocalHost();
         } else {
-            bindIp = InetAddress.getByName(bindIpString);
+            bindAddress = InetAddress.getByName(bindAddressString);
         }
-        port = configuration.getInt(serverSection, "Port");
+        udpPort = configuration.getInt(serverSection, "UdpPort");
 
-        trustedClients = configuration.getStringCollection("Bacta/LoginServer", "TrustedClient");
+
+        String publicAddressString= configuration.getString(serverSection, "PublicAddress");
+        if(publicAddressString.equalsIgnoreCase("localhost")) {
+            publicAddress = InetAddress.getLocalHost();
+        } else {
+            publicAddress = InetAddress.getByName(publicAddressString);
+        }
+
+        trustedClients = configuration.getStringCollection(serverSection, "TrustedClient");
         LinkedList<String> clients = new LinkedList<>();
-        clients.add(bindIp.getHostAddress());
+        clients.add(bindAddress.getHostAddress());
+        clients.add(publicAddress.getHostAddress());
         if(trustedClients != null) {
             clients.addAll(trustedClients);
         }

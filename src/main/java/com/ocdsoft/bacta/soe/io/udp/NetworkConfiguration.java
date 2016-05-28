@@ -19,9 +19,11 @@ public interface NetworkConfiguration {
 
     int getMaxReliablePayload();
 
-    InetAddress getBindIp();
+    InetAddress getBindAddress();
 
-    int getPort();
+    InetAddress getPublicAddress();
+
+    int getUdpPort();
 
     Collection<String> getTrustedClients();
 
