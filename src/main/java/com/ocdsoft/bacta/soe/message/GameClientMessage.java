@@ -40,7 +40,7 @@ public final class GameClientMessage extends GameNetworkMessage {
         for (int i = 0; i < size; ++i)
             BufferUtil.put(buffer, distributionList[i]);
 
-        BufferUtil.putBoolean(buffer, reliable);
+        BufferUtil.put(buffer, reliable);
         buffer.put(internalMessage);
     }
 }

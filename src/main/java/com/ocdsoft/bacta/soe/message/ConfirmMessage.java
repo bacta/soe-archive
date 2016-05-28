@@ -17,8 +17,8 @@ public final class ConfirmMessage extends SoeMessage {
 		buffer.putInt(connectionID);
         buffer.putInt(sessionKey);
 		buffer.put(crcLength);
-		BufferUtil.putBoolean(buffer, useComp);
-        encryptMethod.writeToBuffer(buffer);
+		BufferUtil.put(buffer, useComp);
+		encryptMethod.writeToBuffer(buffer);
         buffer.putInt(udpSize);
 	}
 }
