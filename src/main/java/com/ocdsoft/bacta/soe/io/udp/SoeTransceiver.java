@@ -202,60 +202,59 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
     @Override
     public final void receiveMessage(final InetSocketAddress sender, final ByteBuffer buffer) {
 
-        new Fiber<Void>((SuspendableRunnable) () -> {
+        //new Fiber<Void>((SuspendableRunnable) () -> {
+        try {
+            incomingMessages.inc();
+            SoeUdpConnection connection = connectionMap.get(sender);
+            UdpPacketType packetType;
 
-            try {
-                incomingMessages.inc();
-                SoeUdpConnection connection = connectionMap.get(sender);
-                UdpPacketType packetType;
+            byte type = buffer.get(1);
+            if(type >= 0 && type <= 0x1E) {
 
-                byte type = buffer.get(1);
-                if(type >= 0 && type <= 0x1E) {
+                packetType = UdpPacketType.values()[type];
 
-                    packetType = UdpPacketType.values()[type];
+                LOGGER.trace("[{}] Received {}", serverState.getServerType().name(), packetType);
 
-                    LOGGER.trace("[{}] Received {}", serverState.getServerType().name(), packetType);
+                if (packetType == UdpPacketType.cUdpPacketConnect) {
 
-                    if (packetType == UdpPacketType.cUdpPacketConnect) {
-
-                        connection = createConnection(sender);
-                        connectionMap.put(sender, connection);
+                    connection = createConnection(sender);
+                    connectionMap.put(sender, connection);
 
 
-                        LOGGER.debug("{} connection from {} now has {} total connected clients.",
-                                connection.getClass().getSimpleName(),
-                                sender,
-                                connectionMap.size());
+                    LOGGER.debug("{} connection from {} now has {} total connected clients.",
+                            connection.getClass().getSimpleName(),
+                            sender,
+                            connectionMap.size());
 
-                    } else {
+                } else {
 
-                        if (connection == null) {
-                            LOGGER.debug("Unsolicited Message from " + sender + ": " + BufferUtil.bytesToHex(buffer));
-                            return;
-                        }
+                    if (connection == null) {
+                        LOGGER.debug("Unsolicited Message from " + sender + ": " + BufferUtil.bytesToHex(buffer));
+                        return;
                     }
-                } else {
-                    packetType = UdpPacketType.cUdpPacketZeroEscape;
                 }
-
-                ByteBuffer decodedBuffer = null;
-                if (packetType != UdpPacketType.cUdpPacketConnect && packetType != UdpPacketType.cUdpPacketConfirm) {
-                    decodedBuffer = protocol.decode(connection.getConfiguration().getEncryptCode(), buffer.order(ByteOrder.LITTLE_ENDIAN));
-                } else {
-                    decodedBuffer = buffer;
-                }
-
-                if(decodedBuffer != null) {
-                    connection.increaseProtocolMessageReceived();
-                    soeMessageDispatcher.dispatch(connection, decodedBuffer);
-                } else {
-                    LOGGER.warn("Unhandled message {}}", packetType);
-                }
-
-            } catch (Exception e) {
-                throw new RuntimeException(buffer.toString(), e);
+            } else {
+                packetType = UdpPacketType.cUdpPacketZeroEscape;
             }
-        }).start();
+
+            ByteBuffer decodedBuffer = null;
+            if (packetType != UdpPacketType.cUdpPacketConnect && packetType != UdpPacketType.cUdpPacketConfirm) {
+                decodedBuffer = protocol.decode(connection.getConfiguration().getEncryptCode(), buffer.order(ByteOrder.LITTLE_ENDIAN));
+            } else {
+                decodedBuffer = buffer;
+            }
+
+            if(decodedBuffer != null) {
+                connection.increaseProtocolMessageReceived();
+                soeMessageDispatcher.dispatch(connection, decodedBuffer);
+            } else {
+                LOGGER.warn("Unhandled message {}}", packetType);
+            }
+
+        } catch (Exception e) {
+            throw new RuntimeException(buffer.toString(), e);
+        }
+        //}).start();
     }
 
     @Override
