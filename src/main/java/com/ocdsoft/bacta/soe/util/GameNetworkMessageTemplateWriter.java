@@ -64,19 +64,19 @@ public final class GameNetworkMessageTemplateWriter {
         ve.setProperty(RuntimeConstants.FILE_RESOURCE_LOADER_CACHE, "true");
         ve.init();
 
-        controllerClassPath = configuration.getBasePackage() + ".controller." + serverEnv.name().toLowerCase();
+        controllerClassPath = configuration.getBasePackage() + "." + serverEnv.name().toLowerCase() + ".controller";
         String fs = System.getProperty("file.separator");
 
         controllerFilePath = System.getProperty("user.dir") + fs + System.getProperty("bacta.serverPath") + "src"
                 + fs + "main" + fs + "java" + fs +
-                configuration.getBasePackage().replace(".", fs) + fs + "controller" + fs +
-                serverEnv.name().toLowerCase() + fs;
+                configuration.getBasePackage().replace(".", fs) + fs  +
+                serverEnv.name().toLowerCase() + fs + "controller" + fs;
         
-        messageClassPath = configuration.getBasePackage() + ".message." + serverEnv.name().toLowerCase();
+        messageClassPath = configuration.getBasePackage() + "." + serverEnv.name().toLowerCase() + ".message";
         messageFilePath = System.getProperty("user.dir") + fs + System.getProperty("bacta.serverPath") + "src"
                 + fs + "main" + fs + "java" + fs +
-                configuration.getBasePackage().replace(".", fs) + fs + "message" + fs +
-                serverEnv.name().toLowerCase() + fs;
+                configuration.getBasePackage().replace(".", fs) + fs +
+                serverEnv.name().toLowerCase() + fs +  "message" + fs;
 
         tangibleClassPath = configuration.getBasePackage() + ".object.tangible.TangibleObject";
 

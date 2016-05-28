@@ -24,8 +24,9 @@ public class CommandNames {
 	}
 
 	public static String get(String propertyName) {
-		if(!prop.containsKey(propertyName.toLowerCase()))
-			return "Unknown";
+		if(!prop.containsKey(propertyName.toLowerCase())) {
+            return ClientString.get(propertyName);
+		}
 		
 		return prop.getProperty(propertyName.toLowerCase());
 	}
