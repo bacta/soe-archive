@@ -261,7 +261,7 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
     public void sendMessage(SoeUdpConnection connection, ByteBuffer buffer) {
 
         UdpPacketType packetType = UdpPacketType.values()[buffer.get(1)];
-        LOGGER.trace("Sending message to {} : {}", connection.getRemoteAddress(), SoeMessageUtil.bytesToHex(buffer));
+        LOGGER.trace("Sending message to {}:{} : {}", connection.getRemoteAddress().getAddress().getHostAddress(), connection.getRemoteAddress().getPort(), SoeMessageUtil.bytesToHex(buffer));
 
         if (packetType != UdpPacketType.cUdpPacketConnect && packetType != UdpPacketType.cUdpPacketConfirm) {
             buffer = protocol.encode(connection.getConfiguration().getEncryptCode(), buffer, true);
@@ -345,7 +345,7 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
                                 }
                             }
                             if(networkConfiguration.isReportUdpDisconnects()) {
-                                LOGGER.info("Client disconnected: {}  Connection: {}  Reason: ", connection.getRemoteAddress(), connection.getId(), connection.getTerminateReason());
+                                LOGGER.info("Client disconnected: {}  Connection: {}  Reason: {}", connection.getRemoteAddress(), connection.getId(), connection.getTerminateReason().getReason());
                                 LOGGER.info("Clients still connected: {}", connectionMap.size());
                             }
                         }

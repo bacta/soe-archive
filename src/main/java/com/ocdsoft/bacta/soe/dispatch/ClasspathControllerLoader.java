@@ -2,15 +2,16 @@ package com.ocdsoft.bacta.soe.dispatch;
 
 import com.google.inject.Inject;
 import com.google.inject.Injector;
-import com.google.inject.Singleton;
 import com.ocdsoft.bacta.soe.ServerState;
 import com.ocdsoft.bacta.soe.ServerType;
 import com.ocdsoft.bacta.soe.connection.ConnectionRole;
 import com.ocdsoft.bacta.soe.controller.ConnectionRolesAllowed;
 import com.ocdsoft.bacta.soe.controller.MessageHandled;
+import com.ocdsoft.bacta.soe.message.CommandMessage;
 import com.ocdsoft.bacta.soe.message.GameNetworkMessage;
 import com.ocdsoft.bacta.soe.serialize.GameNetworkMessageSerializer;
 import com.ocdsoft.bacta.soe.util.ClientString;
+import com.ocdsoft.bacta.soe.util.MessageHashUtil;
 import com.ocdsoft.bacta.soe.util.SOECRC32;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
@@ -90,39 +91,24 @@ public final class ClasspathControllerLoader {
 
             Class<? extends GameNetworkMessage> handledMessageClass = (Class<? extends GameNetworkMessage>) controllerAnnotation.handles();
 
-            int controllerId;
-
-            MessageCRC messageCRC = handledMessageClass.getAnnotation(MessageCRC.class);
-            if(messageCRC != null) {
-                controllerId = messageCRC.value();
-            } else if(!controllerAnnotation.command().isEmpty()) {
-                controllerId = SOECRC32.hashCode(controllerAnnotation.command().toLowerCase());
-            } else {
-                controllerId = SOECRC32.hashCode(handledMessageClass.getSimpleName());
-            }
-
-            if (controllerAnnotation.id() != -1) {
-                controllerId = controllerAnnotation.id();
-            }
+            final int hash = MessageHashUtil.getHash(handledMessageClass);
 
             List<ServerType> serverTypes = new ArrayList<>();
             for (ServerType serverType : controllerAnnotation.type()) {
                 serverTypes.add(serverType);
             }
 
-            String propertyName = Integer.toHexString(controllerId);
+            String propertyName = Integer.toHexString(hash);
 
             if (serverTypes.contains(serverState.getServerType())) {
-
-                gameNetworkMessageSerializer.addHandledMessageClass(controllerId, handledMessageClass);
 
                 T controller = injector.getInstance(controllerClass);
 
                 ControllerData<T> newControllerData = new ControllerData(controller, connectionRoles);
 
-                if (!controllers.containsKey(controllerId)) {
+                if (!controllers.containsKey(hash)) {
                     LOGGER.debug("{} Adding Controller {} '{}' 0x{}", serverState.getServerType().name(), controllerClass.getName(), ClientString.get(propertyName), propertyName);
-                    controllers.put(controllerId, newControllerData);
+                    controllers.put(hash, newControllerData);
                 } else {
                     LOGGER.error("{} Duplicate Controller {} '{}' 0x{}", serverState.getServerType().name(), controllerClass.getName(), ClientString.get(propertyName), propertyName);
 

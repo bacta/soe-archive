@@ -20,9 +20,10 @@ public class TerminateController extends BaseSoeController {
     public void handleIncoming(byte zeroByte, UdpPacketType type, SoeUdpConnection connection, ByteBuffer buffer) {
 
         long connectionID = UnsignedUtil.getUnsignedInt(buffer);
+        TerminateReason terminateReason = TerminateReason.values()[buffer.getShort()];
 
         if(connectionID == connection.getId()) {
-            connection.terminate(TerminateReason.OTHERSIDETERMINATED, true);
+            connection.terminate(terminateReason, true);
         }
     }
 }

@@ -1,13 +1,16 @@
 package com.ocdsoft.bacta.soe.serialize;
 
 import com.google.inject.Singleton;
-import com.ocdsoft.bacta.soe.dispatch.MessageCRC;
+import com.ocdsoft.bacta.soe.dispatch.MessageId;
+import com.ocdsoft.bacta.soe.message.CommandMessage;
 import com.ocdsoft.bacta.soe.message.GameNetworkMessage;
 import com.ocdsoft.bacta.soe.message.Priority;
+import com.ocdsoft.bacta.soe.util.MessageHashUtil;
 import com.ocdsoft.bacta.soe.util.SOECRC32;
 import io.netty.util.collection.IntObjectHashMap;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import org.reflections.Reflections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,7 +18,9 @@ import java.lang.reflect.Constructor;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by kyle on 5/4/2016.
@@ -31,6 +36,40 @@ public class GameNetworkMessageSerializerImpl implements GameNetworkMessageSeria
     public GameNetworkMessageSerializerImpl() {
         messageDataMap = new HashMap<>();
         this.messageConstructorMap = new IntObjectHashMap<>();
+        loadMessages();
+    }
+
+    private void loadMessages() {
+
+        Reflections reflections = new Reflections();
+        Set<Class<? extends GameNetworkMessage>> subTypes = reflections.getSubTypesOf(GameNetworkMessage.class);
+        Iterator<Class<? extends GameNetworkMessage>> iter = subTypes.iterator();
+
+        while (iter.hasNext()) {
+
+            Class<? extends GameNetworkMessage> messageClass = iter.next();
+            loadMessageClass(messageClass);
+        }
+    }
+
+    private void loadMessageClass(Class<? extends GameNetworkMessage> messageClass) {
+
+        final int hash = MessageHashUtil.getHash(messageClass);
+
+        if(messageConstructorMap.containsKey(hash)) {
+            LOGGER.error("Message already exists in class map {}", messageClass.getSimpleName());
+        }
+
+        try {
+            Constructor<GameNetworkMessage> constructor = (Constructor<GameNetworkMessage>) messageClass.getConstructor(ByteBuffer.class);
+
+            LOGGER.debug("Putting {} {} in message factory", hash, messageClass.getName());
+            messageConstructorMap.put(hash, constructor);
+
+        } catch (NoSuchMethodException e) {
+            LOGGER.error("{} does not have a constructor taking ByteBuffer", messageClass.getName(), e);
+        }
+
     }
 
     @Override
@@ -86,24 +125,6 @@ public class GameNetworkMessageSerializerImpl implements GameNetworkMessageSeria
         }
         GameNetworkMessage messageInstance = create(messageConstructor, buffer);
         return messageInstance;
-    }
-
-    @Override
-    public void addHandledMessageClass(int hash, Class<? extends GameNetworkMessage> handledMessageClass) {
-
-        if(messageConstructorMap.containsKey(hash)) {
-            LOGGER.error("Message already exists in class map {}", handledMessageClass.getSimpleName());
-        }
-
-        try {
-            Constructor<GameNetworkMessage> constructor = (Constructor<GameNetworkMessage>) handledMessageClass.getConstructor(ByteBuffer.class);
-
-            LOGGER.debug("Putting {} {} in message factory", hash, handledMessageClass.getName());
-            messageConstructorMap.put(hash, constructor);
-
-        } catch (NoSuchMethodException e) {
-            LOGGER.error("{} does not have a constructor taking ByteBuffer", handledMessageClass.getName(), e);
-        }
     }
 
     @Getter
