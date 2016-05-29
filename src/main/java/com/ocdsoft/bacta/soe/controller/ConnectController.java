@@ -4,7 +4,6 @@ import com.google.inject.Inject;
 import com.ocdsoft.bacta.engine.network.client.ConnectionState;
 import com.ocdsoft.bacta.soe.connection.Configuration;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
-import com.ocdsoft.bacta.soe.io.udp.MessageSubscriptionService;
 import com.ocdsoft.bacta.soe.io.udp.NetworkConfiguration;
 import com.ocdsoft.bacta.soe.message.ConfirmMessage;
 import com.ocdsoft.bacta.soe.message.TerminateReason;

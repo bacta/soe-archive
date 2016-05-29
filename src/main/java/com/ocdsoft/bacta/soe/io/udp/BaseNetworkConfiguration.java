@@ -43,8 +43,10 @@ public abstract class BaseNetworkConfiguration implements NetworkConfiguration {
 
     private final boolean multiSoeMessages;
     private final boolean multiGameMessages;
+    private final int connectionsPerAccount;
 
     private final boolean disableInstrumentation;
+    private final String requiredClientVersion;
 
     //    logAllNetworkTraffic = false
     //    incomingBufferSize = 4194304
@@ -108,8 +110,10 @@ public abstract class BaseNetworkConfiguration implements NetworkConfiguration {
         maxOutstandingPackets = configuration.getIntWithDefault("SharedNetwork", "maxOutstandingPackets", 400);
         multiSoeMessages = configuration.getBooleanWithDefault("SharedNetwork", "multiSoeMessages", true);
         multiGameMessages = configuration.getBooleanWithDefault("SharedNetwork", "multiGameMessages", true);
+        connectionsPerAccount = configuration.getIntWithDefault("SharedNetwork", "connectionsPerAccount", -1);
         disableInstrumentation = configuration.getBooleanWithDefault("SharedNetwork", "disableInstrumentation", false);
         basePackage = configuration.getStringWithDefault("Bacta/Packages", "basePackage", "");
+        requiredClientVersion = configuration.getString("SharedNetwork", "requiredClientVersion");
     }
 
     @Override

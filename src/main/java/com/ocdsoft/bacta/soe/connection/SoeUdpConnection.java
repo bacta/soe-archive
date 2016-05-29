@@ -149,24 +149,30 @@ public final class SoeUdpConnection extends UdpConnection implements SoeUdpConne
     @Counted
     public void sendMessage(SoeMessage message) {
 
-        protocolMessagesSent.getAndIncrement();
-        
-        if (udpMessageProcessor.addUnreliable(message.slice())) {
-            updateLastActivity();
+        if(state != ConnectionState.DISCONNECTED) {
+
+            protocolMessagesSent.getAndIncrement();
+
+            if (udpMessageProcessor.addUnreliable(message.slice())) {
+                updateLastActivity();
+            }
         }
     }
 
     public void sendMessage(GameNetworkMessage message) {
 
-        gameNetworkMessagesSent.incrementAndGet();
-        ByteBuffer buffer = messageSerializer.writeToBuffer(message);
+        if(state != ConnectionState.DISCONNECTED) {
 
-        if (!udpMessageProcessor.addReliable(buffer)) {
-            if(getState() == ConnectionState.ONLINE) {
-                setState(ConnectionState.DISCONNECTED);
+            gameNetworkMessagesSent.incrementAndGet();
+            ByteBuffer buffer = messageSerializer.writeToBuffer(message);
+
+            if (!udpMessageProcessor.addReliable(buffer)) {
+                if (getState() == ConnectionState.ONLINE) {
+                    setState(ConnectionState.DISCONNECTED);
+                }
+            } else {
+                updateLastActivity();
             }
-        } else {
-            updateLastActivity();
         }
     }
 

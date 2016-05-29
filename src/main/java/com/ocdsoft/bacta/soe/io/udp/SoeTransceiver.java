@@ -1,7 +1,5 @@
 package com.ocdsoft.bacta.soe.io.udp;
 
-import co.paralleluniverse.fibers.Fiber;
-import co.paralleluniverse.strands.SuspendableRunnable;
 import com.codahale.metrics.*;
 import com.codahale.metrics.Timer;
 import com.google.inject.Inject;
@@ -27,7 +25,6 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 /**
@@ -43,7 +40,9 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
 
     private final SoeProtocol protocol;
 
-    private final Map<Object, SoeUdpConnection> connectionMap;
+    private final AccountCache accountCache;
+
+
 
     private final Thread sendThread;
 
@@ -63,7 +62,7 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
     private final ServerState serverState;
 
     private final GameNetworkMessageSerializer messageSerializer;
-    private final MessageSubscriptionService messageSubscriptionService;
+    private final SubscriptionService subscriptionService;
 
 
     @Inject
@@ -72,7 +71,8 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
                           final ServerState serverState,
                           final SoeMessageDispatcher soeMessageDispatcher,
                           final GameNetworkMessageSerializer messageSerializer,
-                          final MessageSubscriptionService messageSubscriptionService) {
+                          final AccountCache accountCache,
+                          final SubscriptionService subscriptionService) {
 
         super(networkConfiguration.getBindAddress(), networkConfiguration.getUdpPort());
 
@@ -83,13 +83,12 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
         this.random = new Random();
         this.serverState = serverState;
         this.messageSerializer = messageSerializer;
-        this.messageSubscriptionService = messageSubscriptionService;
+        this.accountCache = accountCache;
+        this.subscriptionService = subscriptionService;
 
         this.mBeanServer = ManagementFactory.getPlatformMBeanServer();
 
         protocol.setCompression(networkConfiguration.isCompression());
-
-        connectionMap = new ConcurrentHashMap<>();
 
         sendThread = new Thread(new SendLoop());
         sendThread.setName(serverState.getServerType().name() + " Send");
@@ -137,13 +136,13 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
     public long getOutgoingMessageCount() {
         return outgoingMessages.getCount();
     }
-    
+
     public double getAverageSendQueueSize() {
         return sendQueueSizes.getSnapshot().getMean();
     }
 
     public int getConnectionCount() {
-        return connectionMap.size();
+        return accountCache.getConnectionCount();
     }
     
     /**
@@ -181,12 +180,12 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
                 LOGGER.debug("Whitelisted address connected: " + connection.getRemoteAddress().getAddress().getHostAddress());
             }
 
-            connectionMap.put(connection.getRemoteAddress(), connection);
+            accountCache.put(connection.getRemoteAddress(), connection);
 
             LOGGER.debug("{} connection to {} now has {} total connected clients.",
                     connection.getClass().getSimpleName(),
                     connection.getRemoteAddress(),
-                    connectionMap.size());
+                    accountCache.getConnectionCount());
 
             if(!networkConfiguration.isDisableInstrumentation()) {
                 mBeanServer.registerMBean(connection, connection.getBeanName());
@@ -205,7 +204,7 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
         //new Fiber<Void>((SuspendableRunnable) () -> {
         try {
             incomingMessages.inc();
-            SoeUdpConnection connection = connectionMap.get(sender);
+            SoeUdpConnection connection = accountCache.get(sender);
             UdpPacketType packetType;
 
             byte type = buffer.get(1);
@@ -218,13 +217,12 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
                 if (packetType == UdpPacketType.cUdpPacketConnect) {
 
                     connection = createConnection(sender);
-                    connectionMap.put(sender, connection);
-
+                    accountCache.put(sender, connection);
 
                     LOGGER.debug("{} connection from {} now has {} total connected clients.",
                             connection.getClass().getSimpleName(),
                             sender,
-                            connectionMap.size());
+                            accountCache.getConnectionCount());
 
                 } else {
 
@@ -313,15 +311,14 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
                         
                         nextIteration = currentTime + networkConfiguration.getNetworkThreadSleepTimeMs();
 
-                        final Set<Object> connectionList = connectionMap.keySet();
-                        final List<Object> deadClients = new ArrayList<>();
+                        final Set<InetSocketAddress> connectionList = accountCache.keySet();
+                        final List<InetSocketAddress> deadClients = new ArrayList<>();
 
-                        for (Object obj : connectionList) {
-                            final SoeUdpConnection connection = connectionMap.get(obj);
+                        for (InetSocketAddress inetSocketAddress : connectionList) {
+                            final SoeUdpConnection connection = accountCache.get(inetSocketAddress);
 
                             if (connection == null || connection.getState() == ConnectionState.DISCONNECTED) {
-                                deadClients.add(obj);
-                                continue;
+                                deadClients.add(inetSocketAddress);
                             }
 
                             final List<ByteBuffer> messages = connection.getPendingMessages();
@@ -334,9 +331,9 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
                             }
                         }
 
-                        for (Object key : deadClients) {
-                            final SoeUdpConnection connection = connectionMap.remove(key);
-                            messageSubscriptionService.onDisconnect(connection);
+                        for (InetSocketAddress inetSocketAddress : deadClients) {
+                            final SoeUdpConnection connection = accountCache.remove(inetSocketAddress);
+                            subscriptionService.onDisconnect(connection);
                             if(!networkConfiguration.isDisableInstrumentation()) {
                                 try {
                                     mBeanServer.unregisterMBean(connection.getBeanName());
@@ -346,7 +343,7 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
                             }
                             if(networkConfiguration.isReportUdpDisconnects()) {
                                 LOGGER.info("Client disconnected: {}  Connection: {}  Reason: {}", connection.getRemoteAddress(), connection.getId(), connection.getTerminateReason().getReason());
-                                LOGGER.info("Clients still connected: {}", connectionMap.size());
+                                LOGGER.info("Clients still connected: {}", accountCache.getConnectionCount());
                             }
                         }
 

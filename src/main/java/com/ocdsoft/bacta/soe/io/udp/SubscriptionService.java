@@ -7,9 +7,9 @@ import com.ocdsoft.bacta.soe.message.Subscribable;
 /**
  * Created by kyle on 5/21/2016.
  */
-public interface MessageSubscriptionService {
+public interface SubscriptionService {
     void onConnect(final SoeUdpConnection connection);
     void onDisconnect(final SoeUdpConnection connection);
-    <T extends GameNetworkMessage & Subscribable> void subscribe(final SoeUdpConnection connection, final Class<T> messageClass);
-    <T extends GameNetworkMessage & Subscribable> void unsubscribe(final SoeUdpConnection connection, final Class<T> messageClass);
+    <T extends GameNetworkMessage & Subscribable> void messageSubscribe(final SoeUdpConnection connection, final Class<T> messageClass);
+    <T extends GameNetworkMessage & Subscribable> void messageUnsubscribe(final SoeUdpConnection connection, final Class<T> messageClass);
 }
