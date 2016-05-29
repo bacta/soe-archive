@@ -7,12 +7,10 @@ import com.ocdsoft.bacta.soe.ServerType;
 import com.ocdsoft.bacta.soe.connection.ConnectionRole;
 import com.ocdsoft.bacta.soe.controller.ConnectionRolesAllowed;
 import com.ocdsoft.bacta.soe.controller.MessageHandled;
-import com.ocdsoft.bacta.soe.message.CommandMessage;
 import com.ocdsoft.bacta.soe.message.GameNetworkMessage;
 import com.ocdsoft.bacta.soe.serialize.GameNetworkMessageSerializer;
 import com.ocdsoft.bacta.soe.util.ClientString;
 import com.ocdsoft.bacta.soe.util.MessageHashUtil;
-import com.ocdsoft.bacta.soe.util.SOECRC32;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import org.reflections.Reflections;
@@ -111,7 +109,13 @@ public final class ClasspathControllerLoader {
                         LOGGER.debug("{} Adding Controller {} '{}' 0x{}", serverState.getServerType().name(), controllerClass.getName(), ClientString.get(propertyName), propertyName);
                         controllers.put(hash, newControllerData);
                     } else {
-                        LOGGER.error("{} Duplicate Controller {} '{}' 0x{}", serverState.getServerType().name(), controllerClass.getName(), ClientString.get(propertyName), propertyName);
+                        final ControllerData existingController = controllers.get(hash);
+                        LOGGER.error("{} Controller {} for message '{}'(0x{}) duplicates controller {}.",
+                                serverState.getServerType().name(),
+                                controllerClass.getName(),
+                                ClientString.get(propertyName),
+                                propertyName,
+                                existingController.getController().getClass().getName());
 
                     }
 

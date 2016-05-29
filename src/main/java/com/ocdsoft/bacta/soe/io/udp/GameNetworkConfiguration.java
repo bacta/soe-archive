@@ -3,8 +3,6 @@ package com.ocdsoft.bacta.soe.io.udp;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.ocdsoft.bacta.engine.conf.BactaConfiguration;
-import com.ocdsoft.bacta.soe.io.udp.BaseNetworkConfiguration;
-import com.ocdsoft.bacta.soe.io.udp.NetworkConfiguration;
 import lombok.Getter;
 
 import java.net.InetAddress;
@@ -19,8 +17,10 @@ import java.net.UnknownHostException;
 public final class GameNetworkConfiguration extends BaseNetworkConfiguration implements NetworkConfiguration {
 
     private final int tcpPort;
+
     private final InetAddress loginAddress;
     private final int loginPort;
+
     private final InetAddress chatAddress;
     private final int chatPort;
 

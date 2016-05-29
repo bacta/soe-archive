@@ -1,8 +1,6 @@
 package com.ocdsoft.bacta.soe.serialize;
 
 import com.google.inject.Singleton;
-import com.ocdsoft.bacta.soe.dispatch.MessageId;
-import com.ocdsoft.bacta.soe.message.CommandMessage;
 import com.ocdsoft.bacta.soe.message.GameNetworkMessage;
 import com.ocdsoft.bacta.soe.message.Priority;
 import com.ocdsoft.bacta.soe.util.MessageHashUtil;
@@ -76,7 +74,7 @@ public class GameNetworkMessageSerializerImpl implements GameNetworkMessageSeria
     public <T extends GameNetworkMessage> ByteBuffer writeToBuffer(T message) {
 
         // TODO: Better buffer player
-        ByteBuffer buffer = ByteBuffer.allocate(1500).order(ByteOrder.LITTLE_ENDIAN);
+        ByteBuffer buffer = ByteBuffer.allocate(4096).order(ByteOrder.LITTLE_ENDIAN);
 
         MessageData data = messageDataMap.get(message.getClass());
         if (data == null) {
