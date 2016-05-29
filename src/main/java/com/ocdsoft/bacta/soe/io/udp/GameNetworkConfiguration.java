@@ -17,8 +17,10 @@ import java.net.UnknownHostException;
 public final class GameNetworkConfiguration extends BaseNetworkConfiguration implements NetworkConfiguration {
 
     private final int tcpPort;
+
     private final InetAddress loginAddress;
     private final int loginPort;
+
     private final InetAddress chatAddress;
     private final int chatPort;
 
