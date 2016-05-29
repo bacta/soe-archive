@@ -2,6 +2,7 @@ package com.ocdsoft.bacta.soe.io.udp;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import com.ocdsoft.bacta.soe.connection.ConnectionRole;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 import com.ocdsoft.bacta.soe.message.TerminateReason;
 import org.slf4j.Logger;
@@ -34,41 +35,77 @@ public final class AccountCache {
         this.networkConfiguration = networkConfiguration;
     }
 
+    /**
+     * Returns the number of connections currently recognized
+     * @return number of connections
+     */
     public int getConnectionCount() {
         return connectionMap.size();
     }
 
+    /**
+     * Add an incoming connection to the cache
+     * @param remoteAddress address connection is coming from
+     * @param connection new connection object
+     */
     public void put(final InetSocketAddress remoteAddress, final SoeUdpConnection connection) {
         connectionMap.put(remoteAddress, connection);
         LOGGER.trace("Adding connection from {}", remoteAddress);
     }
 
+    /**
+     * Get connection associated with this {@link InetSocketAddress}
+     * @param sender
+     * @return connection
+     */
     public SoeUdpConnection get(final InetSocketAddress sender) {
         return connectionMap.get(sender);
     }
 
+    /**
+     * Retrieve all {@link InetSocketAddress} objects in the cache
+     * @return all {@link InetSocketAddress} objects
+     */
     public Set<InetSocketAddress> keySet() {
         return connectionMap.keySet();
     }
 
+    /**
+     * Remove connection from cache based on {@link InetSocketAddress} key
+     * @param inetSocketAddress
+     * @return connection removed
+     */
     public SoeUdpConnection remove(final InetSocketAddress inetSocketAddress) {
         final SoeUdpConnection connection = connectionMap.remove(inetSocketAddress);
 
         if(connection != null) {
-            Queue<SoeUdpConnection> connectionQueue = connectedAccountCache.get(connection.getAccountId());
-            connectionQueue.remove(connection);
-            if(connectionQueue.isEmpty()) {
-                connectedAccountCache.remove(connection.getAccountId());
-                LOGGER.trace("No more connections for account {}", connection.getAccountUsername());
+            Queue<SoeUdpConnection> connectionQueue = connectedAccountCache.get(connection.getBactaId());
+            if (connectionQueue != null) {
+                connectionQueue.remove(connection);
+                if (connectionQueue.isEmpty()) {
+                    connectedAccountCache.remove(connection.getBactaId());
+                    LOGGER.trace("No more connections for account {}", connection.getAccountUsername());
+                }
             }
         }
 
         return connection;
     }
 
+    /**
+     * Add new connection.  This method will disconnect any non-authenticated connection or a connection without associated BactaId
+     * @param connection
+     */
     public void addAccountConnection(final SoeUdpConnection connection) {
 
-        Queue<SoeUdpConnection> connectionQueue = connectedAccountCache.get(connection.getAccountId());
+        // If someone tries to add an account before it has been authenticated, disconnect it
+        if(!(connection.getBactaId() >= 0) || !connection.hasRole(ConnectionRole.AUTHENTICATED)) {
+            connection.terminate(TerminateReason.NEWATTEMPT);
+            LOGGER.error("Connection {} is not associated with an account and authenticated is {}, terminating", connection.getId(), connection.hasRole(ConnectionRole.AUTHENTICATED));
+            return;
+        }
+
+        Queue<SoeUdpConnection> connectionQueue = connectedAccountCache.get(connection.getBactaId());
         if (connectionQueue != null) {
             while (connectionQueue.size() >= networkConfiguration.getConnectionsPerAccount()) {
                 SoeUdpConnection connectionToDisconnect = connectionQueue.poll();
@@ -80,7 +117,7 @@ public final class AccountCache {
             }
         } else {
             connectionQueue = new ArrayBlockingQueue<>(networkConfiguration.getConnectionsPerAccount());
-            connectedAccountCache.put(connection.getAccountId(), connectionQueue);
+            connectedAccountCache.put(connection.getBactaId(), connectionQueue);
             LOGGER.trace("Account {} is making first connection {}", connection.getAccountUsername(), connection.getId());
         }
 

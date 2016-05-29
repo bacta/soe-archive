@@ -36,7 +36,7 @@ public final class SoeUdpConnection extends UdpConnection implements SoeUdpConne
 
     @Getter
     @Setter
-    private int accountId;
+    private int bactaId;
 
     @Getter
     @Setter
@@ -119,6 +119,7 @@ public final class SoeUdpConnection extends UdpConnection implements SoeUdpConne
         roles.add(ConnectionRole.UNAUTHENTICATED);
         gameNetworkMessagesSent = new AtomicInteger();
         protocolMessagesSent = new AtomicInteger();
+        bactaId = -1;
 
         protocolMessagesReceived = new AtomicInteger();
         gameNetworkMessagesReceived = new AtomicInteger();
