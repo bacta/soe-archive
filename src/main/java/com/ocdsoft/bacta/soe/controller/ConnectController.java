@@ -39,7 +39,7 @@ public class ConnectController extends BaseSoeController {
         
         if(protocolVersion != networkConfiguration.getProtocolVersion()) {
             connection.terminate(TerminateReason.REFUSED);
-            LOGGER.warn("Client from '{}' attempted to use a non-supported protocol version: {}" + connection.getRemoteAddress().getHostString(), protocolVersion);
+            LOGGER.warn("Client from '{}' attempted to use a non-supported protocol version: {}", connection.getRemoteAddress().getHostString(), protocolVersion);
             return;
         }
         

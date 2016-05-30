@@ -337,17 +337,19 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
 
                         for (InetSocketAddress inetSocketAddress : deadClients) {
                             final SoeUdpConnection connection = accountCache.remove(inetSocketAddress);
-                            subscriptionService.onDisconnect(connection);
-                            if(!networkConfiguration.isDisableInstrumentation()) {
-                                try {
-                                    mBeanServer.unregisterMBean(connection.getBeanName());
-                                } catch (Exception e) {
-                                    LOGGER.warn("Unable to unregister MBEAN {}", connection.getBeanName(), e);
+                            if(connection != null) {
+                                subscriptionService.onDisconnect(connection);
+                                if (!networkConfiguration.isDisableInstrumentation()) {
+                                    try {
+                                        mBeanServer.unregisterMBean(connection.getBeanName());
+                                    } catch (Exception e) {
+                                        LOGGER.warn("Unable to unregister MBEAN {}", connection.getBeanName(), e);
+                                    }
                                 }
-                            }
-                            if(networkConfiguration.isReportUdpDisconnects()) {
-                                LOGGER.info("Client disconnected: {}  Connection: {}  Reason: {}", connection.getRemoteAddress(), connection.getId(), connection.getTerminateReason().getReason());
-                                LOGGER.info("Clients still connected: {}", accountCache.getConnectionCount());
+                                if (networkConfiguration.isReportUdpDisconnects()) {
+                                    LOGGER.info("Client disconnected: {}  Connection: {}  Reason: {}", connection.getRemoteAddress(), connection.getId(), connection.getTerminateReason().getReason());
+                                    LOGGER.info("Clients still connected: {}", accountCache.getConnectionCount());
+                                }
                             }
                         }
 
