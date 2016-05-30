@@ -160,7 +160,7 @@ public class ReliableUdpMessageBuilder implements UdpMessageBuilder<ByteBuffer> 
         private final int size;
         private boolean first;
 
-        public FragmentProcessor(ByteBuffer buffer) {
+        FragmentProcessor(ByteBuffer buffer) {
             this.buffer = buffer;
             size = buffer.remaining();
             first = true;

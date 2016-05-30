@@ -317,7 +317,11 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
                         for (InetSocketAddress inetSocketAddress : connectionList) {
                             final SoeUdpConnection connection = accountCache.get(inetSocketAddress);
 
-                            if (connection == null || connection.getState() == ConnectionState.DISCONNECTED) {
+                            if (connection == null) {
+                                continue;
+                            }
+
+                            if (connection.getState() == ConnectionState.DISCONNECTED) {
                                 deadClients.add(inetSocketAddress);
                             }
 

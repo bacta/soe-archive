@@ -19,8 +19,6 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Queue;
-import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
@@ -48,7 +46,7 @@ public final class SoeUdpConnection extends UdpConnection implements SoeUdpConne
 
     private final AtomicInteger clientSequenceNumber;
 
-    private final FragmentContainer fragmentContainer;
+    private final IncomingFragmentContainer incomingFragmentContainer;
 
     private final List<ConnectionRole> roles;
 
@@ -114,7 +112,7 @@ public final class SoeUdpConnection extends UdpConnection implements SoeUdpConne
 
         udpMessageProcessor = new SoeUdpMessageProcessor(this, networkConfiguration);
         clientSequenceNumber = new AtomicInteger();
-        fragmentContainer = new FragmentContainer();
+        incomingFragmentContainer = new IncomingFragmentContainer();
         roles = new ArrayList<>();
         roles.add(ConnectionRole.UNAUTHENTICATED);
         gameNetworkMessagesSent = new AtomicInteger();
@@ -226,14 +224,7 @@ public final class SoeUdpConnection extends UdpConnection implements SoeUdpConne
     }
 
     public ByteBuffer addIncomingFragment(ByteBuffer buffer) {
-
-        ByteBuffer completedMessage = fragmentContainer.addFragment(buffer);
-
-        if (completedMessage != null) {
-            return completedMessage;
-        }
-
-        return null;
+        return incomingFragmentContainer.addFragment(buffer);
     }
 
     public void connect() {
@@ -286,21 +277,6 @@ public final class SoeUdpConnection extends UdpConnection implements SoeUdpConne
 
     public boolean isGod() {
         return hasRole(ConnectionRole.GOD);
-    }
-
-    @SuppressWarnings("serial")
-    private class FragmentContainer {
-
-        private final Queue<ByteBuffer> queue = new PriorityBlockingQueue<>();
-
-        private int firstFragment = 0;
-        private int lastFragment = 0;
-
-        public ByteBuffer addFragment(ByteBuffer buffer) {
-            queue.add(buffer);
-            return null;
-        }
-
     }
 
 //    013CA650	UdpManager::UdpManager(UdpManager::Params const *)

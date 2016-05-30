@@ -30,7 +30,11 @@ public class ReliableMessageController extends BaseSoeController {
         LOGGER.trace("{} Receiving Reliable Message Sequence {} {}", connection.getId(), sequenceNum, buffer.order());
         connection.sendAck(sequenceNum);
 
-        if(type == UdpPacketType.cUdpPacketFragment1) {
+        if(type == UdpPacketType.cUdpPacketFragment1 ||
+                type == UdpPacketType.cUdpPacketFragment2 ||
+                type == UdpPacketType.cUdpPacketFragment3 ||
+                type == UdpPacketType.cUdpPacketFragment4) {
+
             buffer = connection.addIncomingFragment(buffer);
         }
 

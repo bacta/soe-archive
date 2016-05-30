@@ -1,5 +1,8 @@
 package com.ocdsoft.bacta.soe.serialize;
 
+import com.codahale.metrics.Histogram;
+import com.codahale.metrics.MetricRegistry;
+import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.ocdsoft.bacta.soe.message.GameNetworkMessage;
 import com.ocdsoft.bacta.soe.message.Priority;
@@ -13,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Constructor;
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.HashMap;
@@ -30,8 +34,13 @@ public class GameNetworkMessageSerializerImpl implements GameNetworkMessageSeria
 
     private final IntObjectHashMap<Constructor<? extends GameNetworkMessage>> messageConstructorMap;
     private final Map<Class<? extends GameNetworkMessage>, MessageData> messageDataMap;
+    private final MetricRegistry metricRegistry;
+    private final Histogram histogram;
 
-    public GameNetworkMessageSerializerImpl() {
+    @Inject
+    public GameNetworkMessageSerializerImpl(final MetricRegistry metricRegistry) {
+        this.metricRegistry = metricRegistry;
+        histogram = this.metricRegistry.histogram("GameNetworkMessageBufferAllocations");
         messageDataMap = new HashMap<>();
         this.messageConstructorMap = new IntObjectHashMap<>();
         loadMessages();
@@ -71,10 +80,11 @@ public class GameNetworkMessageSerializerImpl implements GameNetworkMessageSeria
     }
 
     @Override
-    public <T extends GameNetworkMessage> ByteBuffer writeToBuffer(T message) {
+    public <T extends GameNetworkMessage> ByteBuffer writeToBuffer(final T message) {
 
         // TODO: Better buffer player
         ByteBuffer buffer = ByteBuffer.allocate(4096).order(ByteOrder.LITTLE_ENDIAN);
+        histogram.update(4096);
 
         MessageData data = messageDataMap.get(message.getClass());
         if (data == null) {
@@ -92,14 +102,28 @@ public class GameNetworkMessageSerializerImpl implements GameNetworkMessageSeria
             messageDataMap.put(message.getClass(), data);
         }
 
-        buffer.putShort(data.getPriority());
-        buffer.putInt(data.getType());
+        return writeToBufferInternal(buffer, data, message);
+    }
 
-        message.writeToBuffer(buffer);
-        buffer.limit(buffer.position());
-        buffer.rewind();
+    private <T extends GameNetworkMessage> ByteBuffer writeToBufferInternal(final ByteBuffer buffer, final  MessageData data, final T message) {
 
-        return buffer;
+        try {
+            buffer.putShort(data.getPriority());
+            buffer.putInt(data.getType());
+
+            message.writeToBuffer(buffer);
+
+            buffer.limit(buffer.position());
+            buffer.rewind();
+            return buffer;
+
+        } catch (BufferOverflowException e) {
+
+            final ByteBuffer newBuffer = ByteBuffer.allocate(buffer.limit() * 2).order(ByteOrder.LITTLE_ENDIAN);
+            histogram.update(buffer.limit() * 2);
+            return writeToBufferInternal(newBuffer, data, message);
+
+        }
     }
 
     private GameNetworkMessage create(final Constructor<? extends GameNetworkMessage> messageConstructor, final ByteBuffer buffer) {
