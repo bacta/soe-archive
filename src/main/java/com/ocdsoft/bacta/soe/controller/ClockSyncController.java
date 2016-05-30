@@ -3,6 +3,7 @@ package com.ocdsoft.bacta.soe.controller;
 import com.ocdsoft.bacta.soe.connection.SoeUdpConnection;
 import com.ocdsoft.bacta.soe.message.ClockReflectMessage;
 import com.ocdsoft.bacta.soe.message.UdpPacketType;
+import com.ocdsoft.bacta.soe.util.Clock;
 
 import java.nio.ByteBuffer;
 
@@ -70,19 +71,30 @@ import java.nio.ByteBuffer;
 @SoeController(handles = {UdpPacketType.cUdpPacketClockSync})
 public class ClockSyncController extends BaseSoeController {
 
+    private static final long serverStartTime = System.currentTimeMillis();
+
     @Override
-    public void handleIncoming(byte zeroByte, UdpPacketType type, SoeUdpConnection connection, ByteBuffer buffer) {
+    public void handleIncoming(final byte zeroByte, final UdpPacketType type, final SoeUdpConnection connection, final ByteBuffer buffer) {
 
 		short timeStamp = buffer.getShort();
-//		int masterPingTime = buffer.readInt();
-//		int averagePingTime = buffer.readInt();
-//		int lowPingTime = buffer.readInt();
-//		int highPingTime = buffer.readInt();
-//		int lastPingTime = buffer.readInt();
-//		long ourSent = buffer.readLong();
-//		long ourReceived = buffer.readLong();
+		int masterPingTime = buffer.getInt();
+		int averagePingTime = buffer.getInt();
+		int lowPingTime = buffer.getInt();
+		int highPingTime = buffer.getInt();
+		int lastPingTime = buffer.getInt();
+		long ourSent = buffer.getLong();
+		long ourReceived = buffer.getLong();
 
-        ClockReflectMessage outMessage = new ClockReflectMessage(timeStamp);
+        connection.updatePingData(masterPingTime, averagePingTime, lowPingTime, highPingTime, lastPingTime);
+
+        ClockReflectMessage outMessage = new ClockReflectMessage(
+                timeStamp,
+                Clock.now(),
+                ourSent,
+                ourReceived,
+                connection.getProtocolMessagesSent().get(),
+                connection.getProtocolMessagesReceived().get()
+        );
         connection.sendMessage(outMessage);
 
     }

@@ -89,6 +89,17 @@ public final class SoeUdpConnection extends UdpConnection implements SoeUdpConne
     @Setter
     private int orderedStampLast;
 
+    @Getter
+    private int masterPingTime;
+    @Getter
+    private int averagePingTime;
+    @Getter
+    private int lowPingTime;
+    @Getter
+    private int highPingTime;
+    @Getter
+    private int lastPingTime;
+
     private final GameNetworkMessageSerializer messageSerializer;
 
     public SoeUdpConnection(final NetworkConfiguration networkConfiguration,
@@ -122,7 +133,13 @@ public final class SoeUdpConnection extends UdpConnection implements SoeUdpConne
         protocolMessagesReceived = new AtomicInteger();
         gameNetworkMessagesReceived = new AtomicInteger();
         this.orderedStampLast = 0;
-        
+
+        masterPingTime = 0;
+        averagePingTime = 0;
+        lowPingTime = 0;
+        highPingTime = 0;
+        lastPingTime = 0;
+
         updateLastActivity();
         updateLastClientActivity();
     }
@@ -277,6 +294,14 @@ public final class SoeUdpConnection extends UdpConnection implements SoeUdpConne
 
     public boolean isGod() {
         return hasRole(ConnectionRole.GOD);
+    }
+
+    public void updatePingData(final int masterPingTime, final int averagePingTime, final int lowPingTime, final int highPingTime, final int lastPingTime) {
+        this.masterPingTime = masterPingTime;
+        this.averagePingTime = averagePingTime;
+        this.lowPingTime = lowPingTime;
+        this.highPingTime = highPingTime;
+        this.lastPingTime = lastPingTime;
     }
 
 //    013CA650	UdpManager::UdpManager(UdpManager::Params const *)

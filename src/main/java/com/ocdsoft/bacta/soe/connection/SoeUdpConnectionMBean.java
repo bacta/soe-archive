@@ -14,4 +14,9 @@ public interface SoeUdpConnectionMBean {
     AtomicInteger getProtocolMessagesSent();
     AtomicInteger getProtocolMessagesReceived();
     AtomicInteger getGameNetworkMessagesReceived();
+    int getMasterPingTime();
+    int getAveragePingTime();
+    int getLowPingTime();
+    int getHighPingTime();
+    int getLastPingTime();
 }

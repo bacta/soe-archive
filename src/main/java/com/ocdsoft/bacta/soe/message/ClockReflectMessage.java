@@ -59,15 +59,20 @@ package com.ocdsoft.bacta.soe.message;
  */
 public final class ClockReflectMessage extends SoeMessage {
 
+	public ClockReflectMessage(final short timestamp,
+                               final int serverSyncStampLong,
+                               final long yourSent,
+                               final long yourReceived,
+                               final long ourSent,
+                               final long ourReceived) {
 
-	public ClockReflectMessage(short value) {
 		super(UdpPacketType.cUdpPacketClockReflect);
 		
-		buffer.putShort(value);
-        buffer.putInt(0x0); // ?
-        buffer.putLong(0); // Client Sent ?
-        buffer.putLong(0); // Client Received ?
-        buffer.putLong(0);
-        buffer.putLong(0);
+		buffer.putShort(timestamp);
+        buffer.putInt(serverSyncStampLong);
+        buffer.putLong(yourSent); // Client Sent ?
+        buffer.putLong(yourReceived); // Client Received ?
+        buffer.putLong(ourSent);
+        buffer.putLong(ourReceived);
 	}
 }
