@@ -8,7 +8,10 @@ import com.ocdsoft.bacta.soe.controller.GameNetworkMessageController;
 import com.ocdsoft.bacta.soe.message.GameNetworkMessage;
 import com.ocdsoft.bacta.soe.serialize.GameNetworkMessageSerializer;
 import com.ocdsoft.bacta.soe.serialize.GameNetworkMessageTypeNotFoundException;
-import com.ocdsoft.bacta.soe.util.*;
+import com.ocdsoft.bacta.soe.util.ClientString;
+import com.ocdsoft.bacta.soe.util.GameNetworkMessageTemplateWriter;
+import com.ocdsoft.bacta.soe.util.ObjectControllerNames;
+import com.ocdsoft.bacta.soe.util.SoeMessageUtil;
 import gnu.trove.map.TIntObjectMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,18 +33,16 @@ public class GameNetworkMessageDispatcher {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GameNetworkMessageDispatcher.class);
     private final static int OBJECT_CONTROLLER_MESSAGE = 0x80CE5E46;
-    private final static int COMMAND_CONTROLLER_MESSAGE = 0x116;
 
     /**
      * Map of controller data to dispatch messages
      */
-    private final TIntObjectMap<ControllerData> controllers;
+    private final TIntObjectMap<ControllerData<GameNetworkMessageController>> controllers;
 
     /**
      * Creates the {@link GameNetworkMessage} to be passed to the appropriate controller
      */
     private final GameNetworkMessageSerializer gameNetworkMessageSerializer;
-
 
     /**
      * Generates missing {@link GameNetworkMessage} and {@link GameNetworkMessageController} classes for implementation
@@ -65,19 +66,10 @@ public class GameNetworkMessageDispatcher {
     }
 
     public void dispatch(short priority, int gameMessageType, SoeUdpConnection connection, ByteBuffer buffer) {
-
         connection.increaseGameNetworkMessageReceived();
 
-        int internalMessageType = gameMessageType;
-        if (gameMessageType == OBJECT_CONTROLLER_MESSAGE) {
-            internalMessageType = buffer.getInt(4);
+        final ControllerData<GameNetworkMessageController> controllerData = controllers.get(gameMessageType);
 
-            if (internalMessageType == COMMAND_CONTROLLER_MESSAGE) {
-                internalMessageType = buffer.getInt(24);
-            }
-        }
-
-        ControllerData<GameNetworkMessageController> controllerData = controllers.get(gameMessageType);
         if (controllerData != null) {
             if (!controllerData.containsRoles(connection.getRoles())) {
                 LOGGER.error("{} Controller security blocked access: {}", serverState.getServerType(), controllerData.getController().getClass().getName());
@@ -86,13 +78,13 @@ public class GameNetworkMessageDispatcher {
             }
 
             try {
-                GameNetworkMessageController controller = controllerData.getController();
-                GameNetworkMessage incomingMessage = gameNetworkMessageSerializer.readFromBuffer(internalMessageType, buffer);
+                final GameNetworkMessageController controller = controllerData.getController();
+                final GameNetworkMessage incomingMessage = gameNetworkMessageSerializer.readFromBuffer(gameMessageType, buffer);
 
                 LOGGER.trace("[{}] received {}", serverState.getServerType().name(), incomingMessage.getClass().getSimpleName());
 
                 LOGGER.debug("Routing to " + controller.getClass().getSimpleName());
-                controller.handleIncoming(connection, incomingMessage);
+                controller.handleIncoming(connection, incomingMessage); //Can't fix this one yet.
 
 
             } catch (GameNetworkMessageTypeNotFoundException e) {
@@ -107,28 +99,16 @@ public class GameNetworkMessageDispatcher {
     }
 
     private void handleMissingController(short priority, int gameMessageType, ByteBuffer buffer) {
-
         if (gameMessageType == OBJECT_CONTROLLER_MESSAGE) {
-            int objcType = buffer.getInt(4);
+            final int objcType = buffer.getInt(4);
+            final String propertyName = Integer.toHexString(objcType);
 
-            if (objcType == COMMAND_CONTROLLER_MESSAGE) {
-                int commandHash = buffer.getInt(24);
-
-                String propertyName = Integer.toHexString(commandHash);
-                gameNetworkMessageTemplateWriter.createCommandFiles(commandHash, buffer);
-                LOGGER.error("{} Unhandled Command Message: 0x{}", CommandNames.get(propertyName), propertyName);
-                LOGGER.error(SoeMessageUtil.bytesToHex(buffer));
-
-            } else {
-                String propertyName = Integer.toHexString(objcType);
-
-                gameNetworkMessageTemplateWriter.createObjFiles(objcType, buffer);
-                LOGGER.error("{} Unhandled ObjC Message: 0x{}", ObjectControllerNames.get(propertyName), propertyName);
-                LOGGER.error(SoeMessageUtil.bytesToHex(buffer));
-            }
+            gameNetworkMessageTemplateWriter.createObjFiles(objcType, buffer);
+            LOGGER.error("{} Unhandled ObjC Message: 0x{}", ObjectControllerNames.get(propertyName), propertyName);
+            LOGGER.error(SoeMessageUtil.bytesToHex(buffer));
         } else {
 
-            String propertyName = Integer.toHexString(gameMessageType);
+            final String propertyName = Integer.toHexString(gameMessageType);
             gameNetworkMessageTemplateWriter.createGameNetworkMessageFiles(priority, gameMessageType, buffer);
             LOGGER.error("{} Unhandled SWG Message: '{}' 0x{}", serverState.getServerType(), ClientString.get(propertyName), propertyName);
             LOGGER.error(SoeMessageUtil.bytesToHex(buffer));

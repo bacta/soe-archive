@@ -8,7 +8,6 @@ import com.ocdsoft.bacta.soe.connection.ConnectionRole;
 import com.ocdsoft.bacta.soe.controller.ConnectionRolesAllowed;
 import com.ocdsoft.bacta.soe.controller.MessageHandled;
 import com.ocdsoft.bacta.soe.message.GameNetworkMessage;
-import com.ocdsoft.bacta.soe.serialize.GameNetworkMessageSerializer;
 import com.ocdsoft.bacta.soe.util.ClientString;
 import com.ocdsoft.bacta.soe.util.MessageHashUtil;
 import gnu.trove.map.TIntObjectMap;
@@ -19,7 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -30,47 +29,37 @@ public final class ClasspathControllerLoader {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ClasspathControllerLoader.class);
 
-    private final GameNetworkMessageSerializer gameNetworkMessageSerializer;
     private final Injector injector;
     private final ServerState serverState;
 
     @Inject
     public ClasspathControllerLoader(final Injector injector,
-                                     final GameNetworkMessageSerializer gameNetworkMessageSerializer,
                                      final ServerState serverState) {
 
         this.injector = injector;
-        this.gameNetworkMessageSerializer = gameNetworkMessageSerializer;
         this.serverState = serverState;
     }
 
-    public <T> TIntObjectMap<ControllerData> getControllers(Class<T> clazz) {
+    public <T> TIntObjectMap<ControllerData<T>> getControllers(Class<T> clazz) {
 
-        TIntObjectMap<ControllerData> controllers = new TIntObjectHashMap<>();
+        final TIntObjectMap<ControllerData<T>> controllers = new TIntObjectHashMap<>();
+        final Reflections reflections = new Reflections();
+        final Set<Class<? extends T>> subTypes = reflections.getSubTypesOf(clazz);
 
-        Reflections reflections = new Reflections();
-        Set<Class<? extends T>> subTypes = reflections.getSubTypesOf(clazz);
-        Iterator<Class<? extends T>> iter = subTypes.iterator();
-
-        while (iter.hasNext()) {
-
-            Class<? extends T> controllerClass = iter.next();
+        for (final Class<? extends T> controllerClass : subTypes)
             loadControllerClass(controllers, injector, controllerClass, serverState);
-        }
 
         return controllers;
     }
 
-    private <T> void loadControllerClass(final TIntObjectMap<ControllerData> controllers,
-                                     final Injector injector,
-                                     Class<? extends T> controllerClass,
-                                     final ServerState serverState) {
-
+    private <T> void loadControllerClass(final TIntObjectMap<ControllerData<T>> controllers,
+                                         final Injector injector,
+                                         final Class<? extends T> controllerClass,
+                                         final ServerState serverState) {
         try {
 
-            if (Modifier.isAbstract(controllerClass.getModifiers())) {
+            if (Modifier.isAbstract(controllerClass.getModifiers()))
                 return;
-            }
 
             MessageHandled controllerAnnotation = controllerClass.getAnnotation(MessageHandled.class);
 
@@ -79,31 +68,27 @@ public final class ClasspathControllerLoader {
                 return;
             }
 
-            ConnectionRolesAllowed connectionRolesAllowed = controllerClass.getAnnotation(ConnectionRolesAllowed.class);
-            ConnectionRole[] connectionRoles;
+            final ConnectionRolesAllowed connectionRolesAllowed = controllerClass.getAnnotation(ConnectionRolesAllowed.class);
+            final ConnectionRole[] connectionRoles;
             if (connectionRolesAllowed == null) {
                 connectionRoles = new ConnectionRole[]{ConnectionRole.AUTHENTICATED};
             } else {
                 connectionRoles = connectionRolesAllowed.value();
             }
 
-            Class<? extends GameNetworkMessage>[] handledMessageClasses = (Class<? extends GameNetworkMessage>[]) controllerAnnotation.handles();
+            final Class<? extends GameNetworkMessage>[] handledMessageClasses = controllerAnnotation.handles();
 
-            for( Class<? extends GameNetworkMessage> handledMessageClass : handledMessageClasses) {
-
+            for (final Class<? extends GameNetworkMessage> handledMessageClass : handledMessageClasses) {
                 final int hash = MessageHashUtil.getHash(handledMessageClass);
-                List<ServerType> serverTypes = new ArrayList<>();
-                for (ServerType serverType : controllerAnnotation.type()) {
-                    serverTypes.add(serverType);
-                }
+                final List<ServerType> serverTypes = new ArrayList<>();
+                Collections.addAll(serverTypes, controllerAnnotation.type());
 
-                String propertyName = Integer.toHexString(hash);
+                final String propertyName = Integer.toHexString(hash);
 
                 if (serverTypes.contains(serverState.getServerType())) {
 
-                    T controller = injector.getInstance(controllerClass);
-
-                    ControllerData<T> newControllerData = new ControllerData(controller, connectionRoles);
+                    final T controller = injector.getInstance(controllerClass);
+                    final ControllerData<T> newControllerData = new ControllerData<>(controller, connectionRoles);
 
                     if (!controllers.containsKey(hash)) {
                         LOGGER.debug("{} Adding Controller {} '{}' 0x{}", serverState.getServerType().name(), controllerClass.getName(), ClientString.get(propertyName), propertyName);

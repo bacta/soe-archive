@@ -17,7 +17,6 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.nio.ByteBuffer;
-import java.nio.file.Paths;
 
 /**
  * Created by kburkhardt on 1/31/15.
@@ -269,7 +268,7 @@ public final class GameNetworkMessageTemplateWriter {
 
     private void writeCommandController(int opcode, String messageName) {
 
-        String className = messageName + "CommandController";
+        String className = messageName + "QueueCommandController";
 
         String outFileName = commandControllerFilePath + className + ".java";
         File file = new File(outFileName);
@@ -278,7 +277,7 @@ public final class GameNetworkMessageTemplateWriter {
             return;
         }
 
-        Template template = ve.getTemplate("/template/CommandController.vm");
+        Template template = ve.getTemplate("/template/QueueCommandController.vm");
 
         VelocityContext context = new VelocityContext();
 

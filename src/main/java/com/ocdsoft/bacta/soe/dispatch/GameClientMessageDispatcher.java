@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 public final class GameClientMessageDispatcher {
     private static final Logger LOGGER = LoggerFactory.getLogger(GameClientMessageDispatcher.class);
 
-    private final TIntObjectMap<ControllerData> controllers;
+    private final TIntObjectMap<ControllerData<GameClientMessageController>> controllers;
     private final ServerState serverState;
 
     @Inject

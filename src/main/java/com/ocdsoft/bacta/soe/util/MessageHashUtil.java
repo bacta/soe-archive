@@ -1,7 +1,6 @@
 package com.ocdsoft.bacta.soe.util;
 
 import com.ocdsoft.bacta.soe.dispatch.MessageId;
-import com.ocdsoft.bacta.soe.message.CommandMessage;
 import com.ocdsoft.bacta.soe.message.GameNetworkMessage;
 
 /**
@@ -9,17 +8,16 @@ import com.ocdsoft.bacta.soe.message.GameNetworkMessage;
  */
 public class MessageHashUtil {
     public static int getHash(Class<? extends GameNetworkMessage> handledMessageClass) {
+        final int hash;
 
-        int hash;
+        final MessageId messageId = handledMessageClass.getAnnotation(MessageId.class);
 
-        MessageId messageId = handledMessageClass.getAnnotation(MessageId.class);
-        if(messageId != null) {
+        if (messageId != null) {
             hash = messageId.value();
-        } else if(CommandMessage.class.isAssignableFrom(handledMessageClass)) {
-            hash = SOECRC32.hashCode(handledMessageClass.getSimpleName().toLowerCase());
         } else {
             hash = SOECRC32.hashCode(handledMessageClass.getSimpleName());
         }
+
         return hash;
     }
 }

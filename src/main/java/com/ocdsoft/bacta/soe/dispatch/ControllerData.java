@@ -1,9 +1,6 @@
 package com.ocdsoft.bacta.soe.dispatch;
 
 import com.ocdsoft.bacta.soe.connection.ConnectionRole;
-import com.ocdsoft.bacta.soe.controller.CommandController;
-import com.ocdsoft.bacta.soe.controller.GameNetworkMessageController;
-import com.ocdsoft.bacta.soe.controller.ObjController;
 import lombok.Getter;
 
 import java.util.List;
@@ -13,7 +10,6 @@ import java.util.List;
  */
 @Getter
 public class ControllerData<T> {
-
     private final T controller;
     private final ConnectionRole[] roles;
 
@@ -23,10 +19,10 @@ public class ControllerData<T> {
         this.roles = roles;
     }
 
-    public boolean containsRoles(List<ConnectionRole> userRoles) {
+    public boolean containsRoles(final List<ConnectionRole> userRoles) {
 
-        for(ConnectionRole role : roles) {
-            if(userRoles.contains(role)) {
+        for (final ConnectionRole role : roles) {
+            if (userRoles.contains(role)) {
                 return true;
             }
         }
