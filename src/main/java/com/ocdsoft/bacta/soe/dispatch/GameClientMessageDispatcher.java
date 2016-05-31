@@ -22,11 +22,13 @@ public final class GameClientMessageDispatcher {
     public GameClientMessageDispatcher(final ClasspathControllerLoader controllerLoader,
                                        final ServerState serverState) {
 
+        LOGGER.debug("Loading");
+
         this.controllers = controllerLoader.getControllers(GameClientMessageController.class);
         this.serverState = serverState;
 
         controllers.forEachEntry((key, data) -> {
-            LOGGER.info("Loaded GameClientMessageController {} for messageType {}", data.getController().getClass().getSimpleName(), key);
+            LOGGER.debug("Loaded GameClientMessageController {} for messageType {}", data.getController().getClass().getSimpleName(), key);
             return true;
         });
     }
