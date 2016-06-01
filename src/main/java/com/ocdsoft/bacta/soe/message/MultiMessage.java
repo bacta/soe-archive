@@ -13,6 +13,8 @@ public final class MultiMessage extends SoeMessage {
 
     public void add(ByteBuffer inbuffer) {
 
+        assert inbuffer.remaining() <= 0xFF : "Buffer is too large ( > 0xFF ) and should never have reached this";
+
         int byteCount = inbuffer.remaining();
         if(byteCount > 0xFF) {
             byte sizeCount = (byte)((byteCount / 0xFF) - (byteCount % 0xFF == 0 ? 1 : 0));

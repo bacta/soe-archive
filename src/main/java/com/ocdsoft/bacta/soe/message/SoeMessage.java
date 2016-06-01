@@ -33,4 +33,8 @@ public abstract class SoeMessage {
     public int size() {
         return buffer.limit();
     }
+
+    public int position() {
+        return buffer.position();
+    }
 }

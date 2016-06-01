@@ -153,7 +153,7 @@ public final class SoeTransceiver extends UdpTransceiver<SoeUdpConnection>  {
      * @throws Exception
      * @since 1.0
      */
-    private final SoeUdpConnection createConnection(final InetSocketAddress address) throws RuntimeException {
+    private SoeUdpConnection createConnection(final InetSocketAddress address) throws RuntimeException {
         SoeUdpConnection connection = new SoeUdpConnection(networkConfiguration, address, ConnectionState.ONLINE, messageSerializer, null);
         
         try {

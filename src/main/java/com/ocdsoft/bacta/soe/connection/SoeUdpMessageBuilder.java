@@ -16,7 +16,7 @@ import java.util.concurrent.ArrayBlockingQueue;
  */
 public class SoeUdpMessageBuilder implements UdpMessageBuilder<ByteBuffer> {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass().getSimpleName());
+    private static final Logger LOGGER = LoggerFactory.getLogger(SoeUdpMessageBuilder.class);
 
     private final Queue<ByteBuffer> bufferList;
     private final NetworkConfiguration configuration;
@@ -31,48 +31,59 @@ public class SoeUdpMessageBuilder implements UdpMessageBuilder<ByteBuffer> {
     }
 
     @Override
-    public synchronized boolean add(ByteBuffer buffer) {
+    public synchronized boolean add(final ByteBuffer buffer) {
 
         if(!configuration.isMultiSoeMessages()) {
             return bufferList.add(buffer);
         }
 
-        logger.trace("Adding: " + SoeMessageUtil.bytesToHex(buffer));
-        logger.trace("  Queue Size: " + bufferList.size());
-        logger.trace("  Pending Multi: " + (pendingMulti != null));
-        logger.trace("  Pending Buffer: " + (pendingBuffer != null));
+        LOGGER.trace("Adding: {}", SoeMessageUtil.bytesToHex(buffer));
+        LOGGER.trace("Queue Size: {}" ,bufferList.size());
 
-        if(pendingMulti != null) {
-            if(pendingMulti.size() + buffer.remaining() <= configuration.getMaxMultiPayload()) {
-                pendingMulti.add(buffer);
-                logger.trace("Appending: " + SoeMessageUtil.bytesToHex(buffer));
-            } else {
-                ByteBuffer send = pendingMulti.slice();
-                bufferList.add(send);
-                logger.trace("Ready to send: " + SoeMessageUtil.bytesToHex(send));
-                pendingMulti = null;
+        if(buffer.remaining() > 0xFF) {
+            flush();
+            LOGGER.trace("Buffer too large for multi: {}", buffer.remaining());
+            return bufferList.add(buffer);
+        }
+        if(pendingMulti == null) {
+            if(pendingBuffer == null) {
                 pendingBuffer = buffer;
-            }
-        } else {
-            if(pendingBuffer != null) {
-                if(pendingBuffer.remaining() + buffer.remaining() <= configuration.getMaxMultiPayload()) {
+                LOGGER.trace("No data pending, message is first");
+            } else {
+                if (pendingBuffer.remaining() + buffer.remaining() <= configuration.getMaxMultiPayload()) {
                     pendingMulti = new MultiMessage(pendingBuffer, buffer);
-                    logger.trace("Combining: " + SoeMessageUtil.bytesToHex(pendingBuffer));
-                    logger.trace("Combining: " + SoeMessageUtil.bytesToHex(buffer));
+                    LOGGER.trace("Combining: {}", SoeMessageUtil.bytesToHex(pendingBuffer));
+                    LOGGER.trace("Combining: {}" ,SoeMessageUtil.bytesToHex(buffer));
                     pendingBuffer = null;
                 } else {
-                    bufferList.add(pendingBuffer);
+                    flush();
                     pendingBuffer = buffer;
                 }
-            }  else {
+            }
+        } else {
+            if(pendingMulti.position() + buffer.remaining() > configuration.getMaxMultiPayload()) {
+                flush();
                 pendingBuffer = buffer;
+            } else {
+                pendingMulti.add(buffer);
+                LOGGER.trace("Appending: " + SoeMessageUtil.bytesToHex(buffer));
             }
         }
-
-        logger.trace("  Queue Size: " + bufferList.size());
-        logger.trace("  Pending Multi: " + (pendingMulti != null));
-        logger.trace("  Pending Buffer: " + (pendingBuffer != null));
         return true;
+    }
+
+    private void flush() {
+        if (pendingMulti != null) {
+            ByteBuffer send = pendingMulti.slice();
+            bufferList.add(send);
+            LOGGER.trace("Flushing pending data: {} {}", send.remaining(), SoeMessageUtil.bytesToHex(send));
+            pendingMulti = null;
+        }
+
+        if(pendingBuffer != null) {
+            bufferList.add(pendingBuffer);
+            pendingBuffer = null;
+        }
     }
 
     @Override

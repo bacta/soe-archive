@@ -25,7 +25,6 @@ public abstract class BaseNetworkConfiguration implements NetworkConfiguration {
 
     private final int protocolVersion;
     private final int maxRawPacketSize;
-    private final int maxMultiPayload;
     private final byte crcBytes;
     private final EncryptMethod encryptMethod;
 
@@ -96,7 +95,6 @@ public abstract class BaseNetworkConfiguration implements NetworkConfiguration {
 
         protocolVersion = configuration.getIntWithDefault("SharedNetwork", "protocolVersion", 2);
         maxRawPacketSize = configuration.getIntWithDefault("SharedNetwork", "maxRawPacketSize", 496);
-        maxMultiPayload = configuration.getIntWithDefault("SharedNetwork", "maxMultiPayload", 255);
         crcBytes = configuration.getByteWithDefault("SharedNetwork", "crcBytes", (byte) 2);
         compression = configuration.getBooleanWithDefault("SharedNetwork", "compression", true);
         networkThreadSleepTimeMs = configuration.getIntWithDefault("SharedNetwork", "networkThreadSleepTimeMs", 20);
@@ -114,6 +112,11 @@ public abstract class BaseNetworkConfiguration implements NetworkConfiguration {
         disableInstrumentation = configuration.getBooleanWithDefault("SharedNetwork", "disableInstrumentation", false);
         basePackage = configuration.getStringWithDefault("Bacta/Packages", "basePackage", "");
         requiredClientVersion = configuration.getString("SharedNetwork", "requiredClientVersion");
+    }
+
+    @Override
+    public final int getMaxMultiPayload() {
+        return maxRawPacketSize - crcBytes - 5;
     }
 
     @Override
